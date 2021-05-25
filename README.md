@@ -1,2 +1,4 @@
 # zipnet
-Neural compression algorithm run entirely on the web.
+ZipNet is a Work-In-Progress for the course project of [Data Compression With Deep Probabilistic Models](https://robamler.github.io/teaching/compress21/) offered by Robert Bamler at the University of Tübingen.
+
+We want to provide a fully functional Neural Image-Encoder and Decoder on the Web. The goal is to achieve a superior compression rate over classical codes (JPEG, …) while retaining acceptable performance for a Web Application (compression in a few seconds). This results in a maximally portable application that could help Neural Compression Codecs achieve a higher adoption rate. For the implementation, we plan to leverage the new, performant WebASM standard along with a model architecture that allows for various performance optimizations such as quantization and parallelization.
