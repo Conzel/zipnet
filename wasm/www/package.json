@@ -1,7 +1,7 @@
 {
-  "name": "create-wasm-app",
+  "name": "wasm-template-rust",
   "version": "0.1.0",
-  "description": "create an app to consume rust-generated wasm packages",
+  "description": "A template for no npm wasm-rust and github hosting",
   "main": "index.js",
   "bin": {
     "create-wasm-app": ".bin/create-wasm-app.js"
@@ -12,28 +12,26 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rustwasm/create-wasm-app.git"
+    "url": "git+https://github.com/sn99/wasm-template-rust.git"
   },
   "keywords": [
     "webassembly",
     "wasm",
     "rust",
-    "webpack"
+    "webpack",
+    "template"
   ],
-  "author": "Ashley Williams <ashley666ashley@gmail.com>",
+  "author": "sn99 <siddharthn.099@gmail.com>",
   "license": "(MIT OR Apache-2.0)",
-  "bugs": {
-    "url": "https://github.com/rustwasm/create-wasm-app/issues"
+  "homepage": "https://github.com/sn99/wasm-template-rust/blob/master/README.md",
+  "dependencies": {
+    "wasm-zipnet": "file:../pkg"
   },
-  "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
   "devDependencies": {
     "copy-webpack-plugin": "^5.0.0",
     "hello-wasm-pack": "^0.1.0",
     "webpack": "^4.29.3",
     "webpack-cli": "^3.1.0",
-    "webpack-dev-server": "^3.1.5"
-  },
-  "dependencies": {
-    "wasm-zipnet": "file:../pkg"
+    "webpack-dev-server": "^3.11.2"
   }
 }
