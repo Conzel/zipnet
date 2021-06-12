@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+	"wasm",
+	"cli",
+	"encoders",
+	"decoders"
+]
+
+[profile.release]
+opt-level = 3
