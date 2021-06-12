@@ -1,69 +1,56 @@
-<div align="center">
+# Wasm template for Rust hosting without npm-deploy on github pages using Travis script
 
-  <h1><code>wasm-pack-template</code></h1>
+[![Build Status](https://travis-ci.com/sn99/wasm-template-rust.svg?branch=master)](https://travis-ci.com/sn99/wasm-template-rust)
 
-  <strong>A template for kick starting a Rust and WebAssembly project using <a href="https://github.com/rustwasm/wasm-pack">wasm-pack</a>.</strong>
+It automatically hosts you wasm projects on gh-pages using a travis script on the latest commit.
 
-  <p>
-    <a href="https://travis-ci.org/rustwasm/wasm-pack-template"><img src="https://img.shields.io/travis/rustwasm/wasm-pack-template.svg?style=flat-square" alt="Build Status" /></a>
-  </p>
+## Requirements
+- [`rust-toolchain`](https://www.rust-lang.org/tools/install)
+- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/)
+- [`npm`](https://www.npmjs.com/get-npm)
 
-  <h3>
-    <a href="https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html">Tutorial</a>
-    <span> | </span>
-    <a href="https://discordapp.com/channels/442252698964721669/443151097398296587">Chat</a>
-  </h3>
 
-  <sub>Built with 🦀🕸 by <a href="https://rustwasm.github.io/">The Rust and WebAssembly Working Group</a></sub>
-</div>
-
-## About
-
-[**📚 Read this template tutorial! 📚**][template-docs]
-
-This template is designed for compiling Rust libraries into WebAssembly and
-publishing the resulting package to NPM.
-
-Be sure to check out [other `wasm-pack` tutorials online][tutorials] for other
-templates and usages of `wasm-pack`.
-
-[tutorials]: https://rustwasm.github.io/docs/wasm-pack/tutorials/index.html
-[template-docs]: https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html
-
-## 🚴 Usage
-
-### 🐑 Use `cargo generate` to Clone this Template
-
-[Learn more about `cargo generate` here.](https://github.com/ashleygwilliams/cargo-generate)
-
+## Steps : 
+### For building :
+- [Download](https://codeload.github.com/sn99/wasm-template-rust/zip/master) the template as it is
+- Change [`Cargo.toml`](https://github.com/sn99/wasm-template-rust/blob/master/Cargo.toml) to suit yourself
+- Change [`www/package.json`](https://github.com/sn99/wasm-template-rust/blob/master/www/package.json) to suit yourself, also remember to change 
+```json 
+  "dependencies": {
+    "wasm-template-rust": "file:../pkg"
+  },
 ```
-cargo generate --git https://github.com/rustwasm/wasm-pack-template.git --name my-project
-cd my-project
-```
+Into : 
+```json 
+  "dependencies": {
+    "YOUR-PROJECT-NAME-SAME-AS-IN-CARGO.toml": "file:../pkg"
+  },
+``` 
+- Run `wasm-pack build` inside your project dictionary
+- Run `npm install` inside [`www`](https://github.com/sn99/wasm-template-rust/tree/master/www) folder
+- Next, modify [`www/index.js`](https://github.com/sn99/wasm-template-rust/blob/master/www/index.js) to import your `PROJECT` instead of the `wasm-template-rust` package
+- Again run `npm install` inside [`www`](https://github.com/sn99/wasm-template-rust/tree/master/www) folder (just to be sure)
+- Finally run `npm run start` inside [`www`](https://github.com/sn99/wasm-template-rust/tree/master/www) and visit http://localhost:8080 to see the results
 
-### 🛠️ Build with `wasm-pack build`
+### For deployment :
+The template comes with a preconfigured [`.travis.yml`](https://github.com/sn99/wasm-template-rust/blob/master/.travis.yml) but you will still need to :
+- Create a [new branch](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-and-deleting-branches-within-your-repository) by the name [`gh-pages`](https://github.com/sn99/wasm-template-rust/tree/gh-pages)
+- [Github pages](https://pages.github.com/) should be enabled by default but if not go to `Settings -> GitHub Pages` and enable it on your `gh-pages` branch. You will also find the link to your to-be hosted page there
+- Make a [personal access token](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) (only the token no need for command line here)
+- Next we will need to put this token [into our travis](https://docs.travis-ci.com/user/deployment/pages/) settings, go to `more options -> settings -> Environment Variables` and enter the token `value` (the generated token code) and `name` as `GITHUB_TOKEN`, it should look like :
+![token](readme_resources/travis_token.png)
 
-```
-wasm-pack build
-```
+### Additional : 
+- Update [LICENSE-MIT](https://github.com/sn99/wasm-template-rust/blob/master/LICENSE-MIT) and [LICENSE-APACHE](https://github.com/sn99/wasm-template-rust/blob/master/LICENSE-APACHE) to reflect your name and year
+- Read [Rust and WebAssembly](https://rustwasm.github.io/docs/book/introduction.html) 
+- Also read [wasm-pack](https://rustwasm.github.io/docs/wasm-pack/tutorials/hybrid-applications-with-webpack/index.html)
+- Also see [wasm-conway](https://github.com/sn99/wasm-conway) made using [Rust 🦀 and WebAssembly 🕸](https://rustwasm.github.io/docs/book/) hosted at [gh-pages](https://sn99.github.io/wasm-conway/)
 
-### 🔬 Test in Headless Browsers with `wasm-pack test`
+## License
 
-```
-wasm-pack test --headless --firefox
-```
+Licensed under either of these:
 
-### 🎁 Publish to NPM with `wasm-pack publish`
-
-```
-wasm-pack publish
-```
-
-## 🔋 Batteries Included
-
-* [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) for communicating
-  between WebAssembly and JavaScript.
-* [`console_error_panic_hook`](https://github.com/rustwasm/console_error_panic_hook)
-  for logging panic messages to the developer console.
-* [`wee_alloc`](https://github.com/rustwasm/wee_alloc), an allocator optimized
-  for small code size.
+ * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+   https://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+   https://opensource.org/licenses/MIT)
