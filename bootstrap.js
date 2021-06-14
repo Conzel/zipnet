@@ -55,8 +55,17 @@
 /******/ 		"../pkg/wasm_zipnet_bg.wasm": function() {
 /******/ 			return {
 /******/ 				"./wasm_zipnet_bg.js": {
-/******/ 					"__wbg_alert_5c05ff0496cce490": function(p0i32,p1i32) {
-/******/ 						return installedModules["../pkg/wasm_zipnet_bg.js"].exports["__wbg_alert_5c05ff0496cce490"](p0i32,p1i32);
+/******/ 					"__wbg_new_59cb74e423758ede": function() {
+/******/ 						return installedModules["../pkg/wasm_zipnet_bg.js"].exports["__wbg_new_59cb74e423758ede"]();
+/******/ 					},
+/******/ 					"__wbg_stack_558ba5917b466edd": function(p0i32,p1i32) {
+/******/ 						return installedModules["../pkg/wasm_zipnet_bg.js"].exports["__wbg_stack_558ba5917b466edd"](p0i32,p1i32);
+/******/ 					},
+/******/ 					"__wbg_error_4bb6c2a97407129a": function(p0i32,p1i32) {
+/******/ 						return installedModules["../pkg/wasm_zipnet_bg.js"].exports["__wbg_error_4bb6c2a97407129a"](p0i32,p1i32);
+/******/ 					},
+/******/ 					"__wbindgen_object_drop_ref": function(p0i32) {
+/******/ 						return installedModules["../pkg/wasm_zipnet_bg.js"].exports["__wbindgen_object_drop_ref"](p0i32);
 /******/ 					},
 /******/ 					"__wbindgen_throw": function(p0i32,p1i32) {
 /******/ 						return installedModules["../pkg/wasm_zipnet_bg.js"].exports["__wbindgen_throw"](p0i32,p1i32);
@@ -162,7 +171,7 @@
 /******/ 				promises.push(installedWasmModuleData);
 /******/ 			else {
 /******/ 				var importObject = wasmImportObjects[wasmModuleId]();
-/******/ 				var req = fetch(__webpack_require__.p + "" + {"../pkg/wasm_zipnet_bg.wasm":"cd664a69f8d19f84368e"}[wasmModuleId] + ".module.wasm");
+/******/ 				var req = fetch(__webpack_require__.p + "" + {"../pkg/wasm_zipnet_bg.wasm":"04ebddd34a7fb2cba60d"}[wasmModuleId] + ".module.wasm");
 /******/ 				var promise;
 /******/ 				if(importObject instanceof Promise && typeof WebAssembly.compileStreaming === 'function') {
 /******/ 					promise = Promise.all([WebAssembly.compileStreaming(req), importObject]).then(function(items) {
