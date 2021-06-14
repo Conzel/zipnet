@@ -7,9 +7,25 @@
 <body>
     <h1>Hey! We are developing zipnet here.</h1>
 
+    <h2>Encoding Image</h2>
     <!-- Input form for the images -->
-    <input id="imgInput" type="file"><br>
-    <img src="" height="200" alt="Image preview...">
+    <p>Choose the image you want to encode. <br>Currently, we only support .png images (as they don't have the typical
+        JPG artifacts and are easy to handle).
+    </p>
+    <input id="imgInput" type="file" accept=".png"><br>
+    <img src="" height="200" alt="Image preview..." id="encodedPreview"><br>
+    <button id="downloadEncoded">Get Encoded</button><br>
+    <div id="statsEncoded"></div> 
+
+    <h3>Decoding Image</h3>
+    <!-- Input form for the images -->
+    <p>Upload a Zipnet encoded image. 
+        The file should be called something like &quot;zipnet-enc-&lt;timestamp&gt;.bin&quot;.
+    </p>
+    <input id="encodedInput" type="file" accept=".bin"><br>
+    <img src="" height="200" alt="Image preview..." id="decodedPreview"><br>
+    <button id="downloadDecoded">Get Decoded</button><br>
+    <div id="statsDecoded"></div> 
 
 <script src="./bootstrap.js"></script>
 <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
