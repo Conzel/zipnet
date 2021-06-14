@@ -3,8 +3,8 @@
 members = [
 	"wasm",
 	"cli",
-	"encoders",
-	"decoders"
+	"coders",
+	"ml"
 ]
 
 [profile.release]
