@@ -16,6 +16,7 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 js-sys = "0.3.35"
 image = "0.23.14"
+coders = { path = "../coders" }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.8"

@@ -25,5 +25,8 @@ You should see the website running! As long as you have the server running, you 
 
 You can get more detailed info on why we are doing everything like that at https://rustwasm.github.io/book/game-of-life/hello-world.html.
 
+### List of crates tested for WASM-compatibility
+- ndarray v0.15.3 (no feature flags)
+
 ## Contributing for maintainers
 If you make changes and push them to the main branch, they are automatically reflected on the website via a Github Action. Thus please ensure beforehand that everything works locally as you want it. Please also make sure, that the GitHub Action correctly runs and fix errors that can occur.
