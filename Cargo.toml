@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+	"wasm",
+	"cli",
+	"coders",
+	"ml"
+]
+
+[profile.release]
+opt-level = 3
