@@ -1,7 +1,7 @@
 checkpoint_dir = './checkpoints'
 
 # compression / evaluation settings
-write_tfci_for_eval = False
+write_tfci_for_eval = True
 eval_batch_num_pixels = 1e7  # num pixels in the batch; corresponding to 10 1000x1000 images, using 0.03GB memory (conversion from number of pixels to bytes: #bytes = #pixels * 24 / 8)
 
 
