@@ -1,5 +1,5 @@
 pub mod convolutions;
-pub mod feed_forward;
+pub mod fully_connected;
 
 type WeightPrecision = f32;
 type ImagePrecision = f32;
