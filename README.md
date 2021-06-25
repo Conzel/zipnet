@@ -3,7 +3,13 @@ ZipNet is a Work-In-Progress for the course project of [Data Compression With De
 
 We want to provide a fully functional Neural Image-Encoder and Decoder on the Web. The goal is to achieve a superior compression rate over classical codes (JPEG, …) while retaining acceptable performance for a Web Application (compression in a few seconds). This results in a maximally portable application that could help Neural Compression Codecs achieve a higher adoption rate. For the implementation, we plan to leverage the new, performant WebASM standard along with a model architecture that allows for various performance optimizations such as quantization and parallelization.
 
-## How to build locally
+## Using the CLI
+- Install the Rust toolchain (https://www.rust-lang.org/tools/install)
+- Run the CLI via `cargo run -p zipnet -- <all the other commands you want to add>`. You can get an overview over the
+possibilites by running `cargo run -p zipnet -- --help`. For subcommands, just call the subcommand, and then `--help`
+to get information on them.
+
+## Building WASM locally
 ### Setup (Ubuntu)
 Make sure you have installed the Rust-toolchain, wasm-pack and npm.
 - _Rust_: Follow the instructions at https://www.rust-lang.org/tools/install
