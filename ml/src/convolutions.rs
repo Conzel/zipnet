@@ -76,7 +76,7 @@ impl ConvolutionLayer {
                 let j_with_stride = j * self.stride;
                 let imslice = im2d_arr.slice(s![
                     i_with_stride..(i_with_stride + self.kernel_width),
-                    j_with_stride..j_with_stride + (self.kernel_height)
+                    j_with_stride..(j_with_stride + self.kernel_height)
                 ]);
 
                 let conv_entry = (&imslice * &kernel_weights_arr).sum();
@@ -85,6 +85,10 @@ impl ConvolutionLayer {
         }
         ret
     }
+
+    // TODO: Refer to
+    // https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
+    // to speed up everything
 }
 
 #[cfg(test)]
