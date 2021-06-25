@@ -64,12 +64,6 @@ enum Zipnet {
     Statistics(StatsOpts),
 }
 
-/// Compresses an image using the given Compression options.
-fn compress(cfg: CompressOpts) {}
-
-/// Decompresses an image using the given decompression options.
-fn decompress(cfg: DecompressOpts) {}
-
 /// Trait for the subcommands that zipnet uses
 trait ZipnetOpts {
     /// Performs the subcommand
