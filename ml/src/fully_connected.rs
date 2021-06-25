@@ -4,13 +4,13 @@ use ndarray::*;
 /// Rust implementation of a feed forward layer.
 /// The weight matrix shall have dimension (in that order)
 /// input units x output units (to comply with the order in which pytorch weights are saved).
-pub struct FeedforwardLayer {
+pub struct FullyConnectedLayer {
     weights: Array2<WeightPrecision>,
     input_dimension: usize,
     output_dimension: usize,
 }
 
-impl FeedforwardLayer {
+impl FullyConnectedLayer {
     pub fn new(weights: Array2<WeightPrecision>) {
         todo!()
     }
