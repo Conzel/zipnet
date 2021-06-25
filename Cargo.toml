@@ -2,10 +2,11 @@
 
 members = [
 	"wasm",
-	"cli",
+	"zipnet",
 	"coders",
 	"ml"
 ]
+# default-members = ["zipnet"]
 
 [profile.release]
 opt-level = 3

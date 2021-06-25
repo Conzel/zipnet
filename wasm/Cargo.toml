@@ -1,5 +1,5 @@
 [package]
-name = "wasm-zipnet"
+name = "wasm"
 version = "0.1.0"
 authors = ["Conzel <38732545+Conzel@users.noreply.github.com>"]
 edition = "2018"
