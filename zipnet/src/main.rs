@@ -13,7 +13,7 @@ struct CompressOpts {
     output: Option<PathBuf>,
     /// Sets the desired bitrate per pixel
     #[structopt(short = "b", long = "bitrate")]
-    bitrate: f64,
+    bitrate: Option<f64>,
     #[structopt(flatten)]
     verbosity: Verbosity,
 }
@@ -57,22 +57,12 @@ enum Zipnet {
     )]
     Decompress(DecompressOpts),
     #[structopt(
-        name = "decompress",
-        about = "Decompress an image previously compressed by ZipNet."
-    )]
-    #[structopt(
         name = "statistics",
         about = "Prints out statistics about the decompression and compression process to StdOut. \
         Performs multiple compression and decompression passes and thus might take a while during execution."
     )]
     Statistics(StatsOpts),
 }
-
-/// Compresses an image using the given Compression options.
-fn compress(cfg: CompressOpts) {}
-
-/// Decompresses an image using the given decompression options.
-fn decompress(cfg: DecompressOpts) {}
 
 /// Trait for the subcommands that zipnet uses
 trait ZipnetOpts {
