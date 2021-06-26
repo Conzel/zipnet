@@ -1,3 +1,4 @@
+pub mod activation_functions;
 pub mod convolutions;
 pub mod fully_connected;
 
