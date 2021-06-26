@@ -47,8 +47,8 @@ impl ConvolutionLayer {
 
     /// Naive implementation of 2d convolution
     /// TODO: We might want to get something more efficient going, like described here:
-    /// https://wiseodd.github.io/techblog/2016/07/16/convnet-conv-layer/
-    fn conv_2d<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
+    /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
+    fn conv_2d_naive<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
     where
         // This trait bound ensures that kernel and im2d can be passed as owned array or view.
         // AsArray just ensures that im2d can be converted to an array view via ".into()".
@@ -86,9 +86,22 @@ impl ConvolutionLayer {
         ret
     }
 
-    // TODO: Refer to
-    // https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
-    // to speed up everything
+    fn conv_2d<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
+    where
+        // This trait bound ensures that kernel and im2d can be passed as owned array or view.
+        // AsArray just ensures that im2d can be converted to an array view via ".into()".
+        // Read more here: https://docs.rs/ndarray/0.12.1/ndarray/trait.AsArray.html
+        V: AsArray<'a, ImagePrecision, Ix2>,
+        T: AsArray<'a, ImagePrecision, Ix2>,
+    {
+        let im2d_arr: ArrayView2<f32> = im2d.into();
+        let kernel_weights_arr: ArrayView2<f32> = kernel_weights.into();
+
+        let im_width = im2d_arr.len_of(Axis(0));
+        let im_height = im2d_arr.len_of(Axis(1));
+
+        todo!()
+    }
 }
 
 #[cfg(test)]
@@ -96,7 +109,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_naive_2dconv() {
+    fn test_naive_2d_conv() {
+        let test_img = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
+        let kernel = Array::from_shape_vec((1, 1, 2, 2), vec![0., 1., -1., 0.]).unwrap();
+        let conv_layer = ConvolutionLayer::new(kernel, 1, 0);
+
+        let convolved_image = conv_layer.conv_2d_naive(
+            &(conv_layer.kernel.slice(s![0, 0, .., ..])),
+            &test_img.view(),
+        );
+
+        assert_eq!(convolved_image, array![[1., 0.], [1., 0.]]);
+    }
+
+    #[test]
+    fn test_naive_2d_conv_with_stride() {
+        let test_img: Array2<ImagePrecision> = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
+        let kernel = Array::from_shape_vec((1, 1, 1, 1), vec![1.]).unwrap();
+        let conv_layer = ConvolutionLayer::new(kernel, 2, 0);
+
+        let convolved_image =
+            conv_layer.conv_2d_naive(&(conv_layer.kernel.slice(s![0, 0, .., ..])), &test_img);
+
+        assert_eq!(convolved_image, array![[0., 0.], [-1., 0.]]);
+    }
+
+    #[test]
+    fn test_2d_conv() {
         let test_img = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
         let kernel = Array::from_shape_vec((1, 1, 2, 2), vec![0., 1., -1., 0.]).unwrap();
         let conv_layer = ConvolutionLayer::new(kernel, 1, 0);
@@ -110,7 +149,7 @@ mod tests {
     }
 
     #[test]
-    fn test_naive_2d_conv_with_stride() {
+    fn test_2d_conv_with_stride() {
         let test_img: Array2<ImagePrecision> = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
         let kernel = Array::from_shape_vec((1, 1, 1, 1), vec![1.]).unwrap();
         let conv_layer = ConvolutionLayer::new(kernel, 2, 0);
