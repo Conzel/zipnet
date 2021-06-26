@@ -1,5 +1,6 @@
 pub mod coding_errors;
 pub mod dummy_coders;
+pub mod statistics;
 
 pub type EncodedData = Vec<u32>;
 pub type CodingResult<T> = std::result::Result<T, coding_errors::CodingError>;
