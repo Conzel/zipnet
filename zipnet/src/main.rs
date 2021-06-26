@@ -1,3 +1,5 @@
+use coders::statistics::Statistics;
+use ndarray_image::{open_image, Colors};
 use quicli::prelude::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -95,7 +97,11 @@ impl ZipnetOpts for CompressOpts {
 
 impl ZipnetOpts for StatsOpts {
     // Prints out statistics to StdOut
-    fn run(&self) {}
+    fn run(&self) {
+        let im_raw = open_image(&self.image, Colors::Rgb).unwrap();
+        let stats = Statistics::new(&im_raw);
+        println!("{}", stats);
+    }
     fn get_verbosity(&self) -> &Verbosity {
         &self.verbosity
     }
