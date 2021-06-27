@@ -85,24 +85,24 @@ pub fn relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecisi
     data.mapv(|x| if x > 0. { x } else { 0. })
 }
 
-struct GdnLayer {
+pub struct GdnLayer {
     beta: Array1<WeightPrecision>,
     gamma: Array2<WeightPrecision>,
 }
 
 impl GdnLayer {
-    fn activate(&self, x: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    pub fn activate(&self, x: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
         gdn(x, &self.beta, &self.gamma)
     }
 }
 
-struct IgdnLayer {
+pub struct IgdnLayer {
     beta: Array1<WeightPrecision>,
     gamma: Array2<WeightPrecision>,
 }
 
 impl IgdnLayer {
-    fn activate(&self, x: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    pub fn activate(&self, x: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
         igdn(x, &self.beta, &self.gamma)
     }
 }
