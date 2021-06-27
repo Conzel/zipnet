@@ -1,0 +1,14 @@
+[package]
+name = "zipnet"
+version = "0.1.0"
+edition = "2018"
+description = "Command-line interface to ZipNet."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+quicli = "0.4"
+structopt = "0.2"
+ndarray-image ="0.3.0"
+ndarray = "0.15.3"
+coders = { path = "../coders" }
