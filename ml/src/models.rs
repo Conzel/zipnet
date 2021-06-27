@@ -1,3 +1,5 @@
+pub type InternalDataRepresentation = Array3<ImagePrecision>;
+
 use crate::{
     activation_functions::{leaky_relu, GdnLayer, IgdnLayer},
     convolutions::ConvolutionLayer,
@@ -7,23 +9,23 @@ use ndarray::*;
 
 /// General model trait for en- and decoding
 pub trait CodingModel {
-    fn forward_pass(&self, input: &Array2<ImagePrecision>) -> Array2<ImagePrecision>;
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation;
 }
 
 impl CodingModel for ConvolutionLayer {
-    fn forward_pass(&self, input: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         self.convolve(input)
     }
 }
 
 impl CodingModel for GdnLayer {
-    fn forward_pass(&self, input: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         self.activate(input)
     }
 }
 
 impl CodingModel for IgdnLayer {
-    fn forward_pass(&self, input: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         self.activate(input)
     }
 }
@@ -41,7 +43,7 @@ struct MinnenEncoder {
 }
 
 impl CodingModel for MinnenEncoder {
-    fn forward_pass(&self, input: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = self.layer_0.forward_pass(input);
         let x = self.gdn_0.forward_pass(&x);
         let x = self.layer_1.forward_pass(&x);
@@ -63,7 +65,7 @@ struct MinnenHyperencoder {
 }
 
 impl CodingModel for MinnenHyperencoder {
-    fn forward_pass(&self, input: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = self.layer_0.forward_pass(input);
         let x = leaky_relu(&x);
         let x = self.layer_1.forward_pass(&x);
@@ -91,7 +93,7 @@ struct JohnstonDecoder {
 }
 
 impl CodingModel for JohnstonDecoder {
-    fn forward_pass(&self, input: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = self.layer_0.forward_pass(input);
         let x = self.igdn_0.forward_pass(&x);
         let x = self.layer_1.forward_pass(&x);
@@ -113,7 +115,7 @@ struct JohnstonHyperdecoder {
 }
 
 impl CodingModel for JohnstonHyperdecoder {
-    fn forward_pass(&self, input: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = self.layer_0.forward_pass(input);
         let x = leaky_relu(&x);
         let x = self.layer_1.forward_pass(&x);
