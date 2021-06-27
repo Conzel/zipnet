@@ -7,3 +7,5 @@ edition = "2018"
 
 [dependencies]
 thiserror = "1.0.25"
+ndarray = "0.14.0"
+image = "0.23.14"
