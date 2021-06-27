@@ -22,10 +22,10 @@ impl ConvolutionLayer {
         stride: usize,
         padding: usize,
     ) -> ConvolutionLayer {
-        let num_input_channels = weights.len_of(Axis(0)) as u16;
-        let num_output_channels = weights.len_of(Axis(1)) as u16;
-        let kernel_width = weights.len_of(Axis(2));
-        let kernel_height = weights.len_of(Axis(3));
+        let num_input_channels = weights.len_of(Axis(0)) as u16; // Filters
+        let num_output_channels = weights.len_of(Axis(1)) as u16; // Channels
+        let kernel_width = weights.len_of(Axis(2)); // Width
+        let kernel_height = weights.len_of(Axis(3)); // Height
 
         debug_assert!(stride > 0, "Stride of 0 passed");
 
@@ -86,21 +86,70 @@ impl ConvolutionLayer {
         ret
     }
 
+    fn im2col_ref(&self, im_arr, ker_height, ker_width, im_height_in, im_width_in, im_height_out, im_width_out)
+    {
+        let mut img_matrix = Array::zeros((im_channel*ker_height*ker_width, im_height_out*im_width_out));
+        let cont = 0;
+        for i in 1..im_height_in {
+            for j in 1..im_width_out {
+                if (((j+ker_width)-1) <= im_width_in) && (((i+ker_height)-1) <= im_height_in) {
+                    let patch = im_arr.slice(s![
+                        i..(i+ker_height)-1,
+                        j..(j+ker_width)-1,
+                        ..
+                    ]);
+                
+                    let patchRow = patch.into_shape((-1, 1));
+
+                    // append it to matrix
+                    img_matrix[:, cont] = patchRow; // CHECK SYNTAX & REDO
+                    cont = cont+1;
+                }
+
+            }
+        }
+    }
+
     fn conv_2d<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
     where
         // This trait bound ensures that kernel and im2d can be passed as owned array or view.
         // AsArray just ensures that im2d can be converted to an array view via ".into()".
         // Read more here: https://docs.rs/ndarray/0.12.1/ndarray/trait.AsArray.html
+
+        // Weights.shape = [F, C, WW, HH]
         V: AsArray<'a, ImagePrecision, Ix2>,
         T: AsArray<'a, ImagePrecision, Ix2>,
     {
         let im2d_arr: ArrayView2<f32> = im2d.into();
         let kernel_weights_arr: ArrayView2<f32> = kernel_weights.into();
 
+        // H, W
         let im_width = im2d_arr.len_of(Axis(0));
         let im_height = im2d_arr.len_of(Axis(1));
 
-        todo!()
+        // HH = self.kernel_height, WW = self.kernel_width
+        // calculate output sizes
+        // new_h = (H+2*P-HH) / S+1
+        let new_im_width = (im_width+2*self.padding - self.kernel_width) / self.stride + 1;
+        let new_im_height = (im_height+2*self.padding - self.kernel_height) / self.stride + 1;
+
+        // Alocate memory for output (?)
+        let filter = self.num_input_channels as usize;
+        //let mut activations = Array::zeros((new_im_height, new_im_width, filter)); // NOTE: N=1
+
+        // filter weights
+        let c_out = self.num_output_channels as usize;
+        let filter_col = kernel_weights_arr.into_shape((filter, self.kernel_height*self.kernel_width*c_out));// weights.reshape(F, HH*WW*C)
+
+        // prepare bias: TO DO
+
+        // convolve
+        let im_col = im2col_ref(im2d_arr, self.kernel_height, self.kernel_width, im_height, im_width, new_im_height, new_im_width);
+        let mul = (filter_col * im_col); // + bias_m
+        let new_im_channel = mul.len_of(Axis(1)) as u16;
+        let activations = col2im_ref(mul, new_im_height, new_im_width, new_im_channel);
+        // let activations = array![[1., 0.], [-1., 0.]];
+    activations
     }
 }
 
