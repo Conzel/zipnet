@@ -5,28 +5,27 @@ use crate::{ImagePrecision, WeightPrecision};
 // Implementation base for GDN, leveraging that we can use almost the same implementation for GDN and iGDN.
 // The other functions (gdn, igdn) are publicly exported to serve a nicer interface.
 fn gdn_base(
-    x: &Array3<ImagePrecision>,
+    x: &Array2<ImagePrecision>,
     beta: &Array1<WeightPrecision>,
     gamma: &Array2<WeightPrecision>,
     inverse: bool,
-) -> Array3<ImagePrecision> {
-    let num_channels = x.len_of(Axis(2));
+) -> Array2<ImagePrecision> {
+    let num_channels = x.len_of(Axis(1));
 
     debug_assert_eq!(gamma.len_of(Axis(0)), num_channels);
     debug_assert_eq!(gamma.len_of(Axis(1)), num_channels);
     debug_assert_eq!(beta.len_of(Axis(0)), num_channels);
 
-    let width = x.len_of(Axis(0));
-    let height = x.len_of(Axis(1));
+    let im_len = x.len_of(Axis(0));
 
-    let mut z: Array3<ImagePrecision> = Array::zeros((width, height, num_channels));
+    let mut z: Array2<ImagePrecision> = Array::zeros((im_len, num_channels));
 
     for i in 0..num_channels {
-        let x_i = x.slice(s![.., .., i]);
+        let x_i = x.slice(s![.., i]);
 
-        let mut normalization: Array2<ImagePrecision> = Array::zeros((width, height));
+        let mut normalization: Array1<ImagePrecision> = Array::zeros(im_len);
         for j in 0..num_channels {
-            let x_j = x.slice(s![.., .., j]);
+            let x_j = x.slice(s![.., j]);
             // TODO: Should we run into some performance problems, this is a bit bad,
             // since it copies the array in a loop...
             normalization = normalization + gamma[[i, j]] * x_j.mapv(|a| a.abs());
@@ -39,10 +38,8 @@ fn gdn_base(
         };
 
         // TODO: Same thing here, a lot of unnecessary assignments :(
-        for k in 0..width {
-            for l in 0..height {
-                z[[k, l, i]] = z_i[[k, l]];
-            }
+        for k in 0..im_len {
+            z[[k, i]] = z_i[k];
         }
     }
     z
@@ -56,10 +53,10 @@ fn gdn_base(
 /// i and j here indicate channel parameters (so the different channels in the image influence each other
 /// in the activation)
 pub fn gdn(
-    x: &Array3<ImagePrecision>,
+    x: &Array2<ImagePrecision>,
     beta: &Array1<WeightPrecision>,
     gamma: &Array2<WeightPrecision>,
-) -> Array3<ImagePrecision> {
+) -> Array2<ImagePrecision> {
     gdn_base(x, beta, gamma, false)
 }
 
@@ -73,10 +70,10 @@ pub fn gdn(
 /// We essentially just replace the division operation with a multiplication operation in the normalization calculation,
 /// leveraging the fact, that we only perform one step of iteration.
 pub fn igdn(
-    x: &Array3<ImagePrecision>,
+    x: &Array2<ImagePrecision>,
     beta: &Array1<WeightPrecision>,
     gamma: &Array2<WeightPrecision>,
-) -> Array3<ImagePrecision> {
+) -> Array2<ImagePrecision> {
     gdn_base(x, beta, gamma, true)
 }
 
@@ -88,28 +85,51 @@ pub fn relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecisi
     data.mapv(|x| if x > 0. { x } else { 0. })
 }
 
+struct GdnLayer {
+    beta: Array1<WeightPrecision>,
+    gamma: Array2<WeightPrecision>,
+}
+
+impl GdnLayer {
+    fn activate(&self, x: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+        gdn(x, &self.beta, &self.gamma)
+    }
+}
+
+struct IgdnLayer {
+    beta: Array1<WeightPrecision>,
+    gamma: Array2<WeightPrecision>,
+}
+
+impl IgdnLayer {
+    fn activate(&self, x: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+        igdn(x, &self.beta, &self.gamma)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_gdn() {
-        let input = array![[[0., 0.], [1., 0.]], [[0., 0.], [1., 1.]]];
+        // 0 1 0 1 // 0 0 0 1
+        let input = array![[0., 0.], [1., 0.], [0., 0.], [1., 1.]];
         let beta = array![1., 1.];
         let gamma = array![[1., 1.], [0., 1.]];
 
-        let res_i = array![[[0., 0.], [2., 0.]], [[0., 0.], [3., 2.]]];
+        let res_i = array![[0., 0.], [2., 0.], [0., 0.], [3., 2.]];
 
         assert_eq!(igdn(&input, &beta, &gamma), res_i);
     }
 
     #[test]
     fn test_igdn() {
-        let input = array![[[0., 0.], [1., 0.]], [[0., 0.], [1., 1.]]];
+        let input = array![[0., 0.], [1., 0.], [0., 0.], [1., 1.]];
         let beta = array![1., 1.];
         let gamma = array![[1., 1.], [0., 1.]];
 
-        let res_i = array![[[0., 0.], [2., 0.]], [[0., 0.], [3., 2.]]];
+        let res_i = array![[0., 0.], [2., 0.], [0., 0.], [3., 2.]];
 
         assert_eq!(igdn(&input, &beta, &gamma), res_i);
     }
