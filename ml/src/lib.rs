@@ -1,6 +1,7 @@
 pub mod activation_functions;
 pub mod convolutions;
 pub mod fully_connected;
+pub mod models;
 
 type WeightPrecision = f32;
 type ImagePrecision = f32;
