@@ -80,6 +80,14 @@ pub fn igdn(
     gdn_base(x, beta, gamma, true)
 }
 
+pub fn leaky_relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecision, D> {
+    data.mapv(|x| if x > 0. { x } else { 0.01 * x })
+}
+
+pub fn relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecision, D> {
+    data.mapv(|x| if x > 0. { x } else { 0. })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
