@@ -41,13 +41,14 @@ impl ConvolutionLayer {
     }
 
     /// Performs a convolution on the given image data using this layers parameters.
-    pub fn convolve(&self, image: &Array3<ImagePrecision>) -> Array3<ImagePrecision> {
+    /// We always convolve on flattened images and expect the input array in im2col
+    /// style format (read more here).
+    /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
+    pub fn convolve(&self, image: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
         todo!();
     }
 
-    /// Naive implementation of 2d convolution
-    /// TODO: We might want to get something more efficient going, like described here:
-    /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
+    /// Naive implementation of 2d convolution for reference implementations
     fn conv_2d_naive<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
     where
         // This trait bound ensures that kernel and im2d can be passed as owned array or view.
