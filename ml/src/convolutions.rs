@@ -87,28 +87,37 @@ impl ConvolutionLayer {
         ret
     }
 
-    fn im2col_ref(&self, im_arr, ker_height, ker_width, im_height_in, im_width_in, im_height_out, im_width_out)
+    fn im2col_ref<'a, T>(&self, im_arr:T, ker_height:usize, ker_width:usize, im_height_in:usize, im_width_in:usize, im_height_out:usize, im_width_out:usize, im_channel:usize) -> Array2<ImagePrecision>
+    where
+        T: AsArray<'a, ImagePrecision, Ix3>,
     {
-        let mut img_matrix = Array::zeros((im_channel*ker_height*ker_width, im_height_out*im_width_out));
-        let cont = 0;
+        let im2d_arr: ArrayView3<f32> = im_arr.into();
+        let mut img_matrix = Array::zeros((im_channel*ker_height*ker_width, im_height_out*im_width_out)); // shape: (X, Y)
+        let mut cont = 0 as usize;
         for i in 1..im_height_in {
             for j in 1..im_width_out {
                 if (((j+ker_width)-1) <= im_width_in) && (((i+ker_height)-1) <= im_height_in) {
-                    let patch = im_arr.slice(s![
+                    let patch = im2d_arr.slice(s![
                         i..(i+ker_height)-1,
                         j..(j+ker_width)-1,
                         ..
                     ]);
-                
-                    let patchRow = patch.into_shape((-1, 1));
+                    
+                    let patch_h = patch.len_of(Axis(0));
+                    let patch_w = patch.len_of(Axis(1));
+                    let patch_c = patch.len_of(Axis(2));
+                    let patchRow = patch.into_shape(patch_h*patch_w*patch_c).unwrap(); // shape: (x, 1)
+                    
+
 
                     // append it to matrix
-                    img_matrix[:, cont] = patchRow; // CHECK SYNTAX & REDO
-                    cont = cont+1;
+                    img_matrix.row_mut(cont).assign(&patchRow);
+                    cont+=1;
                 }
 
             }
         }
+        img_matrix
     }
 
     fn conv_2d<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
@@ -118,15 +127,16 @@ impl ConvolutionLayer {
         // Read more here: https://docs.rs/ndarray/0.12.1/ndarray/trait.AsArray.html
 
         // Weights.shape = [F, C, WW, HH]
-        V: AsArray<'a, ImagePrecision, Ix2>,
+        V: AsArray<'a, ImagePrecision, Ix3>,
         T: AsArray<'a, ImagePrecision, Ix2>,
     {
-        let im2d_arr: ArrayView2<f32> = im2d.into();
+        let im2d_arr: ArrayView3<f32> = im2d.into();
         let kernel_weights_arr: ArrayView2<f32> = kernel_weights.into();
 
-        // H, W
+        // W X H X C
         let im_width = im2d_arr.len_of(Axis(0));
         let im_height = im2d_arr.len_of(Axis(1));
+        let im_channel = im2d_arr.len_of(Axis(2));
 
         // HH = self.kernel_height, WW = self.kernel_width
         // calculate output sizes
@@ -136,20 +146,21 @@ impl ConvolutionLayer {
 
         // Alocate memory for output (?)
         let filter = self.num_input_channels as usize;
-        //let mut activations = Array::zeros((new_im_height, new_im_width, filter)); // NOTE: N=1
+        // let mut activations = Array::zeros((new_im_height, new_im_width, filter)); // NOTE: N=1
 
         // filter weights
         let c_out = self.num_output_channels as usize;
-        let filter_col = kernel_weights_arr.into_shape((filter, self.kernel_height*self.kernel_width*c_out));// weights.reshape(F, HH*WW*C)
+        let filter_col = kernel_weights_arr.into_shape((filter, self.kernel_height*self.kernel_width*c_out)).unwrap();// weights.reshape(F, HH*WW*C)
 
         // prepare bias: TO DO
 
         // convolve
-        let im_col = im2col_ref(im2d_arr, self.kernel_height, self.kernel_width, im_height, im_width, new_im_height, new_im_width);
-        let mul = (filter_col * im_col); // + bias_m
-        let new_im_channel = mul.len_of(Axis(1)) as u16;
-        let activations = col2im_ref(mul, new_im_height, new_im_width, new_im_channel);
-        // let activations = array![[1., 0.], [-1., 0.]];
+        let im_col = ConvolutionLayer::im2col_ref(self, im2d_arr, self.kernel_height, self.kernel_width, im_height, im_width, new_im_height, new_im_width, im_channel);
+        let mul = &filter_col * &im_col; // + bias_m
+        println!("{:?}", mul);
+        // let new_im_channel = mul.len_of(Axis(1)) as u16;
+        // let activations = col2im_ref(mul, new_im_height, new_im_width, new_im_channel);
+        let activations = array![[1., 0.], [-1., 0.]];
     activations
     }
 }
