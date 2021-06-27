@@ -1,5 +1,6 @@
 import os
 import time
+from mbt2018 import _compress, _decompress
 
 args = {'model': 'mbt2018',
         'checkpoint_dir': 'checkpoints',
@@ -29,7 +30,12 @@ def run(mode, input_file, verbose=False):
 
 
 def decompress(input_file, verbose=False):
-    run("decompress", input_file, verbose)
+    # run("decompress", input_file, verbose)
+    runname = args['model_file']
+    checkpoint_dir = args["checkpoint_dir"]
+    num_filters = args['num_filters']
+    output_file = input_file + ".png"
+    _decompress(runname, input_file, output_file, checkpoint_dir, num_filters)
 
 
 def compress(input_file, verbose=False):
@@ -39,10 +45,17 @@ def compress(input_file, verbose=False):
     :param verbose:
     :return:
     """
-    run("compress", input_file, verbose)
+    # run("compress", input_file, verbose)
+
+    runname = args['model_file']
+    checkpoint_dir = args["checkpoint_dir"]
+    results_dir = args["results_dir"]
+    num_filters = args['num_filters']
+    output_file = input_file + ".tfci"
+
+    _compress(runname, input_file, output_file, checkpoint_dir, results_dir, num_filters)
 
     compressed_file = input_file + '.tfci'
-
     results_file = 'rd-{model_file}-file={input_file}.npz'.format(
         model_file=args['model_file'],
         input_file=input_file
@@ -59,6 +72,7 @@ def main(input_file):
     intermediate_time = time.time()
     compress_time = intermediate_time - start_time
     print(f'>>> compressing {input_file} done in {compress_time} seconds')
+    compressed_file = "dog.jpg.tfci"
     print(f'<<< decompressing {compressed_file} ...')
     decompress(compressed_file, verbose=True)
     stop_time = time.time()
@@ -66,8 +80,8 @@ def main(input_file):
     print(f'<<< decompressing {compressed_file} done in {decompress_time} seconds')
     total_time = stop_time - start_time
     print(f'compressing and decompressing took {total_time} seconds')
-    print(f'compressing took {(compress_time/total_time)*100}% of the total time')
-    print(f'decompressing took {(decompress_time/total_time)*100}% of the total time')
+    print(f'compressing took {(compress_time / total_time) * 100}% of the total time')
+    print(f'decompressing took {(decompress_time / total_time) * 100}% of the total time')
 
 
 if __name__ == '__main__':

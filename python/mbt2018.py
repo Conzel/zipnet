@@ -49,16 +49,21 @@ SCALES_LEVELS = 64
 
 
 def build_graph(args, x, training=True):
+    num_filters = args.num_filters
+    _build_graph(x, num_filters, training)
+
+
+def _build_graph(x, num_filters, training=True):
     """
     Build the computational graph of the model. x should be a float tensor of shape [batch, H, W, 3].
     Given original image x, the model computes a lossy reconstruction x_tilde and various other quantities of interest.
     During training we sample from box-shaped posteriors; during compression this is approximated by rounding.
     """
     # Instantiate model.
-    analysis_transform = AnalysisTransform(args.num_filters)
-    synthesis_transform = SynthesisTransform(args.num_filters)
-    hyper_analysis_transform = HyperAnalysisTransform(args.num_filters)
-    hyper_synthesis_transform = HyperSynthesisTransform(args.num_filters, num_output_filters=2 * args.num_filters)
+    analysis_transform = AnalysisTransform(num_filters)
+    synthesis_transform = SynthesisTransform(num_filters)
+    hyper_analysis_transform = HyperAnalysisTransform(num_filters)
+    hyper_synthesis_transform = HyperSynthesisTransform(num_filters, num_output_filters=2 * num_filters)
     entropy_bottleneck = tfc.EntropyBottleneck()
 
     # Build autoencoder and hyperprior.
@@ -128,18 +133,30 @@ def build_train_graph(args, x):
     reconstruction = quantize_image(x_tilde)
     return locals()
 
-
 def compress(args):
+
+    input_file = args.input_file
+    output_file = args.output_file
+    checkpoint_dir = args.checkpoint_dir
+    results_dir = args.results_dir
+    num_filters = args.num_filters
+    runname = args.runname
+
+    _compress(runname, input_file, output_file, checkpoint_dir, results_dir, num_filters)
+
+
+def _compress(runname, input_file, output_file, checkpoint_dir, results_dir, num_filters):
     """Compresses an image, or a batch of images of the same shape in npy format."""
+    tf.reset_default_graph()
     from configs import get_eval_batch_size, write_tfci_for_eval
 
-    if args.input_file.endswith('.npy'):
+    if input_file.endswith('.npy'):
         # .npy file should contain N images of the same shapes, in the form of an array of shape [N, H, W, 3]
-        X = np.load(args.input_file)
+        X = np.load(input_file)
     else:
         # Load input image and add batch dimension.
         from PIL import Image
-        x = np.asarray(Image.open(args.input_file).convert('RGB'))
+        x = np.asarray(Image.open(input_file).convert('RGB'))
         X = x[None, ...]
 
     num_images = int(X.shape[0])
@@ -157,7 +174,7 @@ def compress(args):
     x_next = dataset.make_one_shot_iterator().get_next()
 
     x_ph = x = tf.placeholder('float32', (None, *X.shape[1:]))  # keep a reference around for feed_dict
-    graph = build_graph(args, x, training=False)
+    graph = _build_graph(x, num_filters, training=False)
     y_likelihoods, z_likelihoods, x_tilde = graph['y_likelihoods'], graph['z_likelihoods'], graph['x_tilde']
     string, side_string = graph['string'], graph['side_string']
 
@@ -186,7 +203,7 @@ def compress(args):
     with tf.Session() as sess:
         # Load the latest model checkpoint, get the compressed string and the tensor
         # shapes.
-        save_dir = os.path.join(args.checkpoint_dir, args.runname)
+        save_dir = os.path.join(checkpoint_dir, runname)
         latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
         tf.train.Saver().restore(sess, save_path=latest)
         eval_fields = ['mse', 'psnr', 'msssim', 'msssim_db', 'est_bpp', 'est_y_bpp', 'est_z_bpp']
@@ -214,7 +231,7 @@ def compress(args):
 
                 packed.pack(compression_tensors, compression_arrs)
                 if write_tfci_for_eval:
-                    with open(args.output_file, "wb") as f:
+                    with open(output_file, "wb") as f:
                         f.write(packed.string)
 
                 # The actual bits per pixel including overhead.
@@ -237,38 +254,50 @@ def compress(args):
         eval_fields.append('avg_batch_actual_bpp')
         all_results_arrs['avg_batch_actual_bpp'] = avg_batch_actual_bpp
 
-        input_file = os.path.basename(args.input_file)
+        input_file = os.path.basename(input_file)
         results_dict = all_results_arrs
-        np.savez(os.path.join(args.results_dir, 'rd-%s-file=%s.npz'
-                              % (args.runname, input_file)), **results_dict)
+        np.savez(os.path.join(results_dir, 'rd-%s-file=%s.npz'
+                              % (runname, input_file)), **results_dict)
         for field in eval_fields:
             arr = all_results_arrs[field]
             print('Avg {}: {:0.4f}'.format(field, arr.mean()))
 
 
 def decompress(args):
+
+    input_file = args.input_file
+    output_file = args.output_file
+    checkpoint_dir = args.checkpoint_dir
+    num_filters = args.num_filters
+    runname = args.runname
+
+    _decompress(runname, input_file, output_file, checkpoint_dir, num_filters)
+
+
+def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
     """Decompresses an image."""
     # Adapted from https://github.com/tensorflow/compression/blob/master/examples/bmshj2018.py
     # Read the shape information and compressed string from the binary file.
+    tf.reset_default_graph()
     string = tf.placeholder(tf.string, [1])
     side_string = tf.placeholder(tf.string, [1])
     x_shape = tf.placeholder(tf.int32, [2])
     y_shape = tf.placeholder(tf.int32, [2])
     z_shape = tf.placeholder(tf.int32, [2])
-    with open(args.input_file, "rb") as f:
+    with open(input_file, "rb") as f:
         packed = tfc.PackedTensors(f.read())
     tensors = [string, side_string, x_shape, y_shape, z_shape]
     arrays = packed.unpack(tensors)
 
     # Instantiate model. TODO: automate this with build_graph
-    synthesis_transform = SynthesisTransform(args.num_filters)
-    hyper_synthesis_transform = HyperSynthesisTransform(args.num_filters, num_output_filters=2 * args.num_filters)
+    synthesis_transform = SynthesisTransform(num_filters)
+    hyper_synthesis_transform = HyperSynthesisTransform(num_filters, num_output_filters=2 * num_filters)
     entropy_bottleneck = tfc.EntropyBottleneck(dtype=tf.float32)
 
     # Decompress and transform the image back.
-    z_shape = tf.concat([z_shape, [args.num_filters]], axis=0)
+    z_shape = tf.concat([z_shape, [num_filters]], axis=0)
     z_hat = entropy_bottleneck.decompress(
-        side_string, z_shape, channels=args.num_filters)
+        side_string, z_shape, channels=num_filters)
 
     mu, sigma = tf.split(hyper_synthesis_transform(z_hat), num_or_size_splits=2, axis=-1)
     sigma = tf.exp(sigma)  # make positive
@@ -286,20 +315,20 @@ def decompress(args):
     x_hat = x_hat[0, :x_shape[0], :x_shape[1], :]
 
     # Write reconstructed image out as a PNG file.
-    op = write_png(args.output_file, x_hat)
+    op = write_png(output_file, x_hat)
 
     # Load the latest model checkpoint, and perform the above actions.
     with tf.Session() as sess:
-        save_dir = os.path.join(args.checkpoint_dir, args.runname)
+        save_dir = os.path.join(checkpoint_dir, runname)
         latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
         tf.train.Saver().restore(sess, save_path=latest)
         sess.run(op, feed_dict=dict(zip(tensors, arrays)))
-
 
 from tf_boilerplate import train, parse_args
 
 
 def main(args):
+
     # Invoke subcommand.
     if args.command == "train":
         train(args, build_train_graph=build_train_graph)
@@ -310,6 +339,7 @@ def main(args):
         compress(args)
         # compress_est_ideal_rate(args)
     elif args.command == "decompress":
+        print(args)
         if not args.output_file:
             args.output_file = args.input_file + ".png"
         decompress(args)
