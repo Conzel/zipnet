@@ -92,9 +92,13 @@ def conv_forward_naive(x, w, b, conv_param):
   return out, cache
 
 
-input = np.array([[]]) # N, C, H, W
-weights = # F, C, HH, WW
-bias = # null
+input = np.array([[[[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]]]]) # N, C, H, W
+weights = np.array([[[[1.0, 2.0],[1.0, 2.0]],[[1.0, 2.0],[1.0, 2.0]], [[1.0, 2.0],[1.0, 2.0]]]]) # F, C, HH, WW
+print(input.shape)
+print(weights.shape)
+bias = np.zeros((1, 1))# null
 conv_param = {"pad":0,"stride":1}
 
-output, _ = conv_forward_naive(input, weights)
+output, _ = conv_forward_naive(input, weights, bias, conv_param)
+
+print("output:", output)
