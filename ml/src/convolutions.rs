@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_2d_conv() {
-        let test_img = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
+        let test_img = array![[[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]], [[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]], [[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]]];
         let kernel = Array::from_shape_vec((1, 1, 2, 2), vec![0., 1., -1., 0.]).unwrap();
         let conv_layer = ConvolutionLayer::new(kernel, 1, 0);
 
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn test_2d_conv_with_stride() {
-        let test_img: Array2<ImagePrecision> = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
+        let test_img: Array3<ImagePrecision> = array![[[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]], [[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]], [[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]]];
         let kernel = Array::from_shape_vec((1, 1, 1, 1), vec![1.]).unwrap();
         let conv_layer = ConvolutionLayer::new(kernel, 2, 0);
 
