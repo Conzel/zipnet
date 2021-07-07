@@ -87,38 +87,48 @@ impl ConvolutionLayer {
         ret
     }
 
-    fn im2col_ref<'a, T>(&self, im_arr:T, ker_height:usize, ker_width:usize, im_height_in:usize, im_width_in:usize, im_height_out:usize, im_width_out:usize, im_channel:usize) -> Array2<ImagePrecision>
+    fn im2col_ref<'a, T>(
+        &self,
+        im_arr: T,
+        ker_height: usize,
+        ker_width: usize,
+        im_height_in: usize,
+        im_width_in: usize,
+        im_height_out: usize,
+        im_width_out: usize,
+        im_channel: usize,
+    ) -> Array2<ImagePrecision>
     where
         T: AsArray<'a, ImagePrecision, Ix3>,
     {
         let im2d_arr: ArrayView3<f32> = im_arr.into();
         let new_h = (im_height_in - ker_height) / self.stride + 1;
         let new_w = (im_width_in - ker_width) / self.stride + 1;
-        let mut img_matrix = Array::zeros((new_h*new_w, im_channel*ker_height*ker_width)); // shape: (X, Y)
+        let mut img_matrix: Array2<ImagePrecision> =
+            Array::zeros((new_h * new_w, im_channel * ker_height * ker_width)); // shape: (X, Y)
         let mut cont = 0 as usize;
         for i in 1..new_h {
             for j in 1..new_w {
-                if (((j+ker_width)-1) <= im_width_in) && (((i+ker_height)-1) <= im_height_in) {
+                if (((j + ker_width) - 1) <= im_width_in)
+                    && (((i + ker_height) - 1) <= im_height_in)
+                {
                     let patch = im2d_arr.slice(s![
                         ..,
-                        i*self.stride..(i*self.stride+ker_height),
-                        j*self.stride..(j*self.stride+ker_width),
+                        i * self.stride..(i * self.stride + ker_height),
+                        j * self.stride..(j * self.stride + ker_width),
                     ]);
-                    
+
                     let patch_c = patch.len_of(Axis(0));
                     let patch_h = patch.len_of(Axis(1));
                     let patch_w = patch.len_of(Axis(2));
                     // let patchRow = patch.into_shape(patch_c*patch_h*patch_w); // shape: (x, 1)
                     // let patchrow_unwrap:ArrayView1<f32> = patchRow.unwrap(); // patchrow_unwrap
-                    let patchrow_unwrap:Array1<f32> = Array::from_iter(patch.into_iter());
-                    
-
+                    let patchrow_unwrap: Array1<f32> = Array::from_iter(patch.map(|a| *a));
 
                     // append it to matrix
                     img_matrix.row_mut(cont).assign(&patchrow_unwrap);
-                    cont+=1;
+                    cont += 1;
                 }
-
             }
         }
         img_matrix
@@ -145,8 +155,8 @@ impl ConvolutionLayer {
         // HH = self.kernel_height, WW = self.kernel_width
         // calculate output sizes
         // new_h = (H+2*P-HH) / S+1
-        let new_im_width = (im_width+2*self.padding - self.kernel_width) / self.stride + 1;
-        let new_im_height = (im_height+2*self.padding - self.kernel_height) / self.stride + 1;
+        let new_im_width = (im_width + 2 * self.padding - self.kernel_width) / self.stride + 1;
+        let new_im_height = (im_height + 2 * self.padding - self.kernel_height) / self.stride + 1;
 
         // Alocate memory for output (?)
         let filter = self.num_input_channels as usize;
@@ -154,18 +164,34 @@ impl ConvolutionLayer {
 
         // filter weights
         let c_out = self.num_output_channels as usize;
-        let filter_col = kernel_weights_arr.into_shape((filter, self.kernel_height*self.kernel_width*c_out)).unwrap();// weights.reshape(F, HH*WW*C)
+        let filter_col = kernel_weights_arr
+            .into_shape((filter, self.kernel_height * self.kernel_width * c_out))
+            .unwrap(); // weights.reshape(F, HH*WW*C)
 
         // prepare bias: TO DO
 
         // convolve
-        let im_col = ConvolutionLayer::im2col_ref(self, im2d_arr, self.kernel_height, self.kernel_width, im_height, im_width, new_im_height, new_im_width, im_channel);
+        let im_col = ConvolutionLayer::im2col_ref(
+            self,
+            im2d_arr,
+            self.kernel_height,
+            self.kernel_width,
+            im_height,
+            im_width,
+            new_im_height,
+            new_im_width,
+            im_channel,
+        );
         let mul = &filter_col * &im_col; // + bias_m
         println!("{:?}", mul);
         // let new_im_channel = mul.len_of(Axis(1)) as u16;
         // let activations = col2im_ref(mul, new_im_height, new_im_width, new_im_channel);
-        let activations = arr3(&[[[ 57.0, 75.0,  93.0], [111.0, 129.0, 141.0], [138.0, 156.0, 162.0]]]);
-    activations
+        let activations = arr3(&[[
+            [57.0, 75.0, 93.0],
+            [111.0, 129.0, 141.0],
+            [138.0, 156.0, 162.0],
+        ]]);
+        activations
     }
 }
 
@@ -201,17 +227,36 @@ mod tests {
 
     #[test]
     fn test_2d_conv() {
-        let test_img = array![[[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]]];
-        let kernel = Array::from_shape_vec((1, 3, 2, 2), vec![1.,2., 1.,2., 1.,2., 1.,2., 1.,2., 1.,2.]);
+        let test_img = array![
+            [
+                [1.0, 2.0, 3.0, 4.0],
+                [4.0, 5.0, 6.0, 7.0],
+                [7.0, 8.0, 9.0, 9.0],
+                [7.0, 8.0, 9.0, 9.0]
+            ],
+            [
+                [1.0, 2.0, 3.0, 4.0],
+                [4.0, 5.0, 6.0, 7.0],
+                [7.0, 8.0, 9.0, 9.0],
+                [7.0, 8.0, 9.0, 9.0]
+            ],
+            [
+                [1.0, 2.0, 3.0, 4.0],
+                [4.0, 5.0, 6.0, 7.0],
+                [7.0, 8.0, 9.0, 9.0],
+                [7.0, 8.0, 9.0, 9.0]
+            ]
+        ];
+        let kernel = Array::from_shape_vec(
+            (1, 3, 2, 2),
+            vec![1., 2., 1., 2., 1., 2., 1., 2., 1., 2., 1., 2.],
+        );
         let testker = kernel.unwrap();
         // println!("{}",kernel);
         // let kernel = array![[[[1.0, 2.0],[1.0, 2.0]],[[1.0, 2.0],[1.0, 2.0]], [[1.0, 2.0],[1.0, 2.0]]]];
         let conv_layer = ConvolutionLayer::new(testker, 1, 0);
         // let output = arr3(&[[[ 57.0, 75.0,  93.0], [111.0, 129.0, 141.0], [138.0, 156.0, 162.0]]]);
-        let convolved_image = conv_layer.conv_2d(
-            &(conv_layer.kernel),
-            &test_img.view(),
-        );
+        let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
 
         // assert_eq!(convolved_image, output);
     }
