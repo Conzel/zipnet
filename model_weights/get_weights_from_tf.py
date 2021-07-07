@@ -42,7 +42,7 @@ def write_weights(args):
 
     d = {}
     for key in tqdm(valid_keys):
-        arr_list = reader.get_tensor(key).tolist()
+        arr_list = reader.get_tensor(key).flatten().tolist()
         d[key] = arr_list
 
     with open(json_out, "wt") as out:
@@ -51,7 +51,7 @@ def write_weights(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Output variables with shape from a tf checkpoint")
+        description="Output model weights from a tensorflow checkpoint. Weights are output in Json with Keys as names and values as flattened (!) weight arrays.")
     parser.add_argument("checkpoint", type=str, help="Path to checkpoint")
     parser.add_argument("outfile", type=str, help="Path to write to")
     parser.add_argument("--valid-keys", dest="valid_keys", type=str,
