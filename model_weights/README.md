@@ -5,6 +5,11 @@ variable names that the Rust model is using. The scripts are targeted to be used
 
 If you work with the scripts, please take care not to push the weights or other result files.
 
+## Weights
+The weights shall be shared between Rust and Python as a JSON file that contains a single object, which
+itself consists of (_key_, _value_) pairs, where _key_ is the name of the parameter, and _value_ is a flattened array
+containing the weight values.
+
 ## Scripts
 - `get_checkpoint_vars.py` can be used to extract a dictionary of variable names and shapes that are present in a model. First argument
 is the checkpoint, second is the text file to save to.
