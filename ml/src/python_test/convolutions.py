@@ -42,10 +42,12 @@ def im2col(x,hh,ww,stride):
     new_h = (h-hh) // stride + 1
     new_w = (w-ww) // stride + 1
     col = np.zeros([new_h*new_w,c*hh*ww])
-
+    print(new_h, new_w, c, hh, ww)
+    print("img matrix:", col.shape)
     for i in range(new_h):
        for j in range(new_w):
            patch = x[...,i*stride:i*stride+hh,j*stride:j*stride+ww]
+           print(patch.shape)
            col[i*new_w+j,:] = np.reshape(patch,-1)
     return col
 
