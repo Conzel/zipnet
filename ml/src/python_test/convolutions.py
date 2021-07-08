@@ -43,7 +43,7 @@ def im2col(x,hh,ww,stride):
     new_w = (w-ww) // stride + 1
     col = np.zeros([new_h*new_w,c*hh*ww])
     print(new_h, new_w, c, hh, ww)
-    print("img matrix:", col.shape)
+    print("img matrix:", x)
     for i in range(new_h):
        for j in range(new_w):
            patch = x[...,i*stride:i*stride+hh,j*stride:j*stride+ww]
@@ -87,6 +87,7 @@ def conv_forward_naive(x, w, b, conv_param):
       im = x[im_num,:,:,:]
       im_pad = np.pad(im,((0,0),(pad_num,pad_num),(pad_num,pad_num)),'constant')
       im_col = im2col(im_pad,HH,WW,stride)
+      print(im_col)
       filter_col = np.reshape(w,(F,-1))
       mul = im_col.dot(filter_col.T) + b
       out[im_num,:,:,:] = col2im(mul,H_prime,W_prime,1)
