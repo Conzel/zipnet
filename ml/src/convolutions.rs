@@ -122,6 +122,34 @@ impl ConvolutionLayer {
         img_matrix
     }
 
+    fn col2im_ref<'a, T>(
+        &self,
+        mat: T,
+        height_prime: usize,
+        width_prime: usize,
+        C: usize,
+    ) -> Array3<ImagePrecision>
+    where
+        T: AsArray<'a, ImagePrecision, Ix2>,
+    {
+        let img_vec: ArrayView2<f32> = mat.into();
+        let filter_axis = img_vec.len_of(Axis(1));
+        // let mut img_mat: Array3<ImagePrecision> = 
+        // Array::zeros((filter_axis, height_prime, width_prime)); ALTERNATE 
+        let mut img_mat: Array3<ImagePrecision> = 
+        Array::zeros((0, height_prime, width_prime));
+        if C == 1 { 
+            for i in 0..filter_axis {
+                let col = img_vec.slice(s![.., i]);
+                let col_reshape = col.into_shape((height_prime, width_prime)).unwrap();
+                // img_mat.assign(&col_reshape);  ALTERNATE
+                img_mat.push(Axis(0), col_reshape).unwrap(); 
+            }
+        } 
+    img_mat
+
+    }
+
     fn conv_2d<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array3<ImagePrecision>
     where
         // This trait bound ensures that kernel and im2d can be passed as owned array or view.
@@ -148,7 +176,6 @@ impl ConvolutionLayer {
 
         // Alocate memory for output (?)
         let filter = self.num_input_channels as usize;
-        // let mut activations = Array::zeros((new_im_height, new_im_width, filter)); // NOTE: N=1
 
         // filter weights
         let c_out = self.num_output_channels as usize;
@@ -168,16 +195,9 @@ impl ConvolutionLayer {
             im_width,
             im_channel,
         );
-        let mul = &filter_col * &im_col; // + bias_m
-        println!("col");
-        println!("{:?}", im_col);
-        // let new_im_channel = mul.len_of(Axis(1)) as u16;
-        // let activations = col2im_ref(mul, new_im_height, new_im_width, new_im_channel);
-        let activations = arr3(&[[
-            [57.0, 75.0, 93.0],
-            [111.0, 129.0, 141.0],
-            [138.0, 156.0, 162.0],
-        ]]);
+        let filter_transpose = filter_col.t(); // SHAPE IS (1, N)
+        let mul = im_col.dot(&filter_transpose); // + bias_m
+        let activations = ConvolutionLayer::col2im_ref(self, &mul, new_im_height, new_im_width, 1); // filter is set to 1 (?)
         activations
     }
 }
@@ -240,21 +260,9 @@ mod tests {
         );
         let testker = kernel.unwrap();
         let conv_layer = ConvolutionLayer::new(testker, 1, 0);
-        // let output = arr3(&[[[ 57.0, 75.0,  93.0], [111.0, 129.0, 141.0], [138.0, 156.0, 162.0]]]);
+        let output = arr3(&[[[ 57.0, 75.0,  93.0], [111.0, 129.0, 141.0], [138.0, 156.0, 162.0]]]);
         let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
 
-        // assert_eq!(convolved_image, output);
+        assert_eq!(convolved_image, output);
     }
-
-    // #[test]
-    // fn test_2d_conv_with_stride() {
-    //     let test_img: Array3<ImagePrecision> = array![[[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]], [[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]], [[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]]];
-    //     let kernel = Array::from_shape_vec((1, 1, 1, 1), vec![1.]).unwrap();
-    //     let conv_layer = ConvolutionLayer::new(kernel, 2, 0);
-
-    //     let convolved_image =
-    //         conv_layer.conv_2d(&(conv_layer.kernel.slice(s![0, 0, .., ..])), &test_img);
-
-    //     assert_eq!(convolved_image, array![[0., 0.], [-1., 0.]]);
-    // }s
 }
