@@ -94,8 +94,6 @@ impl ConvolutionLayer {
         ker_width: usize,
         im_height_in: usize,
         im_width_in: usize,
-        im_height_out: usize,
-        im_width_out: usize,
         im_channel: usize,
     ) -> Array2<ImagePrecision>
     where
@@ -107,28 +105,18 @@ impl ConvolutionLayer {
         let mut img_matrix: Array2<ImagePrecision> =
             Array::zeros((new_h * new_w, im_channel * ker_height * ker_width)); // shape: (X, Y)
         let mut cont = 0 as usize;
-        for i in 1..new_h {
-            for j in 1..new_w {
-                if (((j + ker_width) - 1) <= im_width_in)
-                    && (((i + ker_height) - 1) <= im_height_in)
-                {
-                    let patch = im2d_arr.slice(s![
-                        ..,
-                        i * self.stride..(i * self.stride + ker_height),
-                        j * self.stride..(j * self.stride + ker_width),
-                    ]);
+        for i in 1..new_h+1 {
+            for j in 1..new_w+1 {
+                let patch = im2d_arr.slice(s![
+                    ..,
+                    i-1 * self.stride..(i-1 * self.stride + ker_height),
+                    j-1 * self.stride..(j-1 * self.stride + ker_width),
+                ]);
+                let patchrow_unwrap: Array1<f32> = Array::from_iter(patch.map(|a| *a));
 
-                    let patch_c = patch.len_of(Axis(0));
-                    let patch_h = patch.len_of(Axis(1));
-                    let patch_w = patch.len_of(Axis(2));
-                    // let patchRow = patch.into_shape(patch_c*patch_h*patch_w); // shape: (x, 1)
-                    // let patchrow_unwrap:ArrayView1<f32> = patchRow.unwrap(); // patchrow_unwrap
-                    let patchrow_unwrap: Array1<f32> = Array::from_iter(patch.map(|a| *a));
-
-                    // append it to matrix
-                    img_matrix.row_mut(cont).assign(&patchrow_unwrap);
-                    cont += 1;
-                }
+                // append it to matrix
+                img_matrix.row_mut(cont).assign(&patchrow_unwrap);
+                cont += 1;
             }
         }
         img_matrix
@@ -178,12 +166,11 @@ impl ConvolutionLayer {
             self.kernel_width,
             im_height,
             im_width,
-            new_im_height,
-            new_im_width,
             im_channel,
         );
         let mul = &filter_col * &im_col; // + bias_m
-        println!("{:?}", mul);
+        println!("col");
+        println!("{:?}", im_col);
         // let new_im_channel = mul.len_of(Axis(1)) as u16;
         // let activations = col2im_ref(mul, new_im_height, new_im_width, new_im_channel);
         let activations = arr3(&[[
@@ -252,8 +239,6 @@ mod tests {
             vec![1., 2., 1., 2., 1., 2., 1., 2., 1., 2., 1., 2.],
         );
         let testker = kernel.unwrap();
-        // println!("{}",kernel);
-        // let kernel = array![[[[1.0, 2.0],[1.0, 2.0]],[[1.0, 2.0],[1.0, 2.0]], [[1.0, 2.0],[1.0, 2.0]]]];
         let conv_layer = ConvolutionLayer::new(testker, 1, 0);
         // let output = arr3(&[[[ 57.0, 75.0,  93.0], [111.0, 129.0, 141.0], [138.0, 156.0, 162.0]]]);
         let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
