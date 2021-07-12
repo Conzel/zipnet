@@ -63,7 +63,7 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
         let mut coder = DefaultAnsCoder::new();
 
         // TODO: We could use bits back here I am pretty sure... :)
-        // Encoding the latents
+        // Encoding the latents y with p(y | z)
         encode_gaussians(
             &mut coder,
             flat_latents.mapv(|a| a.round() as i32),
@@ -71,7 +71,13 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
             stds.mapv(|a| *a as f64),
         );
 
-        // Encoding the hyperlatents
+        // TODO: Bits back?
+        // decode bits back p(z | y)? Is this possible?
+        // First:
+        // encode y with p(y | z)
+        // encode p(z)
+
+        // Encoding the hyperlatents z with p(z)
         let prior_means: Array1<f64> = Array::ones(flat_hyperlatents.len()) * PRIOR_MEAN;
         let prior_stds: Array1<f64> = Array::ones(flat_hyperlatents.len()) * PRIOR_SCALE;
 
