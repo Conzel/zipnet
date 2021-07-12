@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # Gets model weights from a tensorflow checkpoint
 # coding: utf-8
+import os
 import tensorflow as tf
 import json
 import argparse
 import ast
+import h5py
 from tqdm import tqdm
 from tensorflow.python.training import py_checkpoint_reader
 
@@ -27,7 +29,7 @@ def load_valid_keys(path):
 
 def write_weights(args):
     checkpoint_name = args.checkpoint
-    json_out = args.outfile
+    outfile = args.outfile
 
     valid_key_list = None
     if args.valid_keys is not None:
@@ -40,20 +42,35 @@ def write_weights(args):
     if valid_key_list is not None:
         valid_keys = list(filter(lambda k: k in valid_key_list, valid_keys))
 
-    d = {}
-    for key in tqdm(valid_keys):
-        arr_list = reader.get_tensor(key).flatten().tolist()
-        d[key] = arr_list
+    _, filetype = os.path.splitext(outfile)
 
-    with open(json_out, "wt") as out:
-        json.dump(d, out)
+    if filetype == ".json":
+        d = {}
+        for key in tqdm(valid_keys):
+            arr_list = reader.get_tensor(key).flatten().tolist()
+            d[key] = arr_list
+
+        with open(outfile, "wt") as out:
+            json.dump(d, out)
+
+    elif filetype == ".h5":
+        with h5py.File(outfile, 'w') as h5f:
+            d = {}
+            for key in tqdm(valid_keys):
+                arr = reader.get_tensor(key).flatten()
+                h5f.create_dataset(key, data=arr)
+
+    else:
+        raise TypeError(
+            "Unknown file extension. Only .h5 and .json are allowed.")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Output model weights from a tensorflow checkpoint. Weights are output in Json with Keys as names and values as flattened (!) weight arrays.")
+        description="Output model weights from a tensorflow checkpoint. Weights are output in H5 or JSON with keys as names and values as flattened (!) weight arrays.")
     parser.add_argument("checkpoint", type=str, help="Path to checkpoint")
-    parser.add_argument("outfile", type=str, help="Path to write to")
+    parser.add_argument(
+        "outfile", type=str, help="Path to write to. This can be a hd5 (.h5) or json (.json) file.")
     parser.add_argument("--valid-keys", dest="valid_keys", type=str,
                         help="File to a path that contains all keys that we want to include from the weights. Must contain either a python dict (where we use the keys) or list (where we use the content as list).")
     args = parser.parse_args()
