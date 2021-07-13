@@ -7,6 +7,7 @@ import json
 import argparse
 import ast
 import h5py
+import numpy as np
 from tqdm import tqdm
 from tensorflow.python.training import py_checkpoint_reader
 
@@ -53,6 +54,15 @@ def write_weights(args):
         with open(outfile, "wt") as out:
             json.dump(d, out)
 
+    elif filetype == ".npz":
+        d = {}
+        for key in tqdm(valid_keys):
+            arr_list = reader.get_tensor(key).flatten()
+            d[key] = arr_list
+
+        np.savez(outfile, **d)
+        
+
     elif filetype == ".h5":
         with h5py.File(outfile, 'w') as h5f:
             d = {}
@@ -67,10 +77,10 @@ def write_weights(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Output model weights from a tensorflow checkpoint. Weights are output in H5 or JSON with keys as names and values as flattened (!) weight arrays.")
+        description="Output model weights from a tensorflow checkpoint. Weights are output in H5, numpy or JSON with keys as names and values as weight arrays (flattened in case of JSON).")
     parser.add_argument("checkpoint", type=str, help="Path to checkpoint")
     parser.add_argument(
-        "outfile", type=str, help="Path to write to. This can be a hd5 (.h5) or json (.json) file.")
+        "outfile", type=str, help="Path to write to. This can be a HD5 (.h5), numpy (.npz) or JSON (.json) file.")
     parser.add_argument("--valid-keys", dest="valid_keys", type=str,
                         help="File to a path that contains all keys that we want to include from the weights. Must contain either a python dict (where we use the keys) or list (where we use the content as list).")
     args = parser.parse_args()
