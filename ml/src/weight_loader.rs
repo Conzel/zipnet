@@ -1,5 +1,6 @@
 use crate::WeightPrecision;
-use ndarray::{Array, Array1, Dimension, Shape, ShapeError, StrideShape};
+use ndarray::{Array, Array1, ArrayBase, Dimension, Shape, ShapeError, StrideShape};
+use ndarray_npy::{NpzReader, ReadNpzError};
 use serde_json::{self, Map, Value};
 use std::{fs, path::Path};
 use thiserror::Error;
@@ -14,26 +15,41 @@ pub enum WeightError {
     WeightFormatError,
     #[error("Weight file not found. Filesystem reported error\n {0}.")]
     WeightFileNotFoundError(#[from] std::io::Error),
+    #[error("Weight file not readable. Filesystem reported error\n {0}.")]
+    WeightFileNpzError(#[from] ReadNpzError),
     #[error("Wrong shape for weight:\n {0}.")]
     WeightShapeError(#[from] ShapeError),
 }
 
-pub struct WeightLoader {
+trait WeightLoader {
+    fn get_weight<D, Sh>(
+        &self,
+        param_name: &str,
+        shape: Sh,
+    ) -> WeightResult<Array<WeightPrecision, D>>
+    where
+        D: Dimension,
+        Sh: Into<StrideShape<D>>;
+}
+
+pub struct JsonWeightLoader {
     content: Map<String, Value>,
 }
 
-impl WeightLoader {
-    pub fn new<P: AsRef<Path>>(path: P) -> WeightResult<WeightLoader> {
+impl JsonWeightLoader {
+    pub fn new<P: AsRef<Path>>(path: P) -> WeightResult<JsonWeightLoader> {
         let raw_file = fs::read_to_string(path)?;
         let parsed: Value =
             serde_json::from_str(&raw_file).map_err(|_| WeightError::WeightFormatError)?;
         let content = parsed.as_object().unwrap().clone();
-        Ok(WeightLoader { content })
+        Ok(JsonWeightLoader { content })
     }
+}
 
+impl WeightLoader for JsonWeightLoader {
     /// Returns weights with the given name from the weight loader. Weights are returned in a FLATTENED form
     /// (to facilitate working with JSON, as then all arrays have the same length.)
-    pub fn get_weight<D, Sh>(
+    fn get_weight<D, Sh>(
         &self,
         param_name: &str,
         shape: Sh,
@@ -68,17 +84,51 @@ impl WeightLoader {
     }
 }
 
+struct NpzWeightLoader {
+    file: std::fs::File,
+}
+
+impl NpzWeightLoader {
+    pub fn new<P: AsRef<Path>>(path: P) -> WeightResult<NpzWeightLoader> {
+        let file = std::fs::File::open(path)?;
+        Ok(NpzWeightLoader { file })
+    }
+}
+
+impl WeightLoader for NpzWeightLoader {
+    fn get_weight<D, Sh>(
+        &self,
+        param_name: &str,
+        _shape: Sh,
+    ) -> WeightResult<Array<WeightPrecision, D>>
+    where
+        D: Dimension,
+        Sh: Into<StrideShape<D>>,
+    {
+        // The reader in the npy package has to be mut, so we recreate.
+        // Else get_weight would have to be mutable (or we have to put it
+        // into a RefCell). I dislike both solutions
+        // We hope that this doesn't hurt perforrmance, we'll have to see.
+        let mut reader = NpzReader::new(&self.file)?;
+
+        let arr: ArrayBase<_, D> = reader.by_name(param_name)?;
+
+        debug_assert_eq!(&arr.raw_dim(), _shape.into().raw_dim());
+        Ok(arr)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs::File;
     use std::io::Write;
 
     use super::*;
-    use ndarray::array;
+    use ndarray::{array, Array2};
     use tempfile::tempdir;
 
     #[test]
-    fn test_weight_loader() {
+    fn test_json_weight_loader() {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("temp-weights.txt");
         let mut file = File::create(&file_path).unwrap();
@@ -89,7 +139,7 @@ mod tests {
         )
         .unwrap();
 
-        let loader = WeightLoader::new(file_path).unwrap();
+        let loader = JsonWeightLoader::new(file_path).unwrap();
 
         assert_eq!(
             loader.get_weight("arr1", 3).unwrap(),
@@ -101,6 +151,26 @@ mod tests {
         );
 
         drop(file);
+        dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_npz_weight_loader() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("temp-weights.npz");
+        let file = File::create(&file_path).unwrap();
+        let mut npz = ndarray_npy::NpzWriter::new(file);
+        let a: Array2<f32> = array![[1., 2., 3.], [4., 5., 6.]];
+        let b: Array1<f32> = array![7., 8., 9.];
+        npz.add_array("a", &a).unwrap();
+        npz.add_array("b", &b).unwrap();
+        npz.finish().unwrap();
+
+        let loader = NpzWeightLoader::new(file_path).unwrap();
+
+        assert_eq!(loader.get_weight("a", (2, 3)).unwrap(), a);
+        assert_eq!(loader.get_weight("b", 3).unwrap(), b);
+
         dir.close().unwrap();
     }
 }
