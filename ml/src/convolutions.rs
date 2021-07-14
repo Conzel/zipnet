@@ -1,5 +1,7 @@
 use crate::{ImagePrecision, WeightPrecision};
 use ndarray::*;
+use ndarray_rand::RandomExt;
+use ndarray_rand::rand_distr::Uniform;
 
 /// Rust implementation of a convolutional layer.
 /// The weight matrix shall have dimension (in that order)
@@ -109,8 +111,8 @@ impl ConvolutionLayer {
             for j in 1..new_w+1 {
                 let patch = im2d_arr.slice(s![
                     ..,
-                    i-1 * self.stride..(i-1 * self.stride + ker_height),
-                    j-1 * self.stride..(j-1 * self.stride + ker_width),
+                    (i-1) * self.stride..((i-1) * self.stride + ker_height),
+                    (j-1) * self.stride..((j-1) * self.stride + ker_width),
                 ]);
                 let patchrow_unwrap: Array1<f32> = Array::from_iter(patch.map(|a| *a));
 
@@ -231,6 +233,28 @@ mod tests {
 
         assert_eq!(convolved_image, array![[0., 0.], [-1., 0.]]);
     }
+
+    // #[test]
+    // fn test_im2col_col2im() {
+    //     let im2d_arr = Array::random((1, 4, 4), Uniform::new(0., 10.));
+    //     let kernel = Array::from_shape_vec(
+    //         (1, 1, 2, 2),
+    //         vec![1., 1., 1., 1.],
+    //     );
+    //     let testker = kernel.unwrap();  
+    //     // args
+    //     let im_width = im2d_arr.len_of(Axis(2));
+    //     let im_height = im2d_arr.len_of(Axis(1));
+    //     let im_channel = im2d_arr.len_of(Axis(0));
+    //     let kernel_height = testker.len_of(Axis(2));
+    //     let kernel_width = testker.len_of(Axis(3));
+
+    //     let conv_layer = ConvolutionLayer::new(testker, 2, 0);
+    //     let cols = conv_layer.im2col_ref(&im2d_arr, kernel_height, kernel_width, im_height, im_width, im_channel);
+    //     // let cols_dot = cols.dot(&ker_col);
+    //     let im = conv_layer.col2im_ref(&cols, im_height, im_width, 1);
+    //     assert_eq!(im2d_arr, im);
+    // }
 
     #[test]
     fn test_2d_conv() {

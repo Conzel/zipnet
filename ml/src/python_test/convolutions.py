@@ -42,7 +42,7 @@ def im2col(x,hh,ww,stride):
     new_h = (h-hh) // stride + 1
     new_w = (w-ww) // stride + 1
     col = np.zeros([new_h*new_w,c*hh*ww])
-    print(new_h, new_w, c, hh, ww)
+    # print(new_h, new_w, c, hh, ww)
     # print("img matrix:", x)
     for i in range(new_h):
        for j in range(new_w):
@@ -105,3 +105,11 @@ conv_param = {"pad":0,"stride":1}
 output, _ = conv_forward_naive(input, weights, bias, conv_param)
 
 print("output:", output)
+
+test_im = np.random.rand(3, 4, 4)
+cols = im2col(test_im, 2, 2, 2)
+print(cols.shape, test_im.shape)
+H_prime = (4+2*pad_num-HH) // stride + 1
+W_prime = (4+2*-WW) // stride + 1
+im = col2im(cols, 4, 4, 3)
+assert(im==test_im)
