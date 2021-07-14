@@ -99,6 +99,11 @@ def _build_graph(x, num_filters, training=True):
                   :, : x_shape[1], : x_shape[2], :
                   ]  # crop reconstruction to have the same shape as input
 
+
+        my_x_shape = x.shape
+        my_y_shape = y.shape
+        my_z_shape = z.shape
+
     return locals()
 
 

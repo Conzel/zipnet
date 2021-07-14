@@ -26,7 +26,7 @@ def _train(
     num_filters,
     lmbda,
     last_step,
-    checkpoint_dir="./checkpoints",
+    checkpoint_dir="checkpoints",
     logdir="tmp/tf_logs",
     verbose=False,
     save_summary_secs=60,
