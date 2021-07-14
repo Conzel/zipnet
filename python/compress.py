@@ -85,7 +85,7 @@ def _compress(
     )  # keep a reference around for feed_dict
     graph = _build_graph(x, num_filters, training=False)
 
-    print(graph)
+    print(graph["my_x_shape"])
 
     def model_summary():
         model_vars = tf.trainable_variables()
