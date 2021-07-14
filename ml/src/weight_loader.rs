@@ -21,7 +21,7 @@ pub enum WeightError {
     WeightShapeError(#[from] ShapeError),
 }
 
-trait WeightLoader {
+pub trait WeightLoader {
     fn get_weight<D, Sh>(
         &self,
         param_name: &str,
