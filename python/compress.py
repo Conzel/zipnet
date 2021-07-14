@@ -3,6 +3,7 @@ import os
 import numpy as np
 import tensorflow.compat.v1 as tf
 import tensorflow_compression as tfc
+import tensorflow.contrib.slim as slim
 
 from utils import write_png
 
@@ -83,6 +84,15 @@ def _compress(
         "float32", (None, *X.shape[1:])
     )  # keep a reference around for feed_dict
     graph = _build_graph(x, num_filters, training=False)
+
+    print(graph["my_x_shape"])
+
+    def model_summary():
+        model_vars = tf.trainable_variables()
+        slim.model_analyzer.analyze_vars(model_vars, print_info=True)
+
+    model_summary()
+
     y_likelihoods, z_likelihoods, x_tilde = (
         graph["y_likelihoods"],
         graph["z_likelihoods"],
