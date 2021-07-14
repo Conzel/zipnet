@@ -8,7 +8,7 @@ args = {
     "checkpoint_dir": "checkpoints",
     "results_dir": "results",
     "input_file": "dog.jpg",
-    "lmbda": 0.01,
+    "lmbda": 0.001,
     "num_filters": 192,
 }
 args["model_file"] = "{}-num_filters={}-lmbda={}".format(
@@ -69,6 +69,8 @@ def compress(input_file, verbose=False):
         runname, input_file, output_file, checkpoint_dir, results_dir, num_filters
     )
 
+
+
     compressed_file = input_file + ".tfci"
     results_file = "rd-{model_file}-file={input_file}.npz".format(
         model_file=args["model_file"], input_file=input_file
@@ -109,4 +111,4 @@ def train():
 
 if __name__ == "__main__":
     my_picture = "dog.jpg"
-    # main(my_picture)
+    main(my_picture)
