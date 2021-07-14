@@ -2,9 +2,10 @@ pub mod activation_functions;
 pub mod convolutions;
 pub mod fully_connected;
 pub mod weight_loader;
+pub mod models;
 
-type WeightPrecision = f32;
-type ImagePrecision = f32;
+pub type WeightPrecision = f32;
+pub type ImagePrecision = f32;
 
 #[cfg(test)]
 mod tests {
