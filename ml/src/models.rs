@@ -1,10 +1,12 @@
 pub type InternalDataRepresentation = Array3<ImagePrecision>;
 
-use crate::{
-    activation_functions::{leaky_relu, GdnLayer, IgdnLayer},
-    convolutions::ConvolutionLayer,
-    ImagePrecision,
-};
+// Names of the model weights in the weight file
+// Naming convention:
+// [architecture]_[coder]_[layer type]_[layer]_[weight type]
+const MINNEN_ENCODER_CONV_L0_KERNEL: &str = "analysis_transform/layer_0/kernel_rdft";
+const MINNEN_ENCODER_CONV_L0_BIAS: &str = "analysis_transform/layer_0/bias";
+
+use crate::{ImagePrecision, activation_functions::{leaky_relu, GdnLayer, IgdnLayer}, convolutions::ConvolutionLayer, weight_loader::WeightLoader};
 use ndarray::*;
 
 /// General model trait for en- and decoding
@@ -56,7 +58,11 @@ impl CodingModel for MinnenEncoder {
 }
 
 impl MinnenEncoder {
-    pub fn new() -> MinnenEncoder {
+    pub fn new(loader: &impl WeightLoader) -> MinnenEncoder {
+        let l0_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L0_KERNEL, (5,5));
+        // idk if the padding is correct
+        // why are the weights 4 dimensional?
+        // let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, 1);
         todo!()
     }
 }

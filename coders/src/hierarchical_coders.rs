@@ -1,6 +1,7 @@
 use constriction::stream::stack::AnsCoder;
 use constriction::stream::{model::DefaultLeakyQuantizer, stack::DefaultAnsCoder};
 use constriction::stream::{Decode, Encode};
+use ml::weight_loader::WeightLoader;
 use ndarray::Array;
 use ml::models::{MinnenEncoder, JohnstonDecoder, MinnenHyperencoder, JohnstonHyperdecoder};
 use ml::models::CodingModel;
@@ -183,8 +184,8 @@ const PRIOR_MEAN: f64 = 0.0;
 const PRIOR_SCALE: f64 = 1.0;
 
 impl MeanScaleHierarchicalEncoder {
-    pub fn MinnenEncoder() -> MeanScaleHierarchicalEncoder {
-        let latent_encoder = Box::new(MinnenEncoder::new());
+    pub fn MinnenEncoder(loader: &impl WeightLoader) -> MeanScaleHierarchicalEncoder {
+        let latent_encoder = Box::new(MinnenEncoder::new(loader));
         let hyperlatent_encoder = Box::new(MinnenHyperencoder::new());
         let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
 
@@ -206,8 +207,8 @@ impl MeanScaleHierarchicalEncoder {
 }
 
 impl MeanScaleHierarchicalEncoder {
-    pub fn JohnstonDecoder() -> MeanScaleHierarchicalDecoder {
-        let latent_encoder = Box::new(MinnenEncoder::new());
+    pub fn JohnstonDecoder(loader: &impl WeightLoader) -> MeanScaleHierarchicalDecoder {
+        let latent_encoder = Box::new(MinnenEncoder::new(loader));
         let latent_decoder = Box::new(JohnstonDecoder::new());
         let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
 
