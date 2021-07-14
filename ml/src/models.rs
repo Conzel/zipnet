@@ -32,7 +32,7 @@ impl CodingModel for IgdnLayer {
 /// Encoder / Hyperencoder pair as described in Minnen et al 2018,
 /// https://arxiv.org/pdf/1809.02736.pdf without the autoregressive part
 /// All layers are 5x5conv2,192, with kernel 5x5, stride 2, output channels 192
-struct MinnenEncoder {
+pub struct MinnenEncoder {
     layer_0: ConvolutionLayer,
     gdn_0: GdnLayer,
     layer_1: ConvolutionLayer,
@@ -55,7 +55,13 @@ impl CodingModel for MinnenEncoder {
     }
 }
 
-struct MinnenHyperencoder {
+impl MinnenEncoder {
+    pub fn new() -> MinnenEncoder {
+        todo!()
+    }
+}
+
+pub struct MinnenHyperencoder {
     /// 3x3conv,1,320
     layer_0: ConvolutionLayer,
     /// 5x5conv,2,320
@@ -75,10 +81,16 @@ impl CodingModel for MinnenHyperencoder {
     }
 }
 
+impl MinnenHyperencoder {
+    pub fn new() -> MinnenHyperencoder {
+        todo!()
+    }
+}
+
 /// Decoder / Hyperdecoder pair described in Johnston et al 2019, https://arxiv.org/abs/1912.08771
 /// Optimized Architecture for Decoder with MorphNet filter search.
 /// We are usuing Dthe Decoder 5 architecture
-struct JohnstonDecoder {
+pub struct JohnstonDecoder {
     /// 5x5deconv,2,76
     layer_0: ConvolutionLayer,
     igdn_0: IgdnLayer,
@@ -105,7 +117,13 @@ impl CodingModel for JohnstonDecoder {
     }
 }
 
-struct JohnstonHyperdecoder {
+impl JohnstonDecoder {
+    pub fn new() -> JohnstonDecoder {
+        todo!()
+    }
+}
+
+pub struct JohnstonHyperdecoder {
     /// 5x5deconv,2,76
     layer_0: ConvolutionLayer,
     /// 5x5deconv,2,107
@@ -122,5 +140,11 @@ impl CodingModel for JohnstonHyperdecoder {
         let x = leaky_relu(&x);
         let x = self.layer_2.forward_pass(&x);
         x
+    }
+}
+
+impl JohnstonHyperdecoder {
+    pub fn new() -> JohnstonHyperdecoder {
+        todo!()
     }
 }
