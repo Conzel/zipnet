@@ -16,7 +16,7 @@ pub trait Encoder<T> {
 /// of 32-bit integers, that contain the compress data.
 pub trait Decoder<T> {
     /// Decodes the given data.
-    fn decode(&mut self, encoded_data: &EncodedData) -> CodingResult<T>;
+    fn decode(&mut self, encoded_data: EncodedData) -> CodingResult<T>;
 }
 
 #[cfg(test)]
