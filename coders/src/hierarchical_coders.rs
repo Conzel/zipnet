@@ -5,12 +5,16 @@ use ml::ImagePrecision;
 use ndarray::*;
 use probability::distribution::Gaussian;
 
-use crate::{EncodedData, Encoder};
+use crate::{CodingResult, Decoder, EncodedData, Encoder};
 
 // For encoding and decoding, we assume a mean of 0 and a scale of 1.
 // Not exactly elegant, but does the job :)
 const PRIOR_MEAN: f64 = 0.0;
 const PRIOR_SCALE: f64 = 1.0;
+// For quantization of the leaky gaussian. We should probably calculate this dynamically,
+// but fine for now
+const GAUSSIAN_SUPPORT_LOWER: i32 = -100;
+const GAUSSIAN_SUPPORT_UPPER: i32 = 100;
 
 /// A hierarchical encoder, as described in https://arxiv.org/pdf/1809.02736.pdf
 /// (without the autoregressive part, see Fig. 19). The network architecture can be freely chosen
@@ -62,7 +66,18 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
 
         let mut coder = DefaultAnsCoder::new();
 
-        // TODO: We could use bits back here I am pretty sure... :)
+        // Question: Why don't we use bits back?
+        // It would work as follows
+        // We encode the array using bits back coding. We denote the latents by y,
+        // the hyperlatents by z. This means:
+        // decode z, using p(z | y)
+        // encode y, using p(y | z)
+        // encode z, using p(z)
+        // Where the probability distributions are accessed via the following:
+        // p(z | y): Synthesis transform of the Hyperlatent Coder (^= Hyperlatent Decoder)
+        // p(y | z): Analysis transform of the Hyperlatent Coder (^= Hyperlatent Encoder)
+        // p(z): Prior of the Hyperlatent Coder
+
         // Encoding the latents y with p(y | z)
         encode_gaussians(
             &mut coder,
@@ -70,12 +85,6 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
             means.mapv(|a| *a as f64),
             stds.mapv(|a| *a as f64),
         );
-
-        // TODO: Bits back?
-        // decode bits back p(z | y)? Is this possible?
-        // First:
-        // encode y with p(y | z)
-        // encode p(z)
 
         // Encoding the hyperlatents z with p(z)
         let prior_means: Array1<f64> = Array::ones(flat_hyperlatents.len()) * PRIOR_MEAN;
@@ -88,6 +97,31 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
             prior_stds,
         );
         coder.into_compressed().unwrap()
+    }
+}
+
+impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
+    fn decode(&mut self, encoded_data: &EncodedData) -> CodingResult<Array3<ImagePrecision>> {
+        // Create an ANS Coder with default word and state size from the compressed data:
+        // (ANS uses the same type for encoding and decoding, which makes the method very flexible
+        // and allows interleaving small encoding and decoding chunks, e.g., for bits-back coding.)
+        let mut coder = DefaultAnsCoder::from_compressed(encoded_data).unwrap();
+
+        // Same entropy models and quantizer we used for encoding:
+        let means = [35.2, -1.7, 30.1, 71.2, -75.1];
+        let stds = [10.1, 25.3, 23.8, 35.4, 3.9];
+        let quantizer = DefaultLeakyQuantizer::new(-100..=100);
+
+        // Decode the data:
+        coder
+            .decode_symbols(
+                means
+                    .iter()
+                    .zip(&stds)
+                    .map(|(&mean, &std)| quantizer.quantize(Gaussian::new(mean, std))),
+            )
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap()
     }
 }
 
