@@ -73,7 +73,7 @@ class SynthesisTransform(tf.keras.layers.Layer):
 class SynthesisTransform_Johnston(tf.keras.layers.Layer):
     """The synthesis transform."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, num_filters, *args, **kwargs):
         super(SynthesisTransform_Johnston, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
@@ -207,7 +207,7 @@ class MBT2018HyperSynthesisTransform(tf.keras.layers.Layer):
 class MBT2018HyperSynthesisTransform_Johnston(tf.keras.layers.Layer):
     """The synthesis transform for the entropy model parameters."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, num_filters, num_output_filters=320, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def build(self, input_shape):
