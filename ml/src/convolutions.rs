@@ -1,4 +1,4 @@
-use crate::{ImagePrecision, WeightPrecision};
+use crate::{models::InternalDataRepresentation, ImagePrecision, WeightPrecision};
 use ndarray::*;
 
 /// Rust implementation of a convolutional layer.
@@ -44,7 +44,7 @@ impl ConvolutionLayer {
     /// We always convolve on flattened images and expect the input array in im2col
     /// style format (read more here).
     /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
-    pub fn convolve(&self, image: &Array2<ImagePrecision>) -> Array2<ImagePrecision> {
+    pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
         todo!();
     }
 
