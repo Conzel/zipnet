@@ -5,6 +5,18 @@ pub type InternalDataRepresentation = Array3<ImagePrecision>;
 // [architecture]_[coder]_[layer type]_[layer]_[weight type]
 const MINNEN_ENCODER_CONV_L0_KERNEL: &str = "analysis_transform/layer_0/kernel_rdft";
 const MINNEN_ENCODER_CONV_L0_BIAS: &str = "analysis_transform/layer_0/bias";
+const MINEN_ENCODER_CONV_L0_GDN_BETA: &str = "analysis_transform/layer_0/gdn_0/reparam_beta";
+const MINEN_ENCODER_CONV_L0_GDN_GAMMA: &str = "analysis_transform/layer_0/gdn_0/reparam_gamma";
+const MINEN_ENCODER_CONV_L1_KERNEL: &str = "analysis_transform/layer_1/kernel_rdft";
+const MINEN_ENCODER_CONV_L1_BIAS: &str = "analysis_transform/layer_1/bias";
+const MINEN_ENCODER_CONV_L1_GDN_BETA: &str = "analysis_transform/layer_1/gdn_1/reparam_beta";
+const MINEN_ENCODER_CONV_L1_GDN_GAMMA: &str = "analysis_transform/layer_1/gdn_1/reparam_gamma";
+const MINEN_ENCODER_CONV_L2_KERNEL: &str = "analysis_transform/layer_2/kernel_rdft";
+const MINEN_ENCODER_CONV_L2_BIAS: &str = "analysis_transform/layer_2/bias";
+const MINEN_ENCODER_CONV_L2_GDN_BETA: &str = "analysis_transform/layer_2/gdn_2/reparam_beta";
+const MINEN_ENCODER_CONV_L2_GDN_GAMMA: &str = "analysis_transform/layer_2/gdn_2/reparam_gamma";
+const MINEN_ENCODER_CONV_L3_KERNEL: &str = "analysis_transform/layer_3/kernel_rdft";
+const MINEN_ENCODER_CONV_L3_BIAS: &str = "analysis_transform/layer_3/bias";
 
 use crate::{ImagePrecision, activation_functions::{leaky_relu, GdnLayer, IgdnLayer}, convolutions::ConvolutionLayer, weight_loader::WeightLoader};
 use ndarray::*;

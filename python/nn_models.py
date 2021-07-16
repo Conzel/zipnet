@@ -1,6 +1,6 @@
 import tensorflow.compat.v1 as tf
 import tensorflow_compression as tfc
-
+import tensorflow as tf
 
 class AnalysisTransform(tf.keras.layers.Layer):
     """The analysis transform."""
@@ -168,3 +168,11 @@ class MBT2018HyperSynthesisTransform(tf.keras.layers.Layer):
         for layer in self._layers:
             tensor = layer(tensor)
         return tensor
+
+if __name__ == '__main__':
+    num_filters = 192
+    encoder = AnalysisTransform(num_filters)
+    img = tf.random.uniform(shape=[1, 3, 4, 4])
+    y = encoder(img)
+
+
