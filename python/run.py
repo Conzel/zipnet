@@ -106,7 +106,7 @@ def train():
            batch_size=train_args['batch_size'],
            num_filters=args['num_filters'],
            lmbda=args['lmbda'],
-           last_step=10)
+           last_step=10000)
 
 
 if __name__ == "__main__":
