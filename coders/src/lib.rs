@@ -1,6 +1,7 @@
 pub mod coding_errors;
 pub mod dummy_coders;
 pub mod statistics;
+pub mod hierarchical_coders;
 
 pub type EncodedData = Vec<u32>;
 pub type CodingResult<T> = std::result::Result<T, coding_errors::CodingError>;
@@ -16,7 +17,7 @@ pub trait Encoder<T> {
 /// of 32-bit integers, that contain the compress data.
 pub trait Decoder<T> {
     /// Decodes the given data.
-    fn decode(&mut self, encoded_data: &EncodedData) -> CodingResult<T>;
+    fn decode(&mut self, encoded_data: EncodedData) -> CodingResult<T>;
 }
 
 #[cfg(test)]

@@ -16,7 +16,7 @@ impl<T: std::fmt::Debug + Clone> Encoder<T> for DummyCoder<T> {
 }
 
 impl<T: std::fmt::Debug + Clone> Decoder<T> for DummyCoder<T> {
-    fn decode(&mut self, _: &EncodedData) -> CodingResult<T> {
+    fn decode(&mut self, _: EncodedData) -> CodingResult<T> {
         Ok(self.data.clone())
     }
 }
@@ -25,7 +25,7 @@ pub struct ErrorDecoder {}
 
 impl<T: std::fmt::Debug> Decoder<T> for ErrorDecoder {
     /// Dummy decode method, just returns a decode error
-    fn decode(&mut self, _: &EncodedData) -> CodingResult<T> {
+    fn decode(&mut self, _: EncodedData) -> CodingResult<T> {
         return Err(crate::coding_errors::CodingError::DecodingError);
     }
 }
