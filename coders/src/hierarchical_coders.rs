@@ -1,11 +1,11 @@
 use constriction::stream::stack::AnsCoder;
 use constriction::stream::{model::DefaultLeakyQuantizer, stack::DefaultAnsCoder};
 use constriction::stream::{Decode, Encode};
-use ml::weight_loader::WeightLoader;
-use ndarray::Array;
-use ml::models::{MinnenEncoder, JohnstonDecoder, MinnenHyperencoder, JohnstonHyperdecoder};
 use ml::models::CodingModel;
+use ml::models::{JohnstonDecoder, JohnstonHyperdecoder, MinnenEncoder, MinnenHyperencoder};
+use ml::weight_loader::WeightLoader;
 use ml::ImagePrecision;
+use ndarray::Array;
 use ndarray::*;
 use probability::distribution::Gaussian;
 
@@ -19,6 +19,23 @@ const GAUSSIAN_SUPPORT_UPPER: i32 = 100;
 /// A hierarchical encoder/decoder, as described in https://arxiv.org/pdf/1809.02736.pdf
 /// (without the autoregressive part, see Fig. 19). The network architecture can be freely chosen
 /// by picking appropriate coding models.
+
+/// The process goes as follows:
+/// X: Image, Y: Latents, Z: Hyperlatents
+///
+/// Encoding process.
+///                      Hyper Encoder         Discretization        p(z) (FEM)
+///                  Y ------------------> Z -----------------> Z^ ----------------> Z_repr
+///    Encoder net       Discretization         p(y | z)
+/// X -------------> Y ------------------> Y^ ----------------> Y_repr
+///
+///
+/// Decoding process.
+///                      Hyper Encoder         Discretization        p(z) (FEM)
+///                  Y ------------------> Z -----------------> Z^ ----------------> Z_repr
+///         Encoder net       Discretization         p(y | z)
+/// Y_repr -------------> Y ------------------> Y^ ----------------> Y_repr
+
 pub struct MeanScaleHierarchicalEncoder {
     latent_encoder: Box<dyn CodingModel>,
     /// The Hyperlatent encoder shall produce a vector of the form (mu_1, mu2, ..., mu_n, sigma_1, ... sigma_n)
