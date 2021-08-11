@@ -1,0 +1,101 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"command": "doc",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "rust: cargo doc",
+			"presentation": {
+				"clear": true,
+				"reveal": "silent"
+			},
+		},
+		{
+			"type": "cargo",
+			"command": "build",
+			"args": [
+				"--all-features"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "rust: cargo build --all-features",
+			"presentation": {
+				"clear": true
+			},
+		},
+		{
+			"type": "cargo",
+			"command": "build",
+			"args": [
+				"--no-default-features"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "rust: cargo build --no-default-features",
+			"presentation": {
+				"clear": true
+			},
+		},
+		{
+			"type": "cargo",
+			"command": "test",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "rust: cargo test",
+			"presentation": {
+				"clear": true
+			},
+		},
+		{
+			"type": "cargo",
+			"command": "bench",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "rust: cargo bench"
+		},
+		{
+			"label": "Build Python module and start REPL",
+			"type": "shell",
+			"command": "poetry run maturin develop '--cargo-extra-args=--features pybindings' && poetry run ipython -ic 'import numpy as np; import constriction'",
+			"group": "build",
+			"problemMatcher": [],
+			"presentation": {
+				"focus": true,
+				"showReuseMessage": true,
+				"clear": true
+			},
+		},
+		{
+			"label": "Build Python module documentation",
+			"type": "shell",
+			"command": "poetry run maturin develop '--cargo-extra-args=--features pybindings' && poetry run python pythondoc.py html",
+			"group": "build",
+			"problemMatcher": [],
+			"presentation": {
+				"clear": true
+			},
+		},
+		{
+			"label": "Build and test Python module",
+			"type": "shell",
+			"command": "poetry run maturin develop '--cargo-extra-args=--features pybindings' && poetry run pytest tests/python",
+			"group": "build",
+			"problemMatcher": [],
+			"presentation": {
+				"clear": true
+			},
+		}
+	]
+}
