@@ -35,6 +35,15 @@ jobs:
     - name: Run backend tests
       run: CARGO_HOME=.cargo_home cargo test
 
+    - name: Setup emscripten (emsdk)
+      uses: mymindstorm/setup-emsdk@v9
+      with:
+        version: 1.39.20
+        actions-cache-folder: 'emsdk-cache'
+
+    - name: Verify emsdk
+      run: emcc -v
+
     - name: Install wasm-pack 0.8.1
       uses: jetli/wasm-pack-action@v0.3.0
       with:
@@ -43,8 +52,16 @@ jobs:
         # https://github.com/rustwasm/wasm-pack/issues/886
         version: v0.8.1
 
+    - name: Install emscripten rustup target
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        components: rustfmt, clippy
+        target: wasm32-unknown-emscripten
+
     - name: Build backend
-      run: cd wasm && CARGO_HOME=../.cargo_home wasm-pack build
+      run: cd wasm && CARGO_HOME=../.cargo_home cargo build --lib --release --target wasm32-unknown-emscripten
 
     - name: Install node.js
       uses: actions/setup-node@v1
