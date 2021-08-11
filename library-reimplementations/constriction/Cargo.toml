@@ -1,0 +1,61 @@
+[package]
+authors = ["Robert Bamler <robert.bamler@uni-tuebingen.de>"]
+categories = ["compression", "science", "no-std"]
+description = "Composable entropy coding primitives for research and production (Python and Rust)."
+documentation = "https://docs.rs/constriction/"
+edition = "2018"
+homepage = "https://bamler-lab.github.io/constriction/"
+keywords = ["compression", "entropy-coding", "range-coding", "python", "machine-learning"]
+license = "MIT OR Apache-2.0 OR BSL-1.0"
+name = "constriction"
+readme = "README.md"
+repository = "https://github.com/bamler-lab/constriction/"
+version = "0.1.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+name = "constriction"
+
+[features]
+default = ["std"]
+std = ["probability"]
+
+# Use feature `pybindings` to compile the python extension module that provides
+# access to this library from python. This feature is turned off by default
+# because it causes problems with `cargo test`. To turn it on, run:
+#   cargo build --release --features pybindings
+pybindings = ["ndarray", "numpy", "pyo3"]
+
+[dependencies]
+hashbrown = "0.11"
+num = "0.4"
+smallvec = "1.6.1"
+
+probability = {version = "0.17", optional = true, path= "../probability"}
+
+ndarray = {version = "0.15", optional = true}
+numpy = {version = "0.13", optional = true}
+pyo3 = {version = "0.13", features = ["extension-module"], optional = true}
+
+[dev-dependencies]
+byteorder = "1.4.2"
+criterion = "0.3"
+rand = "0.8.3"
+rand_pcg = "0.3"
+rand_xoshiro = "0.6"
+
+[[bench]]
+harness = false
+name = "lookup"
+
+[package.metadata.maturin]
+# TODO: requires-python (string fields), requires-external
+classifiers = [
+  "Topic :: System :: Archiving :: Compression",
+  "Intended Audience :: Science/Research",
+]
+maintainer = "Robert Bamler"
+maintainer-email = "robert.bamler@uni-tuebingen.de"
+project-url."Source repository" = "https://github.com/bamler-lab/constriction/"
