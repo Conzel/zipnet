@@ -1,0 +1,28 @@
+[package]
+name = "probability"
+version = "0.17.0"
+license = "Apache-2.0/MIT"
+authors = [
+    "Brian Knapp <knappador@gmail.com>",
+    "Denis Kolodin <deniskolodin@gmail.com>",
+    "Ivan Ukhov <ivan.ukhov@gmail.com>",
+    "Jon Lund Steffensen <jonlst@gmail.com>",
+    "Marek Baczyński <imbaczek@gmail.com>",
+    "Rúnar Berg Baugsson Sigríðarson <runarberg@zoho.com>",
+    "Yuki Nagae <y-nagae@aptpod.co.jp>",
+]
+description = "The package provides a probability-theory toolbox."
+documentation = "https://docs.rs/probability"
+homepage = "https://github.com/stainless-steel/probability"
+repository = "https://github.com/stainless-steel/probability"
+readme = "README.md"
+categories = ["algorithms", "science"]
+keywords = ["distribution", "probability", "sampling", "statistics", "random"]
+
+[dependencies]
+random = "0.12"
+special = { path = "../special" }
+
+[dev-dependencies]
+assert = "0.7"
+rand = "0.5"
