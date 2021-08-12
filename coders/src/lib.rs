@@ -2,7 +2,7 @@ pub mod coding_errors;
 pub mod dummy_coders;
 pub mod hierarchical_coders;
 pub mod statistics;
-pub mod table_hyperprior;
+pub mod table_hyperpriors;
 
 /// The first vector is the actual data, the second vector can be any side information that is still
 /// needed to decode the data (size, shape, ...)
