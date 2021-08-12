@@ -11,7 +11,7 @@ use ndarray::Array;
 use ndarray::*;
 use probability::distribution::Gaussian;
 
-use crate::{CodingResult, Decoder, EncodedData, Encoder};
+use crate::{table_hyperprior, CodingResult, Decoder, EncodedData, Encoder};
 
 // For quantization of the leaky gaussian. We should probably calculate this dynamically,
 // but fine for now
@@ -59,12 +59,12 @@ pub struct TablePrior {
 impl TablePrior {
     /// Creates a new table prior. The support is the lowest and highest number the
     /// table has entries for. The table can be relative probabilities
-    pub fn new(support: (i32, i32), lookup_table: Vec<f32>) -> TablePrior {
+    pub fn new(support: (i32, i32), lookup_table: &[f32]) -> TablePrior {
         TablePrior {
             support,
             entropy_model:
                 DefaultContiguousCategoricalEntropyModel::from_floating_point_probabilities(
-                    &lookup_table,
+                    lookup_table,
                 )
                 .unwrap(),
         }
@@ -285,7 +285,10 @@ fn get_minnen_johnston_hyperlatent_prior() -> TablePrior {
     // Questions:
     // - format of the table (byte array or directly into Rust array?)
     // - can we somehow use const to our advantage here? probably doesn't matter if the table is small
-    todo!()
+    TablePrior::new(
+        table_hyperprior::MINNEN_JOHNSTON_SUPPORT,
+        &table_hyperprior::MINNEN_JOHNSTON_HYPERPRIOR,
+    )
 }
 
 #[cfg(test)]
