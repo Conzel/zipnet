@@ -11,7 +11,7 @@ use ndarray::Array;
 use ndarray::*;
 use probability::distribution::Gaussian;
 
-use crate::{table_hyperprior, CodingResult, Decoder, EncodedData, Encoder};
+use crate::{table_hyperpriors, CodingResult, Decoder, EncodedData, Encoder};
 
 // For quantization of the leaky gaussian. We should probably calculate this dynamically,
 // but fine for now
@@ -96,8 +96,8 @@ impl TablePrior {
 
     pub fn create_minnen_johnston_hyperlatent_prior() -> TablePrior {
         TablePrior::new(
-            table_hyperprior::MINNEN_JOHNSTON_SUPPORT,
-            &table_hyperprior::MINNEN_JOHNSTON_HYPERPRIOR,
+            table_hyperpriors::MINNEN_JOHNSTON_SUPPORT,
+            &table_hyperpriors::MINNEN_JOHNSTON_HYPERPRIOR,
         )
     }
 }
