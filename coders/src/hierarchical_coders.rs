@@ -1,10 +1,10 @@
 use constriction::stream::stack::AnsCoder;
 use constriction::stream::{model::DefaultLeakyQuantizer, stack::DefaultAnsCoder};
 use constriction::stream::{Decode, Encode};
-use ndarray::Array;
-use ml::models::{MinnenEncoder, JohnstonDecoder, MinnenHyperencoder, JohnstonHyperdecoder};
 use ml::models::CodingModel;
+use ml::models::{JohnstonDecoder, JohnstonHyperdecoder, MinnenEncoder, MinnenHyperencoder};
 use ml::ImagePrecision;
+use ndarray::Array;
 use ndarray::*;
 use probability::distribution::Gaussian;
 
@@ -48,6 +48,40 @@ pub struct GaussianPrior {
 impl GaussianPrior {
     pub fn new(means: Array1<f64>, std: Array1<f64>) -> GaussianPrior {
         GaussianPrior { means, std }
+    }
+}
+
+/// A probability distribution that just consists of a lookup-table.
+/// Values outside of the support are pruned.
+pub struct TablePrior {
+    support: (i32, i32),
+    lookup_table: Vec<f32>,
+}
+
+impl TablePrior {
+    /// Creates a new table prior. The support is the lowest and highest number the
+    /// table has entries for. The table can be relative probabilities and will be normalized
+    /// in the construction
+    pub fn new(support: (i32, i32), lookup_table: Vec<f32>) -> TablePrior {
+        let c: f32 = lookup_table.iter().sum();
+        let normalized_table = lookup_table.iter().map(|a| a / c).collect();
+        TablePrior {
+            support,
+            lookup_table: normalized_table,
+        }
+    }
+
+    /// Returns the probability at the given value.
+    pub fn get(&self, x: i32) -> f32 {
+        let x_idx = if x < self.support.0 {
+            self.support.0
+        } else if x > self.support.1 {
+            self.support.1
+        } else {
+            x
+        };
+
+        self.lookup_table[(x_idx - self.support.0) as usize]
     }
 }
 
@@ -119,6 +153,8 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
         // p(z | y): Synthesis transform of the Hyperlatent Coder (^= Hyperlatent Decoder)
         // p(y | z): Analysis transform of the Hyperlatent Coder (^= Hyperlatent Encoder)
         // p(z): Prior of the Hyperlatent Coder
+
+        // Answer given by Bamler: It was found empiricially that bits back doesn't work :(
 
         // Encoding the latents y with p(y | z)
         encode_gaussians(
@@ -227,5 +263,23 @@ impl MeanScaleHierarchicalEncoder {
             latent_shape,
             hyperlatent_shape,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn table_prior_test() {
+        let table = vec![0.5, 0.8, 0.7];
+        let prior = TablePrior::new((-1, 1), table);
+        assert_eq!(prior.get(-1), 0.25);
+        assert_eq!(prior.get(-2), 0.25);
+        assert_eq!(prior.get(-237466234), 0.25);
+        assert_eq!(prior.get(1), 0.35);
+        assert_eq!(prior.get(2), 0.35);
+        assert_eq!(prior.get(237466234), 0.35);
+        assert_eq!(prior.get(0), 0.4);
     }
 }
