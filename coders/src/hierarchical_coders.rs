@@ -93,6 +93,13 @@ impl TablePrior {
             .map(|a| (a + self.support.0 as usize) as i32)
             .collect()
     }
+
+    pub fn create_minnen_johnston_hyperlatent_prior() -> TablePrior {
+        TablePrior::new(
+            table_hyperprior::MINNEN_JOHNSTON_SUPPORT,
+            &table_hyperprior::MINNEN_JOHNSTON_HYPERPRIOR,
+        )
+    }
 }
 
 fn encode_gaussians(
@@ -261,7 +268,7 @@ impl MeanScaleHierarchicalEncoder {
             latent_encoder,
             hyperlatent_encoder,
             hyperlatent_decoder,
-            hyperlatent_prior: get_minnen_johnston_hyperlatent_prior(),
+            hyperlatent_prior: TablePrior::create_minnen_johnston_hyperlatent_prior(),
         }
     }
 }
@@ -275,20 +282,9 @@ impl MeanScaleHierarchicalEncoder {
         MeanScaleHierarchicalDecoder {
             latent_decoder: latent_decoder,
             hyperlatent_decoder,
-            hyperlatent_prior: get_minnen_johnston_hyperlatent_prior(),
+            hyperlatent_prior: TablePrior::create_minnen_johnston_hyperlatent_prior(),
         }
     }
-}
-
-fn get_minnen_johnston_hyperlatent_prior() -> TablePrior {
-    // TODO: Get Table from Johan and use to directly generate the table prior from it.
-    // Questions:
-    // - format of the table (byte array or directly into Rust array?)
-    // - can we somehow use const to our advantage here? probably doesn't matter if the table is small
-    TablePrior::new(
-        table_hyperprior::MINNEN_JOHNSTON_SUPPORT,
-        &table_hyperprior::MINNEN_JOHNSTON_HYPERPRIOR,
-    )
 }
 
 #[cfg(test)]
