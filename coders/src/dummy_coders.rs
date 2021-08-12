@@ -11,7 +11,7 @@ pub struct DummyCoder<T: std::fmt::Debug + Clone> {
 impl<T: std::fmt::Debug + Clone> Encoder<T> for DummyCoder<T> {
     fn encode(&mut self, data: &T) -> EncodedData {
         self.data = data.clone();
-        Vec::new()
+        (Vec::new(), Vec::new())
     }
 }
 
@@ -37,6 +37,6 @@ impl<T: std::fmt::Debug> Encoder<T> for DummyEncoder {
     /// Dummy encode method, prints a message of the encoded data and returns nonsense data.
     fn encode(&mut self, data: &T) -> EncodedData {
         println!("Stub encoder called with data {:?}", data);
-        Vec::new()
+        (Vec::new(), Vec::new())
     }
 }
