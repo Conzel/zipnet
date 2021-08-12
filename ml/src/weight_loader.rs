@@ -24,9 +24,9 @@ pub enum WeightError {
     WeightShapeError(#[from] ShapeError),
 }
 
-pub trait WeightLoader<'a> {
+pub trait WeightLoader {
     fn get_weight<D, Sh>(
-        &'a self,
+        &self,
         param_name: &str,
         shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -49,11 +49,11 @@ impl JsonWeightLoader {
     }
 }
 
-impl<'a> WeightLoader<'a> for JsonWeightLoader {
+impl WeightLoader for JsonWeightLoader {
     /// Returns weights with the given name from the weight loader. Weights are returned in a FLATTENED form
     /// (to facilitate working with JSON, as then all arrays have the same length.)
     fn get_weight<D, Sh>(
-        &'a self,
+        &self,
         param_name: &str,
         shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -111,13 +111,13 @@ impl NpzWeightLoader<Cursor<&[u8]>> {
 
 // This is kind of dumb, as you always have to use the weight loader with (&loader).
 // Couldn't find a solution to implement this for the unref'd weight loader
-impl<'a, R> WeightLoader<'a> for NpzWeightLoader<R>
+impl<'a, R> WeightLoader for &'a NpzWeightLoader<R>
 where
-    R: Seek + Read + 'a,
+    R: Seek + Read,
     &'a R: Seek + Read,
 {
     fn get_weight<D, Sh>(
-        &'a self,
+        &self,
         param_name: &str,
         _shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -188,8 +188,8 @@ mod tests {
 
         let loader = NpzWeightLoader::from_path(file_path).unwrap();
 
-        assert_eq!(loader.get_weight("a", (2, 3)).unwrap(), a);
-        assert_eq!(loader.get_weight("b", 3).unwrap(), b);
+        assert_eq!((&loader).get_weight("a", (2, 3)).unwrap(), a);
+        assert_eq!((&loader).get_weight("b", 3).unwrap(), b);
 
         dir.close().unwrap();
     }
