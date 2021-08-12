@@ -275,6 +275,9 @@ impl MeanScaleHierarchicalEncoder {
 
 impl MeanScaleHierarchicalEncoder {
     pub fn JohnstonDecoder() -> MeanScaleHierarchicalDecoder {
+        // TODO: Find a way to load the weights:
+        // - include bytes macro?
+        // - include a file in the assets in WASM? probably annoying...
         let latent_encoder = Box::new(MinnenEncoder::new());
         let latent_decoder = Box::new(JohnstonDecoder::new());
         let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
