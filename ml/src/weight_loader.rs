@@ -2,6 +2,9 @@ use crate::WeightPrecision;
 use ndarray::{Array, Array1, ArrayBase, Dimension, Shape, ShapeError, StrideShape};
 use ndarray_npy::{NpzReader, ReadNpzError};
 use serde_json::{self, Map, Value};
+use std::borrow::Borrow;
+use std::io::{Cursor, Read, Seek};
+use std::marker::PhantomData;
 use std::{fs, path::Path};
 use thiserror::Error;
 
@@ -84,18 +87,35 @@ impl WeightLoader for JsonWeightLoader {
     }
 }
 
-struct NpzWeightLoader {
-    file: std::fs::File,
+struct NpzWeightLoader<R>
+where
+    R: Seek + Read,
+{
+    handle: R,
 }
 
-impl NpzWeightLoader {
-    pub fn new<P: AsRef<Path>>(path: P) -> WeightResult<NpzWeightLoader> {
-        let file = std::fs::File::open(path)?;
-        Ok(NpzWeightLoader { file })
+impl NpzWeightLoader<std::fs::File> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> WeightResult<NpzWeightLoader<std::fs::File>> {
+        let handle = std::fs::File::open(path)?;
+        Ok(NpzWeightLoader { handle })
     }
 }
 
-impl WeightLoader for NpzWeightLoader {
+impl NpzWeightLoader<Cursor<&[u8]>> {
+    pub fn from_buffer(bytes_array: &[u8]) -> WeightResult<NpzWeightLoader<Cursor<&[u8]>>> {
+        Ok(NpzWeightLoader {
+            handle: Cursor::new(bytes_array),
+        })
+    }
+}
+
+// This is kind of dumb, as you always have to use the weight loader with (&loader).
+// Couldn't find a solution to implement this for the unref'd weight loader
+impl<'a, R> WeightLoader for &'a NpzWeightLoader<R>
+where
+    R: Seek + Read,
+    &'a R: Seek + Read,
+{
     fn get_weight<D, Sh>(
         &self,
         param_name: &str,
@@ -109,7 +129,7 @@ impl WeightLoader for NpzWeightLoader {
         // Else get_weight would have to be mutable (or we have to put it
         // into a RefCell). I dislike both solutions
         // We hope that this doesn't hurt perforrmance, we'll have to see.
-        let mut reader = NpzReader::new(&self.file)?;
+        let mut reader = NpzReader::new(&self.handle)?;
 
         let arr: ArrayBase<_, D> = reader.by_name(param_name)?;
 
@@ -166,10 +186,10 @@ mod tests {
         npz.add_array("b", &b).unwrap();
         npz.finish().unwrap();
 
-        let loader = NpzWeightLoader::new(file_path).unwrap();
+        let loader = NpzWeightLoader::from_path(file_path).unwrap();
 
-        assert_eq!(loader.get_weight("a", (2, 3)).unwrap(), a);
-        assert_eq!(loader.get_weight("b", 3).unwrap(), b);
+        assert_eq!((&loader).get_weight("a", (2, 3)).unwrap(), a);
+        assert_eq!((&loader).get_weight("b", 3).unwrap(), b);
 
         dir.close().unwrap();
     }
