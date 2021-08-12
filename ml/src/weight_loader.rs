@@ -26,7 +26,7 @@ pub enum WeightError {
 
 pub trait WeightLoader {
     fn get_weight<D, Sh>(
-        &self,
+        &mut self,
         param_name: &str,
         shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -53,7 +53,7 @@ impl WeightLoader for JsonWeightLoader {
     /// Returns weights with the given name from the weight loader. Weights are returned in a FLATTENED form
     /// (to facilitate working with JSON, as then all arrays have the same length.)
     fn get_weight<D, Sh>(
-        &self,
+        &mut self,
         param_name: &str,
         shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -87,7 +87,7 @@ impl WeightLoader for JsonWeightLoader {
     }
 }
 
-struct NpzWeightLoader<R>
+pub struct NpzWeightLoader<R>
 where
     R: Seek + Read,
 {
@@ -107,17 +107,20 @@ impl NpzWeightLoader<Cursor<&[u8]>> {
             handle: Cursor::new(bytes_array),
         })
     }
+
+    /// Returns a weight loader that has full access to all weight.
+    /// The weights are compiled into the struct, so no file access is needed.
+    pub fn full_loader() -> NpzWeightLoader<Cursor<&'static [u8]>> {
+        todo!()
+    }
 }
 
-// This is kind of dumb, as you always have to use the weight loader with (&loader).
-// Couldn't find a solution to implement this for the unref'd weight loader
-impl<'a, R> WeightLoader for &'a NpzWeightLoader<R>
+impl<R> WeightLoader for NpzWeightLoader<R>
 where
     R: Seek + Read,
-    &'a R: Seek + Read,
 {
     fn get_weight<D, Sh>(
-        &self,
+        &mut self,
         param_name: &str,
         _shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -129,7 +132,7 @@ where
         // Else get_weight would have to be mutable (or we have to put it
         // into a RefCell). I dislike both solutions
         // We hope that this doesn't hurt perforrmance, we'll have to see.
-        let mut reader = NpzReader::new(&self.handle)?;
+        let mut reader = NpzReader::new(&mut self.handle)?;
 
         let arr: ArrayBase<_, D> = reader.by_name(param_name)?;
 
@@ -159,7 +162,7 @@ mod tests {
         )
         .unwrap();
 
-        let loader = JsonWeightLoader::new(file_path).unwrap();
+        let mut loader = JsonWeightLoader::new(file_path).unwrap();
 
         assert_eq!(
             loader.get_weight("arr1", 3).unwrap(),
@@ -186,10 +189,10 @@ mod tests {
         npz.add_array("b", &b).unwrap();
         npz.finish().unwrap();
 
-        let loader = NpzWeightLoader::from_path(file_path).unwrap();
+        let mut loader = NpzWeightLoader::from_path(file_path).unwrap();
 
-        assert_eq!((&loader).get_weight("a", (2, 3)).unwrap(), a);
-        assert_eq!((&loader).get_weight("b", 3).unwrap(), b);
+        assert_eq!(loader.get_weight("a", (2, 3)).unwrap(), a);
+        assert_eq!(loader.get_weight("b", 3).unwrap(), b);
 
         dir.close().unwrap();
     }
