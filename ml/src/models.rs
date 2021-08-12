@@ -18,7 +18,12 @@ const MINEN_ENCODER_CONV_L2_GDN_GAMMA: &str = "analysis_transform/layer_2/gdn_2/
 const MINEN_ENCODER_CONV_L3_KERNEL: &str = "analysis_transform/layer_3/kernel_rdft";
 const MINEN_ENCODER_CONV_L3_BIAS: &str = "analysis_transform/layer_3/bias";
 
-use crate::{ImagePrecision, activation_functions::{leaky_relu, GdnLayer, IgdnLayer}, convolutions::ConvolutionLayer, weight_loader::WeightLoader};
+use crate::{
+    activation_functions::{leaky_relu, GdnLayer, IgdnLayer},
+    convolutions::ConvolutionLayer,
+    weight_loader::WeightLoader,
+    ImagePrecision,
+};
 use ndarray::*;
 
 /// General model trait for en- and decoding
@@ -69,9 +74,9 @@ impl CodingModel for MinnenEncoder {
     }
 }
 
-impl MinnenEncoder {
-    pub fn new(loader: &impl WeightLoader) -> MinnenEncoder {
-        let l0_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L0_KERNEL, (5,5));
+impl<'a> MinnenEncoder {
+    pub fn new(loader: &'a impl WeightLoader<'a>) -> MinnenEncoder {
+        let l0_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L0_KERNEL, (5, 5));
         // idk if the padding is correct
         // why are the weights 4 dimensional?
         // let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, 1);
