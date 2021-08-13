@@ -1,0 +1,26 @@
+[package]
+name = "special"
+version = "0.8.1"
+license = "Apache-2.0/MIT"
+authors = [
+    "Abhishek Chanda <abhishek.becs@gmail.com>",
+    "Albert Pang <albert.pang@me.com>",
+    "Baxter Eaves <baxyjr@gmail.com>",
+    "Ivan Ukhov <ivan.ukhov@gmail.com>",
+    "Rúnar Berg Baugsson Sigríðarson <runarberg@zoho.com>",
+    "zolkko <zolkko@gmail.com>",
+]
+description = "The package provides special functions."
+documentation = "https://docs.rs/special"
+homepage = "https://github.com/stainless-steel/special"
+repository = "https://github.com/stainless-steel/special"
+readme = "README.md"
+categories = ["algorithms", "science"]
+keywords = ["beta", "error", "gamma"]
+
+[dependencies]
+mathru = "0.9.1"
+
+[dev-dependencies]
+assert = "0.7"
+random = "0.12"

@@ -1,15 +1,18 @@
+use constriction::stream::model::{
+    DefaultContiguousCategoricalEntropyModel, NonContiguousCategoricalDecoderModel,
+};
 use constriction::stream::stack::AnsCoder;
 use constriction::stream::{model::DefaultLeakyQuantizer, stack::DefaultAnsCoder};
 use constriction::stream::{Decode, Encode};
-use ml::weight_loader::WeightLoader;
-use ndarray::Array;
-use ml::models::{MinnenEncoder, JohnstonDecoder, MinnenHyperencoder, JohnstonHyperdecoder};
 use ml::models::CodingModel;
+use ml::models::{JohnstonDecoder, JohnstonHyperdecoder, MinnenEncoder, MinnenHyperencoder};
+use ml::weight_loader::{NpzWeightLoader, WeightLoader};
 use ml::ImagePrecision;
+use ndarray::Array;
 use ndarray::*;
 use probability::distribution::Gaussian;
 
-use crate::{CodingResult, Decoder, EncodedData, Encoder};
+use crate::{table_hyperpriors, CodingResult, Decoder, EncodedData, Encoder};
 
 // For quantization of the leaky gaussian. We should probably calculate this dynamically,
 // but fine for now
@@ -26,19 +29,14 @@ pub struct MeanScaleHierarchicalEncoder {
     hyperlatent_encoder: Box<dyn CodingModel>,
     hyperlatent_decoder: Box<dyn CodingModel>,
     /// This must be the same prior as used in the corresponding decoder
-    hyperlatent_prior: GaussianPrior,
-    latent_size: usize,
-    latent_shape: (usize, usize, usize),
+    hyperlatent_prior: TablePrior,
 }
 
 pub struct MeanScaleHierarchicalDecoder {
     latent_decoder: Box<dyn CodingModel>,
     hyperlatent_decoder: Box<dyn CodingModel>,
     /// This must be the same prior as used in the corresponding encoder
-    hyperlatent_prior: GaussianPrior,
-    latent_size: usize,
-    latent_shape: (usize, usize, usize),
-    hyperlatent_shape: (usize, usize, usize),
+    hyperlatent_prior: TablePrior,
 }
 
 pub struct GaussianPrior {
@@ -49,6 +47,59 @@ pub struct GaussianPrior {
 impl GaussianPrior {
     pub fn new(means: Array1<f64>, std: Array1<f64>) -> GaussianPrior {
         GaussianPrior { means, std }
+    }
+}
+
+/// A probability distribution that just consists of a lookup-table.
+/// Values outside of the support are pruned.
+pub struct TablePrior {
+    support: (i32, i32),
+    entropy_model: DefaultContiguousCategoricalEntropyModel,
+}
+
+impl TablePrior {
+    /// Creates a new table prior. The support is the lowest and highest number the
+    /// table has entries for. The table can be relative probabilities
+    pub fn new(support: (i32, i32), lookup_table: &[f32]) -> TablePrior {
+        TablePrior {
+            support,
+            entropy_model:
+                DefaultContiguousCategoricalEntropyModel::from_floating_point_probabilities(
+                    lookup_table,
+                )
+                .unwrap(),
+        }
+    }
+
+    /// Takes a vector of integers and makes them conform to the entropy model of the table
+    /// (symbols must normally start at 0 and may not be out of the support)
+    pub fn to_symbols(&self, v: Vec<i32>) -> Vec<usize> {
+        v.iter()
+            .map(|x| {
+                (if x < &self.support.0 {
+                    self.support.0
+                } else if x > &self.support.1 {
+                    self.support.1
+                } else {
+                    *x
+                } - self.support.0) as usize
+            })
+            .collect()
+    }
+
+    /// Reverse to the "to_symbols" function
+    pub fn from_symbols(&self, symbols: Vec<usize>) -> Vec<i32> {
+        symbols
+            .iter()
+            .map(|a| (a + self.support.0 as usize) as i32)
+            .collect()
+    }
+
+    pub fn create_minnen_johnston_hyperlatent_prior() -> TablePrior {
+        TablePrior::new(
+            table_hyperpriors::MINNEN_JOHNSTON_SUPPORT,
+            &table_hyperpriors::MINNEN_JOHNSTON_HYPERPRIOR,
+        )
     }
 }
 
@@ -71,7 +122,7 @@ fn encode_gaussians(
         .unwrap();
 }
 
-fn deocde_gaussians(
+fn decode_gaussians(
     coder: &mut AnsCoder<u32, u64>,
     means: &Array1<f64>,
     stds: &Array1<f64>,
@@ -90,36 +141,30 @@ fn deocde_gaussians(
 }
 
 impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
+    /// The encoded Data contains the actual data in the first tuple entry.
+    /// The second entry consists of
+    /// [hyperlatent_length, ]
     fn encode(&mut self, data: &Array3<ImagePrecision>) -> EncodedData {
         let latents = self.latent_encoder.forward_pass(data);
         let hyperlatents = self.hyperlatent_encoder.forward_pass(&latents);
         let latent_parameters = self.hyperlatent_decoder.forward_pass(&hyperlatents);
 
-        debug_assert_eq!(latents.len(), 2 * hyperlatents.len());
+        let latent_length = latents.len();
+
+        debug_assert_eq!(latent_length, 2 * latent_parameters.len());
 
         let flat_latents = Array::from_iter(latents.iter());
         let flat_hyperlatents = Array::from_iter(hyperlatents.iter());
         let flat_latent_parameters = Array::from_iter(latent_parameters.iter());
 
-        debug_assert_eq!(latents.len(), self.latent_size);
-
         // This slice here is wrong, we need to slice along the last axis...
-        let means = flat_latent_parameters.slice(s![0..self.latent_size]);
-        let stds = flat_latent_parameters.slice(s![self.latent_size..flat_latent_parameters.len()]);
+        let means = flat_latent_parameters.slice(s![0..latent_length]);
+        let stds = flat_latent_parameters.slice(s![latent_length..flat_latent_parameters.len()]);
 
         let mut coder = DefaultAnsCoder::new();
 
         // Question: Why don't we use bits back?
-        // It would work as follows
-        // We encode the array using bits back coding. We denote the latents by y,
-        // the hyperlatents by z. This means:
-        // decode z, using p(z | y)
-        // encode y, using p(y | z)
-        // encode z, using p(z)
-        // Where the probability distributions are accessed via the following:
-        // p(z | y): Synthesis transform of the Hyperlatent Coder (^= Hyperlatent Decoder)
-        // p(y | z): Analysis transform of the Hyperlatent Coder (^= Hyperlatent Encoder)
-        // p(z): Prior of the Hyperlatent Coder
+        // Answer given by Bamler: It was found empiricially that bits back doesn't work :(
 
         // Encoding the latents y with p(y | z)
         encode_gaussians(
@@ -129,47 +174,78 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
             &stds.mapv(|a| *a as f64),
         );
 
+        let quantized_hyperlatents: Vec<i32> =
+            flat_hyperlatents.iter().map(|x| x.round() as i32).collect();
+
         // Encoding the hyperlatents z with p(z)
-        encode_gaussians(
-            &mut coder,
-            flat_hyperlatents.mapv(|a| a.round() as i32),
-            &self.hyperlatent_prior.means,
-            &self.hyperlatent_prior.std,
+        coder.encode_iid_symbols_reverse(
+            self.hyperlatent_prior.to_symbols(quantized_hyperlatents),
+            &self.hyperlatent_prior.entropy_model,
         );
-        coder.into_compressed().unwrap()
+        let data = coder.into_compressed().unwrap();
+
+        // encoding side info
+        let hl_shape = hyperlatents.shape();
+        let l_shape = latents.shape();
+        let side_info = vec![
+            hl_shape[0] as u32,
+            hl_shape[1] as u32,
+            hl_shape[2] as u32,
+            l_shape[0] as u32,
+            l_shape[1] as u32,
+            l_shape[2] as u32,
+        ];
+        (data, side_info)
     }
 }
 
 impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
     fn decode(&mut self, encoded_data: EncodedData) -> CodingResult<Array3<ImagePrecision>> {
-        let mut coder = DefaultAnsCoder::from_compressed(encoded_data).unwrap();
+        let side_info = encoded_data.1;
+        let hyperlatents_shape = (
+            side_info[0] as usize,
+            side_info[1] as usize,
+            side_info[2] as usize,
+        );
+        let hyperlatents_len = hyperlatents_shape.0 * hyperlatents_shape.1 * hyperlatents_shape.2;
+        let latents_shape = (
+            side_info[3] as usize,
+            side_info[4] as usize,
+            side_info[5] as usize,
+        );
+        let latents_len = latents_shape.0 * latents_shape.1 * latents_shape.2;
+        let mut coder = DefaultAnsCoder::from_compressed(encoded_data.0).unwrap();
 
         // Decode the data:
-        let flat_hyperlatents_vec = deocde_gaussians(
-            &mut coder,
-            &self.hyperlatent_prior.means,
-            &self.hyperlatent_prior.std,
-        )
-        .unwrap();
+        let decoded_symbols: Result<Vec<usize>, _> = coder
+            .decode_iid_symbols(
+                hyperlatents_len as usize,
+                &self.hyperlatent_prior.entropy_model,
+            )
+            .collect();
+
+        let flat_hyperlatents_vec = self
+            .hyperlatent_prior
+            .from_symbols(decoded_symbols.unwrap());
 
         let hyperlatents =
-            Array::from_shape_vec(self.hyperlatent_shape, flat_hyperlatents_vec).unwrap();
+            Array::from_shape_vec(hyperlatents_shape, flat_hyperlatents_vec).unwrap();
         let latent_parameters = self
             .hyperlatent_decoder
             .forward_pass(&hyperlatents.map(|a| *a as ImagePrecision));
         let flat_latent_parameters = Array::from_iter(latent_parameters);
 
-        let means = flat_latent_parameters.slice(s![0..self.latent_size]);
-        let stds = flat_latent_parameters.slice(s![self.latent_size..flat_latent_parameters.len()]);
+        let means = flat_latent_parameters.slice(s![0..latents_len]);
+        let stds = flat_latent_parameters.slice(s![latents_len..flat_latent_parameters.len()]);
 
-        let flat_latents_vec = deocde_gaussians(
+        let flat_latents_vec = decode_gaussians(
             &mut coder,
             &means.map(|a| *a as f64),
             &stds.map(|a| *a as f64),
         )
         .unwrap();
 
-        let latents = Array::from_shape_vec(self.hyperlatent_shape, flat_latents_vec).unwrap();
+        let latents = Array::from_shape_vec(latents_shape, flat_latents_vec).unwrap();
 
         Ok(self
             .latent_decoder
@@ -177,56 +253,36 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
     }
 }
 
-// Implementation of the coders
-// For encoding and decoding, we assume a mean of 0 and a scale of 1.
-// Not exactly elegant, but does the job :)
-const PRIOR_MEAN: f64 = 0.0;
-const PRIOR_SCALE: f64 = 1.0;
-
 impl MeanScaleHierarchicalEncoder {
-    pub fn MinnenEncoder(loader: &impl WeightLoader) -> MeanScaleHierarchicalEncoder {
-        let latent_encoder = Box::new(MinnenEncoder::new(loader));
+    pub fn MinnenEncoder() -> MeanScaleHierarchicalEncoder {
+        let mut loader = NpzWeightLoader::full_loader();
+        let latent_encoder = Box::new(MinnenEncoder::new(&mut loader));
         let hyperlatent_encoder = Box::new(MinnenHyperencoder::new());
         let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
-
-        let latent_shape = (8, 8, 8);
-        let latent_size = latent_shape.0 * latent_shape.1 * latent_shape.2;
-        let hyperlatent_mean = Array::ones(latent_size) * PRIOR_MEAN;
-        let hyperlatent_std = Array::ones(latent_size) * PRIOR_SCALE;
-        let hyperlatent_prior = GaussianPrior::new(hyperlatent_mean, hyperlatent_std);
 
         MeanScaleHierarchicalEncoder {
             latent_encoder,
             hyperlatent_encoder,
             hyperlatent_decoder,
-            hyperlatent_prior,
-            latent_size,
-            latent_shape,
+            hyperlatent_prior: TablePrior::create_minnen_johnston_hyperlatent_prior(),
         }
     }
 }
 
 impl MeanScaleHierarchicalEncoder {
-    pub fn JohnstonDecoder(loader: &impl WeightLoader) -> MeanScaleHierarchicalDecoder {
-        let latent_encoder = Box::new(MinnenEncoder::new(loader));
+    pub fn JohnstonDecoder() -> MeanScaleHierarchicalDecoder {
         let latent_decoder = Box::new(JohnstonDecoder::new());
         let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
 
-        // TODO: Replace with correct latent shape (have to give through argument?)
-        let latent_shape = (8, 8, 8);
-        let latent_size = latent_shape.0 * latent_shape.1 * latent_shape.2;
-        let hyperlatent_shape = (8, 8, 8);
-        let hyperlatent_mean = Array::ones(latent_size) * PRIOR_MEAN;
-        let hyperlatent_std = Array::ones(latent_size) * PRIOR_SCALE;
-        let hyperlatent_prior = GaussianPrior::new(hyperlatent_mean, hyperlatent_std);
-
         MeanScaleHierarchicalDecoder {
-            latent_decoder: latent_decoder,
+            latent_decoder,
             hyperlatent_decoder,
-            hyperlatent_prior,
-            latent_size,
-            latent_shape,
-            hyperlatent_shape,
+            hyperlatent_prior: TablePrior::create_minnen_johnston_hyperlatent_prior(),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 }
