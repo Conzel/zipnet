@@ -33,7 +33,7 @@ jobs:
           ${{ runner.os }}-rustc-${{ steps.versions.outputs.rustc }}-
           ${{ runner.os }}-rustc-
     - name: Run backend tests
-      run: CARGO_HOME=.cargo_home cargo test
+      run: CARGO_HOME=.cargo_home cargo test --workspace --exclude probability --exclude constriction --exclude special
 
     - name: Install wasm-pack 0.8.1
       uses: jetli/wasm-pack-action@v0.3.0

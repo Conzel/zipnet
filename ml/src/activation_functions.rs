@@ -115,8 +115,7 @@ mod tests {
         let beta = array![1., 1.];
         let gamma = array![[1., 1.], [0., 1.]];
 
-        let res = array![[[0., 0.], [2., 0.]], [[0., 0.], [3., 2.]]];
-
+        let res = array![[[0., 0.], [0.5, 0.]], [[0., 0.], [(1. / 3.), 0.5]]];
         assert_eq!(gdn(&input, &beta, &gamma), res);
     }
 
