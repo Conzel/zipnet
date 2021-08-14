@@ -1,6 +1,6 @@
 import os
 import time
-from compress import _compress, _decompress
+from compress import _compress, _decompress, encode_latents
 from train import _train
 
 args = {
@@ -111,4 +111,10 @@ def train():
 
 if __name__ == "__main__":
     my_picture = "dog.jpg"
-    main(my_picture)
+    encode_latents('results/latents-mbt2018-num_filters=192-lmbda=0.001-input=dog.jpg.npz',
+                   args['num_filters'],
+                   args['checkpoint_dir'],
+                   args['model_file'],
+                   seperate=True)
+    # main(my_picture)
+    # train()
