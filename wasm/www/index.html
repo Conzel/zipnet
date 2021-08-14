@@ -1,33 +1,198 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
+<!--
+	Phantom by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
 <html>
+
 <head>
-    <meta charset="utf-8">
-    <title>Wasm template Rust</title>
+    <title>Zipnet – Neural Image Codec</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="icon" href="images/logo.svg">
+    <noscript>
+        <link rel="stylesheet" href="assets/css/noscript.css" />
+    </noscript>
 </head>
-<body>
-    <h1>Hey! We are developing zipnet here.</h1>
 
-    <h2>Encoding Image</h2>
-    <!-- Input form for the images -->
-    <p>Choose the image you want to encode. <br>Currently, we only support .png images (as they don't have the typical
-        JPG artifacts and are easy to handle).
-    </p>
-    <input id="imgInput" type="file" accept=".png"><br>
-    <img src="" height="200" alt="Image preview..." id="encodedPreview"><br>
-    <button id="downloadEncoded">Get Encoded</button><br>
-    <div id="statsEncoded"></div> 
+<body class="is-preload">
+    <!-- Wrapper -->
+    <div id="wrapper">
 
-    <h3>Decoding Image</h3>
-    <!-- Input form for the images -->
-    <p>Upload a Zipnet encoded image. 
-        The file should be called something like &quot;zipnet-enc-&lt;timestamp&gt;.bin&quot;.
-    </p>
-    <input id="encodedInput" type="file" accept=".bin"><br>
-    <img src="" height="200" alt="Image preview..." id="decodedPreview"><br>
-    <button id="downloadDecoded">Get Decoded</button><br>
-    <div id="statsDecoded"></div> 
+        <!-- Header -->
+        <header id="header">
+            <div class="inner">
 
-<script src="./bootstrap.js"></script>
-<noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+                <!-- Logo -->
+                <a href="index.html" class="logo">
+                    <span class="symbol"><img src="images/logo.svg" alt="" /></span><span class="title">Zipnet</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main -->
+        <div id="main">
+            <div class="inner">
+                <header>
+                    <h3 style="color: rgb(138, 22, 22)">Website and project still under construction :)</h1>
+                        <h1>Zipnet - a neural image codec entirely in your browser!</h1>
+                        <p>Try it out with your own image. A trained neural network will find an efficient encoding for
+                            your
+                            image and you can then download it.
+                            The encoding will be lossy (similar to JPEG - but it often looks more natural to the eye).
+                            You
+                            can then re-upload the encoded image to see the reconstruction.
+                            And the best thing about it – this algorithm runs entirely in your browser. No servers or
+                            anything involved!
+                        </p>
+                        <hr>
+                </header>
+                <!-- Encoding -->
+                <section>
+                    <h2>Encoding Image</h2>
+                    <!-- Input form for the images -->
+                    <p>Choose the image you want to encode. <br>Currently, we only support .png images (as they don't
+                        have
+                        the typical
+                        JPG artifacts and are easy to handle).
+                    </p>
+                    <input id="imgInput" type="file" accept=".png" class="input"><br>
+                    <img src="" height="200" alt="Image preview..." id="encodedPreview"><br>
+                    <button id="downloadEncoded">Get Encoded</button><br>
+                    <div id="statsEncoded"></div>
+                    <hr>
+                    <section>
+                        <h2>Decoding Image</h2>
+                        <!-- Input form for the images -->
+                        <p>Upload a Zipnet encoded image.
+                            The file should be called something like &quot;zipnet-enc-&lt;timestamp&gt;.bin&quot;.
+                        </p>
+                        <input id="encodedInput" type="file" accept=".bin"><br>
+                        <img src="" height="200" alt="Image preview..." id="decodedPreview"><br>
+                        <button id="downloadDecoded">Get Decoded</button><br>
+                        <div id="statsDecoded"></div>
+                        <hr>
+                        <hr>
+                    </section>
+                </section>
+                <section>
+                    <h2>What is a neural image codec?</h2>
+                    <p>A codec a short word for an algorithm which encodes or decodes data.
+                        The vast majority of the internet traffic is carried in the form of
+                        images and videos, which are largely compressed using classical, lossy codecs (JPEG, MPEG...).
+                        These have been hand-crafted to ensure a good compression performance (the compressed data is
+                        small) and a low distortion (the image still looks similar to the original after
+                        decompression).
+                        In the past years, Machine Learning has popped up in all kinds of
+                        different places, and compression algorithms have been a very recent field of
+                        inquiry. In contrast to the manual classical codec, a neural codec uses a neural network to
+                        learn how to best compress the data while keeping a low distortion.
+                    </p>
+                    <h2>Why is this interesting?</h2>
+                    <p>
+                        As mentioned above, the majority of the internet traffic is encoded image and video data.
+                        <!-- Add the papers -->
+                        Recent research has shown that neural codecs have the potential to greatly increase compression
+                        performance and while even producing more natural looking reconstructions (no more JPEG
+                        artifacts!).
+                        A greater compression performance means reduced data size. This results in reduced network
+                        traffic
+                        and can thus save a lot of costs in hardware, reduce energy usage and increase network
+                        performance.
+                    </p>
+                    <h2>What does Zipnet add to this?</h2>
+                    <p> One of the biggest drawbacks of current neural codecs is their computational cost.
+                        The focus of Machine Learning research often lies on the performance
+                        on certain benchmarks. For this, the networks often get very big and are required to run
+                        on expensive hardware, like GPUs costing upwards of 1000€. Thus, most Machine Learning services
+                        that can be used by someone over a website are powered via large servers.
+                        <!-- Example of such a site. -->
+                        This is not feasible for compression algorithms, as a server obviously cannot do the decoding
+                        job
+                        for an end user. Zipnet aims to bridge this gap between research and application.
+                        We here provide neural codec that can run in any web browser on any reasonably modern hardware
+                        in an acceptable time.
+                    </p>
+                    <h2>I want to know all the details!</h2>
+                    <p>
+                        The following are some more technical informations about the project.
+                        If you are further interested, also make sure to check out our <a
+                            href="https://github.com/Conzel/zipnet"> <i class="fab fa-github"></i><span>Github
+                                Repository</span></a>!
+                    </p>
+                    <h3>Implementation</h3>
+                    TODO
+                    <h3>Performance</h3>
+                    TODO
+                    <h3>Limitations</h3>
+                    TODO
+                </section>
+            </div>
+        </div>
+        <!-- Footer -->
+        <footer id="footer">
+            <div class="inner">
+                <!-- TODO: Reactivate this with links-->
+                <!-- 
+                <section>
+                    <h2>Get in touch</h2>
+                    <form method="post" action="#">
+                        <div class="fields">
+                            <div class="field half">
+                                <input type="text" name="name" id="name" placeholder="Name" />
+                            </div>
+                            <div class="field half">
+                                <input type="email" name="email" id="email" placeholder="Email" />
+                            </div>
+                            <div class="field">
+                                <textarea name="message" id="message" placeholder="Message"></textarea>
+                            </div>
+                        </div>
+                        <ul class="actions">
+                            <li><input type="submit" value="Send" class="primary" /></li>
+                        </ul>
+                    </form>
+                </section>
+                <section>
+                    <h2>Follow</h2>
+                    <ul class="icons">
+                        <li><a href="#" class="icon brands style2 fa-twitter"><span class="label">Twitter</span></a>
+                        </li>
+                        <li><a href="#" class="icon brands style2 fa-facebook-f"><span class="label">Facebook</span></a>
+                        </li>
+                        <li><a href="#" class="icon brands style2 fa-instagram"><span class="label">Instagram</span></a>
+                        </li>
+                        <li><a href="#" class="icon brands style2 fa-dribbble"><span class="label">Dribbble</span></a>
+                        </li>
+                        <li><a href="#" class="icon brands style2 fa-github"><span class="label">GitHub</span></a></li>
+                        <li><a href="#" class="icon brands style2 fa-500px"><span class="label">500px</span></a></li>
+                        <li><a href="#" class="icon solid style2 fa-phone"><span class="label">Phone</span></a></li>
+                        <li><a href="#" class="icon solid style2 fa-envelope"><span class="label">Email</span></a></li>
+                    </ul>
+                </section>
+                -->
+                <ul class="copyright">
+                    <li>&copy; 2021 – Conzel </li>
+                    <li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+                </ul>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/browser.min.js"></script>
+    <script src="assets/js/breakpoints.min.js"></script>
+    <script src="assets/js/util.js"></script>
+    <script src="assets/js/main.js"></script>
+
+    <script src="./bootstrap.js"></script>
+    <noscript>This page contains webassembly and javascript content, please enable javascript in your
+        browser.</noscript>
+
 </body>
+
 </html>
