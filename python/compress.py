@@ -1,9 +1,11 @@
 import os
+import sys
 
 import numpy as np
 import tensorflow.compat.v1 as tf
 import tensorflow_compression as tfc
-import tensorflow.contrib.slim as slim
+
+# import constriction
 
 from utils import write_png
 
@@ -58,8 +60,80 @@ def decompress(args):
     _decompress(runname, input_file, output_file, checkpoint_dir, num_filters)
 
 
+def encode_latents(input_file, num_filters, checkpoint_dir, runname, seperate):
+    # https://github.com/mandt-lab/improving-inference-for-neural-image-compression/blob/ans-coder/bb_sga.py#L381-L386
+
+    Z_DENSITY = 1 << 2
+
+    # Load the latents
+    latents_file = np.load(input_file)
+    y = latents_file['y_tilde_cur']
+    # z_mean = Z_DENSITY * latents_file['z_mean_cur']
+    # z_std = Z_DENSITY * np.exp(0.5 * latents_file['z_logvar_cur'])
+    batch_size = y.shape[0]
+    width, height = latents_file['img_dimensions']
+
+    # # Generate random side information and decode into z using q(z|y)
+    # rng = np.random.RandomState(1234)
+    # num_z = len(z_mean[0].ravel()) if seperate else len(z_mean.ravel())
+    # # 32 bits per parameter should do; if not, just increase the size
+    # side_information = rng.randint(0, 1 << 32, dtype=np.uint32, size=(10 + num_z,))
+    # # Highest bit must be set (and therefore does not count towards the size of the side information
+    # side_information[-1] |= 1 << 31
+    # side_information_bits = 32 * len(side_information) - 1
+
+    # # find maximum range for grid in z-space:
+    # encoder_ranges_z = np.array([7, 15, 31, 63])
+    # max_z_abs = (np.abs(z_mean) + 3.0 * z_std)
+    # z_grid_range_index = min(len(encoder_ranges_z) - 1, np.sum(Z_DENSITY * encoder_ranges_z < max_z_abs))
+    # z_grid_range = Z_DENSITY * encoder_ranges_z[z_grid_range_index]
+    #
+    # instantiate the model
+    fake_X = np.zeros((batch_size, width, height, 3), dtype=np.float32)
+    graph = _build_graph(fake_X, num_filters, training=False)
+    #
+    # z_mean = graph['mu']
+    # _, z_width, z_height, _ = z_mean.shape.as_list()
+
+    # Rasterize the hyperprior
+    z_grid_range = 30
+    z_grid = tf.tile(tf.reshape(tf.range(-z_grid_range, z_grid_range + 1), (-1, 1, 1, 1)),
+                     (1, 1, 1, num_filters))
+    z_grid = (1.0 / Z_DENSITY) * tf.cast(z_grid, tf.float32)
+    entropy_bottleneck = graph['entropy_bottleneck']
+    # z_grid_likelihood = tf.reshape(model.hyper_prior.pdf(z_grid), (2 * z_grid_range + 1, num_filters))
+    z_tilde, z_likelihoods = entropy_bottleneck(z_grid, training=False)
+    z_grid_likelihood = tf.reshape(z_likelihoods, (2 * z_grid_range + 1, num_filters))
+
+    with tf.Session() as sess:
+        # Load latest model checkpoint
+        save_dir = os.path.join(checkpoint_dir, runname)
+        latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
+        tf.train.Saver().restore(sess, save_path=latest)
+
+        # Replace tensorflow op with its corresponding value
+        z_grid_likelihood = sess.run(z_grid_likelihood).astype(np.single)
+
+    prefix = 'pub const MINNEN_HYPERPRIOR: [[f32; {}]; {}] ='.format(z_grid_range*2+1, num_filters)
+    suffix = np.array2string(z_grid_likelihood,
+                             threshold=sys.maxsize,
+                             suppress_small=True,
+                             separator=',')
+    suffix = suffix.replace('\n', '')
+    suffix = suffix.replace(' ', '')
+    result = prefix + suffix + ';'
+
+    support = 'pub const MINNEN_SUPPORT: (i32, i32) = (-{}, {});'.format(z_grid_range, z_grid_range+1)
+
+    with open("file.rs", 'w') as file:
+        with np.printoptions(suppress=True):
+            print(support + '\n' + result, file=file)
+
+    print("done")
+
+
 def _compress(
-    runname, input_file, output_file, checkpoint_dir, results_dir, num_filters
+        runname, input_file, output_file, checkpoint_dir, results_dir, num_filters, save_latents=True
 ):
     """Compresses an image, or a batch of images of the same shape in npy format."""
     tf.reset_default_graph()
@@ -87,12 +161,6 @@ def _compress(
 
     print(graph["my_x_shape"])
 
-    def model_summary():
-        model_vars = tf.trainable_variables()
-        slim.model_analyzer.analyze_vars(model_vars, print_info=True)
-
-    model_summary()
-
     y_likelihoods, z_likelihoods, x_tilde = (
         graph["y_likelihoods"],
         graph["z_likelihoods"],
@@ -103,10 +171,10 @@ def _compress(
     # Total number of bits divided by number of pixels.
     axes_except_batch = list(range(1, len(x.shape)))  # should be [1,2,3]
     y_bpp = tf.reduce_sum(-tf.log(y_likelihoods), axis=axes_except_batch) / (
-        np.log(2) * num_pixels
+            np.log(2) * num_pixels
     )
     z_bpp = tf.reduce_sum(-tf.log(z_likelihoods), axis=axes_except_batch) / (
-        np.log(2) * num_pixels
+            np.log(2) * num_pixels
     )
     eval_bpp = y_bpp + z_bpp  # shape (N,)
 
@@ -140,7 +208,13 @@ def _compress(
             "est_y_bpp",
             "est_z_bpp",
         ]
-        eval_tensors = [mse, psnr, msssim, msssim_db, eval_bpp, y_bpp, z_bpp]
+        eval_tensors = [mse,
+                        psnr,
+                        msssim,
+                        msssim_db,
+                        eval_bpp,
+                        y_bpp,
+                        z_bpp]
         all_results_arrs = {key: [] for key in eval_fields}  # append across all batches
 
         compression_tensors = [
@@ -168,8 +242,16 @@ def _compress(
                 packed = tfc.PackedTensors()
                 compression_arrs = sess.run(compression_tensors, feed_dict=x_feed_dict)
 
+                # test_string = sess.run(graph['string'], feed_dict=x_feed_dict)
+                # test_side_string = sess.run(graph['side_string'], feed_dict=x_feed_dict)
+                y = sess.run(graph['y'], feed_dict=x_feed_dict)
+                z = sess.run(graph['z'], feed_dict=x_feed_dict)
+                mu = sess.run(graph['mu'], feed_dict=x_feed_dict)
+                sigma = sess.run(graph['sigma'], feed_dict=x_feed_dict)
+
                 packed.pack(compression_tensors, compression_arrs)
                 if write_tfci_for_eval:
+                    print('writing tfci to {}'.format(output_file))
                     with open(output_file, "wb") as f:
                         f.write(packed.string)
 
@@ -204,6 +286,18 @@ def _compress(
             arr = all_results_arrs[field]
             print("Avg {}: {:0.4f}".format(field, arr.mean()))
 
+        if save_latents:
+            prefix = 'latents'
+            save_file = '{}-{}-input={}.npz'.format(prefix, runname, input_file)
+            print('writing latents to {}'.format(os.path.join(results_dir, save_file)))
+            np.savez(
+                os.path.join(results_dir, save_file),
+                y_tilde_cur=np.round(y).astype(np.int32),
+                z_mean_cur=mu,
+                z_logvar_cur=sigma,
+                img_dimensions=np.array(X.shape[1:-1], dtype=np.int32)
+            )
+
 
 def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
     """Decompresses an image."""
@@ -237,7 +331,7 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
     sigma = tf.exp(sigma)  # make positive
     training = False
     if (
-        not training
+            not training
     ):  # need to handle images with non-standard sizes during compression; mu/sigma must have the same shape as y
         mu = mu[:, : y_shape[0], : y_shape[1], :]
         sigma = sigma[:, : y_shape[0], : y_shape[1], :]
