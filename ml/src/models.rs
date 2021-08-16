@@ -5,18 +5,18 @@ pub type InternalDataRepresentation = Array3<ImagePrecision>;
 // [architecture]_[coder]_[layer type]_[layer]_[weight type]
 const MINNEN_ENCODER_CONV_L0_KERNEL: &str = "analysis_transform/layer_0/kernel_rdft";
 const MINNEN_ENCODER_CONV_L0_BIAS: &str = "analysis_transform/layer_0/bias";
-const MINnEN_ENCODER_CONV_L0_GDN_BETA: &str = "analysis_transform/layer_0/gdn_0/reparam_beta";
-const MINnEN_ENCODER_CONV_L0_GDN_GAMMA: &str = "analysis_transform/layer_0/gdn_0/reparam_gamma";
-const MINnEN_ENCODER_CONV_L1_KERNEL: &str = "analysis_transform/layer_1/kernel_rdft";
-const MINnEN_ENCODER_CONV_L1_BIAS: &str = "analysis_transform/layer_1/bias";
-const MINnEN_ENCODER_CONV_L1_GDN_BETA: &str = "analysis_transform/layer_1/gdn_1/reparam_beta";
-const MINnEN_ENCODER_CONV_L1_GDN_GAMMA: &str = "analysis_transform/layer_1/gdn_1/reparam_gamma";
-const MINnEN_ENCODER_CONV_L2_KERNEL: &str = "analysis_transform/layer_2/kernel_rdft";
-const MINnEN_ENCODER_CONV_L2_BIAS: &str = "analysis_transform/layer_2/bias";
-const MINnEN_ENCODER_CONV_L2_GDN_BETA: &str = "analysis_transform/layer_2/gdn_2/reparam_beta";
-const MINnEN_ENCODER_CONV_L2_GDN_GAMMA: &str = "analysis_transform/layer_2/gdn_2/reparam_gamma";
-const MINnEN_ENCODER_CONV_L3_KERNEL: &str = "analysis_transform/layer_3/kernel_rdft";
-const MINnEN_ENCODER_CONV_L3_BIAS: &str = "analysis_transform/layer_3/bias";
+const MINNEN_ENCODER_CONV_L0_GDN_BETA: &str = "analysis_transform/layer_0/gdn_0/reparam_beta";
+const MINNEN_ENCODER_CONV_L0_GDN_GAMMA: &str = "analysis_transform/layer_0/gdn_0/reparam_gamma";
+const MINNEN_ENCODER_CONV_L1_KERNEL: &str = "analysis_transform/layer_1/kernel_rdft";
+const MINNEN_ENCODER_CONV_L1_BIAS: &str = "analysis_transform/layer_1/bias";
+const MINNEN_ENCODER_CONV_L1_GDN_BETA: &str = "analysis_transform/layer_1/gdn_1/reparam_beta";
+const MINNEN_ENCODER_CONV_L1_GDN_GAMMA: &str = "analysis_transform/layer_1/gdn_1/reparam_gamma";
+const MINNEN_ENCODER_CONV_L2_KERNEL: &str = "analysis_transform/layer_2/kernel_rdft";
+const MINNEN_ENCODER_CONV_L2_BIAS: &str = "analysis_transform/layer_2/bias";
+const MINNEN_ENCODER_CONV_L2_GDN_BETA: &str = "analysis_transform/layer_2/gdn_2/reparam_beta";
+const MINNEN_ENCODER_CONV_L2_GDN_GAMMA: &str = "analysis_transform/layer_2/gdn_2/reparam_gamma";
+const MINNEN_ENCODER_CONV_L3_KERNEL: &str = "analysis_transform/layer_3/kernel_rdft";
+const MINNEN_ENCODER_CONV_L3_BIAS: &str = "analysis_transform/layer_3/bias";
 
 use crate::{
     activation_functions::{leaky_relu, GdnLayer, IgdnLayer},
@@ -76,7 +76,9 @@ impl CodingModel for MinnenEncoder {
 
 impl<'a> MinnenEncoder {
     pub fn new(loader: &mut impl WeightLoader) -> MinnenEncoder {
-        let l0_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L0_KERNEL, (5, 5));
+        // let l0_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L0_KERNEL, (5, 5));
+        // let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, 0);
+
         // idk if the padding is correct
         // why are the weights 4 dimensional?
         // let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, 1);
