@@ -65,19 +65,6 @@ jobs:
     - name: Install frontend (npm) dependencies
       run: cd wasm/www && npm install
 
-    - name: Get frontend assets (CSS, ...) from current staging branch
-      uses: actions/checkout@v2
-      with:
-        ref: gh-pages-staging
-        path: wasm/www/assets
-
-    - name: Get frontend images from current staging branch
-      uses: actions/checkout@v2
-      with:
-        ref: gh-pages-staging
-        path: wasm/www/images
-
-
     - name: Build frontend
       run: cd wasm/www && npm run build
 
