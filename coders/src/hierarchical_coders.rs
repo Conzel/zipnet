@@ -11,6 +11,7 @@ use ndarray::Array;
 use ndarray::*;
 use probability::distribution::Gaussian;
 
+use crate::table_hyperpriors::{MINNEN_JOHNSTON_NUM_CHANNELS, MINNEN_JOHNSTON_SUPPORT_RANGE};
 use crate::{table_hyperpriors, CodingResult, Decoder, EncodedData, Encoder};
 
 // For quantization of the leaky gaussian. We should probably calculate this dynamically,
@@ -53,21 +54,25 @@ impl GaussianPrior {
 /// Values outside of the support are pruned.
 pub struct TablePrior {
     support: (i32, i32),
-    entropy_model: DefaultContiguousCategoricalEntropyModel,
+    lookup_table: &'static [f32], // entropy_model: DefaultContiguousCategoricalEntropyModel,
 }
 
 impl TablePrior {
     /// Creates a new table prior. The support is the lowest and highest number the
     /// table has entries for. The table can be relative probabilities
-    pub fn new(support: (i32, i32), lookup_table: &[f32]) -> TablePrior {
+    pub fn new(support: (i32, i32), lookup_table: &'static [f32]) -> TablePrior {
         TablePrior {
             support,
-            entropy_model:
-                DefaultContiguousCategoricalEntropyModel::from_floating_point_probabilities(
-                    lookup_table,
-                )
-                .unwrap(),
+            lookup_table,
         }
+    }
+
+    pub fn get_entropy_model(&self, channel: usize) -> DefaultContiguousCategoricalEntropyModel {
+        DefaultContiguousCategoricalEntropyModel::from_floating_point_probabilities(
+            &self.lookup_table[channel * MINNEN_JOHNSTON_SUPPORT_RANGE
+                ..(channel + 1) * MINNEN_JOHNSTON_SUPPORT_RANGE],
+        )
+        .unwrap()
     }
 
     /// Takes a vector of integers and makes them conform to the entropy model of the table
@@ -151,9 +156,11 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
         let latent_length = latents.len();
 
         debug_assert_eq!(latent_length, 2 * latent_parameters.len());
+        // ensures that we use the correct number of channels for the model
+        debug_assert_eq!(hyperlatents.shape()[0], MINNEN_JOHNSTON_NUM_CHANNELS);
 
         let flat_latents = Array::from_iter(latents.iter());
-        let flat_hyperlatents = Array::from_iter(hyperlatents.iter());
+        // let flat_hyperlatents = Array::from_iter(hyperlatents.iter());
         let flat_latent_parameters = Array::from_iter(latent_parameters.iter());
 
         // This slice here is wrong, we need to slice along the last axis...
@@ -173,14 +180,21 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
             &stds.mapv(|a| *a as f64),
         );
 
-        let quantized_hyperlatents: Vec<i32> =
-            flat_hyperlatents.iter().map(|x| x.round() as i32).collect();
+        let quantized_hyperlatents = hyperlatents.map(|x| x.round() as i32);
 
-        // Encoding the hyperlatents z with p(z)
-        coder.encode_iid_symbols_reverse(
-            self.hyperlatent_prior.to_symbols(quantized_hyperlatents),
-            &self.hyperlatent_prior.entropy_model,
-        );
+        for i in 0..MINNEN_JOHNSTON_NUM_CHANNELS {
+            // Encoding the hyperlatents z with p(z)
+            coder.encode_iid_symbols_reverse(
+                self.hyperlatent_prior.to_symbols(
+                    quantized_hyperlatents
+                        .slice(s![i, .., ..])
+                        .iter()
+                        .map(|x| *x)
+                        .collect(),
+                ),
+                &self.hyperlatent_prior.get_entropy_model(i),
+            );
+        }
         let data = coder.into_compressed().unwrap();
 
         // encoding side info
@@ -206,7 +220,8 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
             side_info[1] as usize,
             side_info[2] as usize,
         );
-        let hyperlatents_len = hyperlatents_shape.0 * hyperlatents_shape.1 * hyperlatents_shape.2;
+        let hyperlatents_im_len = hyperlatents_shape.1 * hyperlatents_shape.2;
+        let hyperlatents_len = hyperlatents_shape.0 * hyperlatents_im_len;
         let latents_shape = (
             side_info[3] as usize,
             side_info[4] as usize,
@@ -215,20 +230,30 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
         let latents_len = latents_shape.0 * latents_shape.1 * latents_shape.2;
         let mut coder = DefaultAnsCoder::from_compressed(encoded_data.0).unwrap();
 
+        let mut hyperlatents = Array::zeros(hyperlatents_shape);
         // Decode the data:
-        let decoded_symbols: Result<Vec<usize>, _> = coder
-            .decode_iid_symbols(
-                hyperlatents_len as usize,
-                &self.hyperlatent_prior.entropy_model,
+        for i in 0..MINNEN_JOHNSTON_NUM_CHANNELS {
+            let decoded_symbols: Result<Vec<usize>, _> = coder
+                .decode_iid_symbols(
+                    hyperlatents_im_len as usize,
+                    &self.hyperlatent_prior.get_entropy_model(i),
+                )
+                .collect();
+
+            let flat_hyperlatents_vec = self
+                .hyperlatent_prior
+                .from_symbols(decoded_symbols.unwrap());
+
+            let hyperlatents_i = Array::from_shape_vec(
+                (hyperlatents_shape.1, hyperlatents_shape.2),
+                flat_hyperlatents_vec,
             )
-            .collect();
+            .unwrap();
 
-        let flat_hyperlatents_vec = self
-            .hyperlatent_prior
-            .from_symbols(decoded_symbols.unwrap());
+            let mut slice = hyperlatents.slice_mut(s![i, .., ..]);
+            slice.assign(&hyperlatents_i);
+        }
 
-        let hyperlatents =
-            Array::from_shape_vec(hyperlatents_shape, flat_hyperlatents_vec).unwrap();
         let latent_parameters = self
             .hyperlatent_decoder
             .forward_pass(&hyperlatents.map(|a| *a as ImagePrecision));
