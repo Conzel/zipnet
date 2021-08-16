@@ -9,6 +9,7 @@ description = "Command-line interface to ZipNet."
 [dependencies]
 quicli = "0.4"
 structopt = "0.2"
-nshare = "0.7.0"
+image = "0.23.14"
+nshare = { version = "0.7.0", features = ["ndarray", "image"] }
 ndarray = "0.15.3"
 coders = { path = "../coders" }
