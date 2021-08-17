@@ -10,23 +10,32 @@ class AnalysisTransform(tf.keras.layers.Layer):
         super(AnalysisTransform, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
+        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
         self._layers = [
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_0", corr=True, strides_down=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="gdn_0")),
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_1", corr=True, strides_down=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="gdn_1")),
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_2", corr=True, strides_down=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="gdn_2")),
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_3", corr=True, strides_down=2,
-                padding="same_zeros", use_bias=True,
-                activation=None),
+            tf.layers.Conv2D(self.num_filters, (5, 5), name=names[0], strides=2,
+                             padding="valid", use_bias=False, activation=tfc.GDN(name="gnd_0")),
+            tf.layers.Conv2D(self.num_filters, (5, 5), name=names[1], strides=2,
+                             padding="valid", use_bias=False, activation=tfc.GDN(name="gnd_1")),
+            tf.layers.Conv2D(self.num_filters, (5, 5), name=names[2], strides=2,
+                             padding="valid", use_bias=False, activation=tfc.GDN(name="gnd_2")),
+            tf.layers.Conv2D(self.num_filters, (5, 5), name=names[3], strides=2,
+                             padding="valid", use_bias=False, activation=None),
+            # tfc.SignalConv2D(
+            #     self.num_filters, (5, 5), name=names[0], corr=True, strides_down=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=tfc.GDN(name="gdn_0")),
+            # tfc.SignalConv2D(
+            #     self.num_filters, (5, 5), name=names[1], corr=True, strides_down=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=tfc.GDN(name="gdn_1")),
+            # tfc.SignalConv2D(
+            #     self.num_filters, (5, 5), name=names[2], corr=True, strides_down=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=tfc.GDN(name="gdn_2")),
+            # tfc.SignalConv2D(
+            #     self.num_filters, (5, 5), name=names[3], corr=True, strides_down=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=None),
         ]
         super(AnalysisTransform, self).build(input_shape)
 
@@ -77,23 +86,35 @@ class SynthesisTransform_Johnston(tf.keras.layers.Layer):
         super(SynthesisTransform_Johnston, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
+        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
+        filters = [79, 22, 43, 3]
         self._layers = [
-            tfc.SignalConv2D(
-                79, (5, 5), name="layer_0", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="igdn_0", inverse=True)),
-            tfc.SignalConv2D(
-                22, (5, 5), name="layer_1", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="igdn_1", inverse=True)),
-            tfc.SignalConv2D(
-                43, (5, 5), name="layer_2", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="igdn_2", inverse=True)),
-            tfc.SignalConv2D(
-                3, (5, 5), name="layer_3", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True,
-                activation=None),
+
+            tf.layers.Conv2DTranspose(filters[0], (5, 5), name=names[0], strides=2,
+                                      padding='valid', use_bias=False, activation=tfc.GDN(name='igdn_0', inverse=True)),
+            tf.layers.Conv2DTranspose(filters[1], (5, 5), name=names[1], strides=2,
+                                      padding='valid', use_bias=False, activation=tfc.GDN(name='igdn_1', inverse=True)),
+            tf.layers.Conv2DTranspose(filters[2], (5, 5), name=names[2], strides=2,
+                                      padding='valid', use_bias=False, activation=tfc.GDN(name='igdn_2', inverse=True)),
+            tf.layers.Conv2DTranspose(filters[3], (5, 5), name=names[3], strides=2,
+                                      padding='valid', use_bias=False, activation=tfc.GDN(name='igdn_3', inverse=True)),
+
+            # tfc.SignalConv2D(
+            #     filters[0], (5, 5), name=names[0], corr=False, strides_up=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=tfc.GDN(name="igdn_0", inverse=True)),
+            # tfc.SignalConv2D(
+            #     filters[1], (5, 5), name=names[1], corr=False, strides_up=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=tfc.GDN(name="igdn_1", inverse=True)),
+            # tfc.SignalConv2D(
+            #     filters[2], (5, 5), name=names[2], corr=False, strides_up=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=tfc.GDN(name="igdn_2", inverse=True)),
+            # tfc.SignalConv2D(
+            #     filters[3], (5, 5), name=names[3], corr=False, strides_up=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=None),
         ]
         super(SynthesisTransform_Johnston, self).build(input_shape)
 
@@ -114,19 +135,27 @@ class HyperAnalysisTransform(tf.keras.layers.Layer):
         super(HyperAnalysisTransform, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
+        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
         self._layers = [
-            tfc.SignalConv2D(
-                self.num_filters, (3, 3), name="layer_0", corr=True, strides_down=1,
-                padding="same_zeros", use_bias=True,
-                activation=tf.nn.relu),
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_1", corr=True, strides_down=2,
-                padding="same_zeros", use_bias=True,
-                activation=tf.nn.relu),
-            tfc.SignalConv2D(
-                self.num_output_filters, (5, 5), name="layer_2", corr=True, strides_down=2,
-                padding="same_zeros", use_bias=False,
-                activation=None)
+            tf.layers.Conv2D(self.num_filters, (3, 3), name=names[0], strides=1,
+                             padding="valid", use_bias=False, activation=tf.nn.relu),
+            tf.layers.Conv2D(self.num_filters, (5, 5), name=names[1], strides=2,
+                             padding="valid", use_bias=False, activation=tf.nn.relu),
+            tf.layers.Conv2D(self.num_filters, (5, 5), name=names[2], strides=2,
+                             padding="valid", use_bias=False, activation=None),
+
+            # tfc.SignalConv2D(
+            #     self.num_filters, (3, 3), name="layer_0", corr=True, strides_down=1,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=tf.nn.relu),
+            # tfc.SignalConv2D(
+            #     self.num_filters, (5, 5), name="layer_1", corr=True, strides_down=2,
+            #     padding="same_zeros", use_bias=True,
+            #     activation=tf.nn.relu),
+            # tfc.SignalConv2D(
+            #     self.num_output_filters, (5, 5), name="layer_2", corr=True, strides_down=2,
+            #     padding="same_zeros", use_bias=False,
+            #     activation=None)
         ]
         super(HyperAnalysisTransform, self).build(input_shape)
 
@@ -211,19 +240,27 @@ class MBT2018HyperSynthesisTransform_Johnston(tf.keras.layers.Layer):
         super().__init__(*args, **kwargs)
 
     def build(self, input_shape):
+        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
         self._layers = [
-            tfc.SignalConv2D(
-                76, (5, 5), name="layer_0", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=tf.nn.relu),
-            tfc.SignalConv2D(
-                107, (5, 5), name="layer_1", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=tf.nn.relu),
-            tfc.SignalConv2D(
-                320, (3, 3), name="layer_2", corr=False, strides_up=1,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=None),
+            tf.layers.Conv2DTranspose(76, (3, 3), name=names[0], strides=2,
+                             padding="valid", use_bias=False, activation=tf.nn.relu, kernel_parameterizer=None),
+            tf.layers.Conv2DTranspose(107, (5, 5), name=names[1], strides=2,
+                             padding="valid", use_bias=False, activation=tf.nn.relu, kernel_paramaterizer=None),
+            tf.layers.Conv2DTranspose(320, (5, 5), name=names[2], strides=1,
+                             padding="valid", use_bias=False, activation=None, kernel_parameterized=None),
+
+            # tfc.SignalConv2D(
+            #     76, (5, 5), name="layer_0", corr=False, strides_up=2,
+            #     padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+            #     activation=tf.nn.relu),
+            # tfc.SignalConv2D(
+            #     107, (5, 5), name="layer_1", corr=False, strides_up=2,
+            #     padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+            #     activation=tf.nn.relu),
+            # tfc.SignalConv2D(
+            #     320, (3, 3), name="layer_2", corr=False, strides_up=1,
+            #     padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+            #     activation=None),
         ]
         super().build(input_shape)
 
