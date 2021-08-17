@@ -1,5 +1,6 @@
 use coders::statistics::Statistics;
-// use ndarray_image::{open_image, Colors};
+use image::{io::Reader as ImageReader, DynamicImage, RgbImage};
+use nshare::ToNdarray3;
 use quicli::prelude::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -98,11 +99,15 @@ impl ZipnetOpts for CompressOpts {
 impl ZipnetOpts for StatsOpts {
     // Prints out statistics to StdOut
     fn run(&self) {
-        // let im_raw = open_image(&self.image, Colors::Rgb).unwrap();
-        // let stats = Statistics::new(&im_raw);
-        // println!("{}", stats);
-        // TODO: Replace dependency of ndarray_image with nshare
-        todo!()
+        let img = ImageReader::open(&self.image).unwrap().decode().unwrap();
+        let img_data = match img {
+            DynamicImage::ImageRgb8(i) => i.into_ndarray3(),
+            DynamicImage::ImageRgba8(i) => i.into_ndarray3(),
+            // TODO: Handle this more gracefully
+            _ => panic!("Wrong image type given."),
+        };
+        let stats = Statistics::new(&img_data);
+        println!("{}", stats);
     }
     fn get_verbosity(&self) -> &Verbosity {
         &self.verbosity
