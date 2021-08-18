@@ -19,6 +19,14 @@ def numpy_array_to_rust(x):
     array_repr = f"{x}".replace("\n", ",\n\t\t")
     return f"array!{array_repr}"
 
+# Tensorflow conv2d inputs are given as
+# - batch_shape + [in_height, in_width, in_channels]
+# and weights as 
+# - [filter_height * filter_width * in_channels, output_channels]
+# See also: https://www.tensorflow.org/api_docs/python/tf/nn/conv2d
+# analog for conv2d_transpose:
+# https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
+
 np.set_printoptions(suppress=True)
 
 loader = jinja2.FileSystemLoader("./templates")
