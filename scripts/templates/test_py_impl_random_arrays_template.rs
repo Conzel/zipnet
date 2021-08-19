@@ -14,8 +14,7 @@ fn arr_allclose<D: Dimension>(arr1: &Array<f64,D>, arr2: &Array<f64,D>) -> bool 
 fn test_py_implementation_random_arrays_{{t.test_name}}() {
     {% for r in t.random_test_objects %}
         let test_input{{loop.index}} = {{ r.input_arr }};
-        let kernel{{loop.index}} = Array::from_shape_vec({{ r.kernel_shape }},
-                                           vec!{{ r.kernel }}).unwrap();
+        let kernel{{loop.index}} = {{ r.kernel }};
         let conv_layer{{loop.index}} = {{t.layer_name}}::new(kernel{{loop.index}}, {{r.stride}}, {{r.padding}});
         let target_output{{loop.index}} = {{ r.output_arr }};
         let current_output{{loop.index}} = conv_layer.{{function}}(&test_input);
