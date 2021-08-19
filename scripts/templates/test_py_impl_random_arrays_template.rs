@@ -9,17 +9,19 @@ fn arr_allclose<D: Dimension>(arr1: &Array<f64,D>, arr2: &Array<f64,D>) -> bool 
     (arr1 - arr2).map(|x| (*x as f64).abs()).sum() < 1e-9
 }
 
+{% for t in random_tests %}
 #[test]
-fn test_py_implementation_random_arrays_{{test_name}}() {
-    {% for r in random_test_objects %}
+fn test_py_implementation_random_arrays_{{t.test_name}}() {
+    {% for r in t.random_test_objects %}
         let test_input{{loop.index}} = {{ r.input_arr }};
-        let kernel = Array::from_shape_vec({{ r.kernel_shape }},
+        let kernel{{loop.index}} = Array::from_shape_vec({{ r.kernel_shape }},
                                            vec!{{ r.kernel }}).unwrap();
-        let conv_layer{{loop.index}} = {{layer_name}}::new(kernel, {{r.stride}}, {{r.padding}});
+        let conv_layer{{loop.index}} = {{t.layer_name}}::new(kernel{{loop.index}}, {{r.stride}}, {{r.padding}});
         let target_output{{loop.index}} = {{ r.output_arr }};
         let current_output{{loop.index}} = conv_layer.{{function}}(&test_input);
 
-        assert!(arr_allclose(current_output, target_output), 
-                "{:?} was not equal to {:?}", current_output, target_output);
+        assert!(arr_allclose(current_output{{loop.index}}, target_output{{loop.index}}), 
+                "{:?} was not equal to {:?}", current_output{{loop.index}}, target_output{{loop.index}});
     {% endfor %}
 }
+{% endfor %}
