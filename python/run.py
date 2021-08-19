@@ -106,15 +106,15 @@ def train():
            batch_size=train_args['batch_size'],
            num_filters=args['num_filters'],
            lmbda=args['lmbda'],
-           last_step=10000)
+           last_step=10)
 
 
 if __name__ == "__main__":
     my_picture = "dog.jpg"
-    encode_latents('results/latents-mbt2018-num_filters=192-lmbda=0.001-input=dog.jpg.npz',
-                   args['num_filters'],
-                   args['checkpoint_dir'],
-                   args['model_file'],
-                   seperate=True)
+    # encode_latents('results/latents-mbt2018-num_filters=192-lmbda=0.001-input=dog.jpg.npz',
+    #                args['num_filters'],
+    #                args['checkpoint_dir'],
+    #                args['model_file'],
+    #                seperate=True)
     # main(my_picture)
-    # train()
+    train()
