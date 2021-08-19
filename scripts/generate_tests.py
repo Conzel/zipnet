@@ -4,6 +4,8 @@ import numpy as np
 import itertools
 import tensorflow as tf
 
+np.random.seed(260896)
+
 class RandomArrayTest: 
     def __init__(self, test_name, layer_name, random_test_objects):
         """Struct that represents one Random Array Test.
