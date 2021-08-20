@@ -101,17 +101,17 @@ def conv_forward_naive(x, w, b, conv_param):
 	N,C,H,W = x.shape
 	F,C,HH,WW = w.shape
 	pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right = get_same_padding(H, W, stride, HH, WW)
-	# H_prime = (H+2*pad_num_h-HH) // stride + 1
-	# W_prime = (W+2*pad_num_w-WW) // stride + 1
-	H_prime = int(ceil(float(H) / float(stride)))
-	W_prime = int(ceil(float(W) / float(stride)))
-	out = np.zeros([N,F,H_prime,W_prime]) #SET FILTERS AS 1
+	H_prime = (H+2*pad_num-HH) // stride + 1
+	W_prime = (W+2*pad_num-WW) // stride + 1
+	# H_prime = int(ceil(float(H) / float(stride)))
+	# W_prime = int(ceil(float(W) / float(stride)))
+	out = np.zeros([1,F,H_prime,W_prime]) #SET FILTERS AS 1
 	#im2col
 	for im_num in range(N):
 		im = x[im_num,:,:,:]
-		#   im_pad = np.pad(im,((0,0),(pad_num,pad_num),(pad_num,pad_num)),'constant')
-		im_pad = np.zeros((C, H+pad_num_h, W+pad_num_w))
-		im_pad[:, pad_top:-pad_bottom, pad_left:-pad_right] = im
+		im_pad = np.pad(im,((0,0),(pad_num,pad_num),(pad_num,pad_num)),'constant')
+		# im_pad = np.zeros((C, H+pad_num_h, W+pad_num_w))
+		# im_pad[:, pad_top:-pad_bottom, pad_left:-pad_right] = im
 		# import pdb;pdb.set_trace()
 		im_col = im2col(im_pad,HH,WW,stride)
 		filter_col = np.reshape(w,(F,-1))
@@ -133,24 +133,32 @@ input = np.array(
 [0.66966338, 0.41083884, 0.45831479, 0.70402897, 0.61773261]]]]
 )
 
+# weights = np.array(
+# [[[[ 0.2046923 ]],
+#   [[ 0.47961783]],
+#   [[ 0.28086317]],],
+#  [[[ 0.31954926]],
+#   [[-0.32114562]],
+#   [[-0.3420902 ]]],
+#  [[[-0.56219184]],
+#   [[-0.26813224]],
+#   [[ 0.4976151 ]]]]
+# ).reshape(1,1,3,3)
 weights = np.array(
-[[[[ 0.2046923 ]],
-  [[ 0.47961783]],
-  [[ 0.28086317]],],
- [[[ 0.31954926]],
-  [[-0.32114562]],
-  [[-0.3420902 ]]],
- [[[-0.56219184]],
-  [[-0.26813224]],
-  [[ 0.4976151 ]]]]
-).reshape(1,1,3,3)
+[
+0.92697753, 0.91485179, 0.85028299, 0.26970649, 0.55898563, 0.84558665, 0.75231163,
+0.90343251, 0.07658575, 0.56033562, 0.33565241, 0.96145765, 0.24242379, 0.5888119,
+0.04742411, 0.96925828, 0.2795916, 0.71978642, 0.90980128, 0.37189406, 0.55666793,
+0.79448488, 0.44166553, 0.23985275, 0.12854726, 0.75676637, 0.13313323,
+]
+).reshape(3, 1, 3, 3)
 
 # input = np.array([[[[3, 5, 2, 7], [4, 1, 3, 8], [6, 3, 8, 2], [9, 6, 1, 5]]]])
 # weights = np.array([[[[1, 2, 1], [2, 1, 2], [1, 1, 2]]]])
 print(input.shape)
 print(weights.shape)
 bias = np.zeros((1, 1))# null
-conv_param = {"pad":0,"stride":2}
+conv_param = {"pad":0,"stride":1}
 
 output, _ = conv_forward_naive(input, weights, bias, conv_param)
 print(output.shape)
