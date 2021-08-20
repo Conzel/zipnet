@@ -45,7 +45,8 @@ impl ConvolutionLayer {
     /// style format (read more here).
     /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
     pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
-        todo!();
+        let output = ConvolutionLayer::conv_2d(self, &self.kernel, &image.view());
+    output
     }
 
     /// Naive implementation of 2d convolution for reference implementations
@@ -261,8 +262,10 @@ mod tests {
         let testker = kernel.unwrap();
         let conv_layer = ConvolutionLayer::new(testker, 1, 0);
         let output = arr3(&[[[ 57.0, 75.0,  93.0], [111.0, 129.0, 141.0], [138.0, 156.0, 162.0]]]);
-        let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
-
-        assert_eq!(convolved_image, output);
+        let output_test = conv_layer.convolve(&test_img);
+        // let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
+        // assert_eq!(convolved_image, output);
+        
+        assert_eq!(output_test, output)
     }
 }
