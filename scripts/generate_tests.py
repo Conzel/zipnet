@@ -3,6 +3,7 @@ import jinja2
 import numpy as np
 import itertools
 import tensorflow as tf
+import os
 
 np.random.seed(260896)
 
@@ -114,15 +115,26 @@ def main():
     # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
 
     np.set_printoptions(suppress=True)
-
+    # loading Jinja with the random array test template
     loader = jinja2.FileSystemLoader("./templates")
     env = jinja2.Environment(loader=loader)
-
     template = env.get_template("test_py_impl_random_arrays_template.rs")
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    ml_test_folder = os.path.join(project_root, "ml", "tests")
 
+    # writing out the conv2d test cases
     conv2d_test_case = conv2d_random_array_test()
+    conv2d_test_content = template.render(random_tests=[conv2d_test_case], file=__file__)
 
-    print(template.render(random_tests=[conv2d_test_case], file=__file__))
+    conv2d_output_filename = os.path.join(ml_test_folder, "convolutions_automated_test.rs")
+    with open(conv2d_output_filename, "w+") as conv2d_output_file:
+        conv2d_output_file.write(conv2d_test_content)
+        print(f"Successfully wrote conv2d test to {conv2d_output_filename}")
+
+
+    # TODO:
+    # writing out the transposed conv2d test cases
+
 
 if __name__ == "__main__":
     main()
