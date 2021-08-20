@@ -18,8 +18,8 @@ pub struct ConvolutionLayer {
     kernel_height: usize,
     stride: usize,
     padding: Padding,
-    num_input_channels: u16,
-    num_output_channels: u16,
+    num_filters: u16,
+    img_channels: u16,
 }
 
 impl ConvolutionLayer {
@@ -28,8 +28,8 @@ impl ConvolutionLayer {
         stride: usize,
         padding: Padding,
     ) -> ConvolutionLayer {
-        let num_input_channels = weights.len_of(Axis(0)) as u16; // Filters
-        let num_output_channels = weights.len_of(Axis(1)) as u16; // Channels
+        let num_filters = weights.len_of(Axis(0)) as u16; // Filters
+        let img_channels = weights.len_of(Axis(1)) as u16; // Channels
         let kernel_width = weights.len_of(Axis(2)); // Width
         let kernel_height = weights.len_of(Axis(3)); // Height
 
@@ -40,8 +40,8 @@ impl ConvolutionLayer {
             kernel_width,
             kernel_height,
             stride,
-            num_input_channels,
-            num_output_channels,
+            num_filters,
+            img_channels,
             padding,
         }
     }
@@ -185,10 +185,10 @@ impl ConvolutionLayer {
         let new_im_height = (im_height - self.kernel_height) / self.stride + 1;
 
         // Alocate memory for output (?)
-        let filter = self.num_input_channels as usize;
+        let filter = self.num_filters as usize;
 
         // filter weights
-        let c_out = self.num_output_channels as usize;
+        let c_out = self.img_channels as usize;
         let filter_col = kernel_weights_arr
             .into_shape((filter, self.kernel_height * self.kernel_width * c_out))
             .unwrap(); // weights.reshape(F, HH*WW*C)
