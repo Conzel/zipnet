@@ -46,7 +46,11 @@ impl ConvolutionLayer {
     /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
     pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
         // PADDING: we need to call a function get_padding_size() ; this function should take in (H, W, padding, stride, kernel_size) and give back int: P_h and P_w
+<<<<<<< HEAD
         // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here
+=======
+        // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here 
+>>>>>>> 15a4e85ab5d41c7aacc36fbefc3cf50b02f4542a
         // conv_2d should be modified to accept two integers for the padding
         let output = ConvolutionLayer::conv_2d(self, &self.kernel, &image.view());
         output
@@ -188,6 +192,7 @@ impl ConvolutionLayer {
         // prepare bias: TO DO
 
         // convolve
+        // PADDING: here, instead of im2d_arr we need to pass an image which already has zero padding; so the todo() will be above this
         let im_col = ConvolutionLayer::im2col_ref(
             self,
             im2d_arr,
