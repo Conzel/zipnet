@@ -46,7 +46,7 @@ impl ConvolutionLayer {
     /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
     pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
         // PADDING: we need to call a function get_padding_size() ; this function should take in (H, W, padding, stride, kernel_size) and give back int: P_h and P_w
-        // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here 
+        // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here
         // conv_2d should be modified to accept two integers for the padding
         let output = ConvolutionLayer::conv_2d(self, &self.kernel, &image.view());
         output
