@@ -6,6 +6,7 @@ use constriction::stream::{model::DefaultLeakyQuantizer, stack::DefaultAnsCoder}
 use constriction::stream::{Decode, Encode};
 use ml::models::CodingModel;
 use ml::models::{JohnstonDecoder, JohnstonHyperdecoder, MinnenEncoder, MinnenHyperencoder};
+use ml::weight_loader::{NpzWeightLoader, WeightLoader};
 use ml::ImagePrecision;
 use ndarray::Array;
 use ndarray::*;
@@ -277,15 +278,10 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
     }
 }
 
-// Implementation of the coders
-// For encoding and decoding, we assume a mean of 0 and a scale of 1.
-// Not exactly elegant, but does the job :)
-const PRIOR_MEAN: f64 = 0.0;
-const PRIOR_SCALE: f64 = 1.0;
-
 impl MeanScaleHierarchicalEncoder {
     pub fn MinnenEncoder() -> MeanScaleHierarchicalEncoder {
-        let latent_encoder = Box::new(MinnenEncoder::new());
+        let mut loader = NpzWeightLoader::full_loader();
+        let latent_encoder = Box::new(MinnenEncoder::new(&mut loader));
         let hyperlatent_encoder = Box::new(MinnenHyperencoder::new());
         let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
 
@@ -300,15 +296,7 @@ impl MeanScaleHierarchicalEncoder {
 
 impl MeanScaleHierarchicalEncoder {
     pub fn JohnstonDecoder() -> MeanScaleHierarchicalDecoder {
-        let latent_encoder = Box::new(MinnenEncoder::new());
-        let latent_decoder = Box::new(JohnstonDecoder::new());
-        let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
-
-        MeanScaleHierarchicalDecoder {
-            latent_decoder: latent_decoder,
-            hyperlatent_decoder,
-            hyperlatent_prior: TablePrior::create_minnen_johnston_hyperlatent_prior(),
-        }
+        todo!()
     }
 }
 

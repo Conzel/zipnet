@@ -2,6 +2,9 @@ use crate::WeightPrecision;
 use ndarray::{Array, Array1, ArrayBase, Dimension, Shape, ShapeError, StrideShape};
 use ndarray_npy::{NpzReader, ReadNpzError};
 use serde_json::{self, Map, Value};
+use std::borrow::Borrow;
+use std::io::{Cursor, Read, Seek};
+use std::marker::PhantomData;
 use std::{fs, path::Path};
 use thiserror::Error;
 
@@ -21,9 +24,9 @@ pub enum WeightError {
     WeightShapeError(#[from] ShapeError),
 }
 
-trait WeightLoader {
+pub trait WeightLoader {
     fn get_weight<D, Sh>(
-        &self,
+        &mut self,
         param_name: &str,
         shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -50,7 +53,7 @@ impl WeightLoader for JsonWeightLoader {
     /// Returns weights with the given name from the weight loader. Weights are returned in a FLATTENED form
     /// (to facilitate working with JSON, as then all arrays have the same length.)
     fn get_weight<D, Sh>(
-        &self,
+        &mut self,
         param_name: &str,
         shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -84,20 +87,40 @@ impl WeightLoader for JsonWeightLoader {
     }
 }
 
-struct NpzWeightLoader {
-    file: std::fs::File,
+pub struct NpzWeightLoader<R>
+where
+    R: Seek + Read,
+{
+    handle: R,
 }
 
-impl NpzWeightLoader {
-    pub fn new<P: AsRef<Path>>(path: P) -> WeightResult<NpzWeightLoader> {
-        let file = std::fs::File::open(path)?;
-        Ok(NpzWeightLoader { file })
+impl NpzWeightLoader<std::fs::File> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> WeightResult<NpzWeightLoader<std::fs::File>> {
+        let handle = std::fs::File::open(path)?;
+        Ok(NpzWeightLoader { handle })
     }
 }
 
-impl WeightLoader for NpzWeightLoader {
+impl NpzWeightLoader<Cursor<&[u8]>> {
+    pub fn from_buffer(bytes_array: &[u8]) -> WeightResult<NpzWeightLoader<Cursor<&[u8]>>> {
+        Ok(NpzWeightLoader {
+            handle: Cursor::new(bytes_array),
+        })
+    }
+
+    /// Returns a weight loader that has full access to all weight.
+    /// The weights are compiled into the struct, so no file access is needed.
+    pub fn full_loader() -> NpzWeightLoader<Cursor<&'static [u8]>> {
+        todo!()
+    }
+}
+
+impl<R> WeightLoader for NpzWeightLoader<R>
+where
+    R: Seek + Read,
+{
     fn get_weight<D, Sh>(
-        &self,
+        &mut self,
         param_name: &str,
         _shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
@@ -109,7 +132,7 @@ impl WeightLoader for NpzWeightLoader {
         // Else get_weight would have to be mutable (or we have to put it
         // into a RefCell). I dislike both solutions
         // We hope that this doesn't hurt perforrmance, we'll have to see.
-        let mut reader = NpzReader::new(&self.file)?;
+        let mut reader = NpzReader::new(&mut self.handle)?;
 
         let arr: ArrayBase<_, D> = reader.by_name(param_name)?;
 
@@ -139,7 +162,7 @@ mod tests {
         )
         .unwrap();
 
-        let loader = JsonWeightLoader::new(file_path).unwrap();
+        let mut loader = JsonWeightLoader::new(file_path).unwrap();
 
         assert_eq!(
             loader.get_weight("arr1", 3).unwrap(),
@@ -166,7 +189,7 @@ mod tests {
         npz.add_array("b", &b).unwrap();
         npz.finish().unwrap();
 
-        let loader = NpzWeightLoader::new(file_path).unwrap();
+        let mut loader = NpzWeightLoader::from_path(file_path).unwrap();
 
         assert_eq!(loader.get_weight("a", (2, 3)).unwrap(), a);
         assert_eq!(loader.get_weight("b", 3).unwrap(), b);
