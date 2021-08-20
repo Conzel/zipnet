@@ -101,9 +101,9 @@ def conv2d_random_array_test(num_arrays_per_case=3):
             #     height x width x channels
             #   our ordering:
             #     channels x height x width
-            im = np.moveaxis(im, [0,1,2], [1,2,0])
-            ker = np.moveaxis(ker, [0,1,2,3], [3,2,0,1])
-            out = np.moveaxis(out, [0,1,2], [1,2,0])
+            im = np.moveaxis(im, [0,1,2], [2,0,1])
+            ker = np.moveaxis(ker, [0,1,2,3], [2,3,1,0])
+            out = np.moveaxis(out, [0,1,2], [2,0,1])
 
             test_obj = RandomArrayTestObject(im, ker, out, padding)
             objects.append(test_obj)
