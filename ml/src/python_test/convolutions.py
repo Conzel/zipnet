@@ -150,7 +150,7 @@ weights = np.array(
 print(input.shape)
 print(weights.shape)
 bias = np.zeros((1, 1))# null
-conv_param = {"pad":0,"stride":1}
+conv_param = {"pad":0,"stride":2}
 
 output, _ = conv_forward_naive(input, weights, bias, conv_param)
 print(output.shape)
