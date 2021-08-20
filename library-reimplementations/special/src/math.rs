@@ -13,6 +13,12 @@ pub fn tgamma(x: f64) -> f64 {
 // I don't know if this sign is even needed
 pub fn lgamma(x: f64, sign: &mut i32) -> f64 {
     let res = mathru::special::gamma::ln_gamma(x);
-    *sign = if res > 1.0 { 1 } else if res < 1.0 { -1 } else { 0 };
+    *sign = if res > 1.0 {
+        1
+    } else if res < 1.0 {
+        -1
+    } else {
+        0
+    };
     res
 }
