@@ -136,6 +136,8 @@ def main():
     with open(conv2d_output_filename, "w+") as conv2d_output_file:
         conv2d_output_file.write(conv2d_test_content)
         print(f"Successfully wrote conv2d test to {conv2d_output_filename}")
+    os.system(f"rustfmt {conv2d_output_filename}")
+    print(f"Formatted conv2d test.")
 
 
     # TODO:
