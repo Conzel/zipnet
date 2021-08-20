@@ -46,7 +46,7 @@ impl ConvolutionLayer {
     /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
     pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
         let output = ConvolutionLayer::conv_2d(self, &self.kernel, &image.view());
-    output
+        output
     }
 
     /// Naive implementation of 2d convolution for reference implementations
@@ -106,12 +106,12 @@ impl ConvolutionLayer {
         let mut img_matrix: Array2<ImagePrecision> =
             Array::zeros((new_h * new_w, im_channel * ker_height * ker_width)); // shape: (X, Y)
         let mut cont = 0 as usize;
-        for i in 1..new_h+1 {
-            for j in 1..new_w+1 {
+        for i in 1..new_h + 1 {
+            for j in 1..new_w + 1 {
                 let patch = im2d_arr.slice(s![
                     ..,
-                    i-1 * self.stride..(i-1 * self.stride + ker_height),
-                    j-1 * self.stride..(j-1 * self.stride + ker_width),
+                    i - 1 * self.stride..(i - 1 * self.stride + ker_height),
+                    j - 1 * self.stride..(j - 1 * self.stride + ker_width),
                 ]);
                 let patchrow_unwrap: Array1<f32> = Array::from_iter(patch.map(|a| *a));
 
@@ -135,20 +135,18 @@ impl ConvolutionLayer {
     {
         let img_vec: ArrayView2<f32> = mat.into();
         let filter_axis = img_vec.len_of(Axis(1));
-        // let mut img_mat: Array3<ImagePrecision> = 
-        // Array::zeros((filter_axis, height_prime, width_prime)); ALTERNATE 
-        let mut img_mat: Array3<ImagePrecision> = 
-        Array::zeros((0, height_prime, width_prime));
-        if C == 1 { 
+        // let mut img_mat: Array3<ImagePrecision> =
+        // Array::zeros((filter_axis, height_prime, width_prime)); ALTERNATE
+        let mut img_mat: Array3<ImagePrecision> = Array::zeros((0, height_prime, width_prime));
+        if C == 1 {
             for i in 0..filter_axis {
                 let col = img_vec.slice(s![.., i]);
                 let col_reshape = col.into_shape((height_prime, width_prime)).unwrap();
                 // img_mat.assign(&col_reshape);  ALTERNATE
-                img_mat.push(Axis(0), col_reshape).unwrap(); 
+                img_mat.push(Axis(0), col_reshape).unwrap();
             }
-        } 
-    img_mat
-
+        }
+        img_mat
     }
 
     fn conv_2d<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array3<ImagePrecision>
@@ -261,11 +259,15 @@ mod tests {
         );
         let testker = kernel.unwrap();
         let conv_layer = ConvolutionLayer::new(testker, 1, 0);
-        let output = arr3(&[[[ 57.0, 75.0,  93.0], [111.0, 129.0, 141.0], [138.0, 156.0, 162.0]]]);
+        let output = arr3(&[[
+            [57.0, 75.0, 93.0],
+            [111.0, 129.0, 141.0],
+            [138.0, 156.0, 162.0],
+        ]]);
         let output_test = conv_layer.convolve(&test_img);
         // let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
         // assert_eq!(convolved_image, output);
-        
+
         assert_eq!(output_test, output)
     }
 }

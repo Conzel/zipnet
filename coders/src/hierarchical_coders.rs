@@ -271,14 +271,7 @@ impl MeanScaleHierarchicalEncoder {
 
 impl MeanScaleHierarchicalEncoder {
     pub fn JohnstonDecoder() -> MeanScaleHierarchicalDecoder {
-        let latent_decoder = Box::new(JohnstonDecoder::new());
-        let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
-
-        MeanScaleHierarchicalDecoder {
-            latent_decoder,
-            hyperlatent_decoder,
-            hyperlatent_prior: TablePrior::create_minnen_johnston_hyperlatent_prior(),
-        }
+        todo!()
     }
 }
 
