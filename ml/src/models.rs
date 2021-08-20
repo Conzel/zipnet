@@ -1,8 +1,61 @@
 pub type InternalDataRepresentation = Array3<ImagePrecision>;
 
+// Names of the model weights in the weight file
+// Naming convention:
+// [architecture]_[coder]_[layer type]_[layer]_[weight type]
+const MINNEN_ENCODER_CONV_L0_KERNEL: &str = "analysis_transform/layer_0/kernel_rdft";
+const MINNEN_ENCODER_CONV_L0_BIAS: &str = "analysis_transform/layer_0/bias";
+const MINNEN_ENCODER_CONV_L0_GDN_BETA: &str = "analysis_transform/layer_0/gdn_0/reparam_beta";
+const MINNEN_ENCODER_CONV_L0_GDN_GAMMA: &str = "analysis_transform/layer_0/gdn_0/reparam_gamma";
+const MINNEN_ENCODER_CONV_L1_KERNEL: &str = "analysis_transform/layer_1/kernel_rdft";
+const MINNEN_ENCODER_CONV_L1_BIAS: &str = "analysis_transform/layer_1/bias";
+const MINNEN_ENCODER_CONV_L1_GDN_BETA: &str = "analysis_transform/layer_1/gdn_1/reparam_beta";
+const MINNEN_ENCODER_CONV_L1_GDN_GAMMA: &str = "analysis_transform/layer_1/gdn_1/reparam_gamma";
+const MINNEN_ENCODER_CONV_L2_KERNEL: &str = "analysis_transform/layer_2/kernel_rdft";
+const MINNEN_ENCODER_CONV_L2_BIAS: &str = "analysis_transform/layer_2/bias";
+const MINNEN_ENCODER_CONV_L2_GDN_BETA: &str = "analysis_transform/layer_2/gdn_2/reparam_beta";
+const MINNEN_ENCODER_CONV_L2_GDN_GAMMA: &str = "analysis_transform/layer_2/gdn_2/reparam_gamma";
+const MINNEN_ENCODER_CONV_L3_KERNEL: &str = "analysis_transform/layer_3/kernel_rdft";
+const MINNEN_ENCODER_CONV_L3_BIAS: &str = "analysis_transform/layer_3/bias";
+
+const MINNEN_HYPERENCODER_CONV_L0_KERNEL: &str = "hyper_analysis_transform/layer_0/kernel_rdft";
+const MINNEN_HYPERENCODER_CONV_L0_BIAS: &str = "hyper_analysis_transform/layer_0/bias";
+const MINNEN_HYPERENCODER_CONV_L1_KERNEL: &str = "hyper_analysis_transform/layer_1/kernel_rdft";
+const MINNEN_HYPERENCODER_CONV_L1_BIAS: &str = "hyper_analysis_transform/layer_1/bias";
+const MINNEN_HYPERENCODER_CONV_L2_KERNEL: &str = "hyper_analysis_transform/layer_2/kernel_rdft";
+
+const JOHNSTON_DECODER_CONV_L0_KERNEL: &str = "synthesis_transform/layer_0/kernel_rdft";
+const JOHNSTON_DECODER_CONV_L0_BIAS: &str = "synthesis_transform/layer_0/bias";
+const JOHNSTON_DECODER_CONV_L0_IGDN_BETA: &str = "synthesis_transform/layer_0/igdn_0/reparam_beta";
+const JOHNSTON_DECODER_CONV_L0_IGDN_GAMMA: &str =
+    "synthesis_transform/layer_0/igdn_0/reparam_gamma";
+const JOHNSTON_DECODER_CONV_L1_KERNEL: &str = "synthesis_transform/layer_1/kernel_rdft";
+const JOHNSTON_DECODER_CONV_L1_BIAS: &str = "synthesis_transform/layer_1/bias";
+const JOHNSTON_DECODER_CONV_L1_IGDN_BETA: &str = "synthesis_transform/layer_1/igdn_1/reparam_beta";
+const JOHNSTON_DECODER_CONV_L1_IGDN_GAMMA: &str =
+    "synthesis_transform/layer_1/igdn_1/reparam_gamma";
+const JOHNSTON_DECODER_CONV_L2_KERNEL: &str = "synthesis_transform/layer_2/kernel_rdft";
+const JOHNSTON_DECODER_CONV_L2_BIAS: &str = "synthesis_transform/layer_2/bias";
+const JOHNSTON_DECODER_CONV_L2_IGDN_BETA: &str = "synthesis_transform/layer_2/igdn_2/reparam_beta";
+const JOHNSTON_DECODER_CONV_L2_IGDN_GAMMA: &str =
+    "synthesis_transform/layer_2/igdn_2/reparam_gamma";
+const JOHNSTON_DECODER_CONV_L3_KERNEL: &str = "synthesis_transform/layer_3/kernel_rdft";
+const JOHNSTON_DECODER_CONV_L3_BIAS: &str = "synthesis_transform/layer_3/bias";
+
+const JOHNSTON_HYPERDECODER_CONV_L0_KERNEL: &str =
+    "mb_t2018hyper_synthesis_transform/layer_0/kernel_rdft";
+const JOHNSTON_HYPERDECODER_CONV_L0_BIAS: &str = "mb_t2018hyper_synthesis_transform/layer_0/bias";
+const JOHNSTON_HYPERDECODER_CONV_L1_KERNEL: &str =
+    "mb_t2018hyper_synthesis_transform/layer_1/kernel_rdft";
+const JOHNSTON_HYPERDECODER_CONV_L1_BIAS: &str = "mb_t2018hyper_synthesis_transform/layer_1/bias";
+const JOHNSTON_HYPERDECODER_CONV_L2_KERNEL: &str =
+    "mb_t2018hyper_synthesis_transform/layer_2/kernel_rdft";
+const JOHNSTON_HYPERDECODER_CONV_L2_BIAS: &str = "mb_t2018hyper_synthesis_transform/layer_2/bias";
+
 use crate::{
     activation_functions::{leaky_relu, GdnLayer, IgdnLayer},
     convolutions::ConvolutionLayer,
+    weight_loader::WeightLoader,
     ImagePrecision,
 };
 use ndarray::*;
@@ -55,8 +108,8 @@ impl CodingModel for MinnenEncoder {
     }
 }
 
-impl MinnenEncoder {
-    pub fn new() -> MinnenEncoder {
+impl<'a> MinnenEncoder {
+    pub fn new(loader: &mut impl WeightLoader) -> MinnenEncoder {
         todo!()
     }
 }
@@ -118,7 +171,7 @@ impl CodingModel for JohnstonDecoder {
 }
 
 impl JohnstonDecoder {
-    pub fn new() -> JohnstonDecoder {
+    pub fn new(loader: &mut impl WeightLoader) -> JohnstonDecoder {
         todo!()
     }
 }
