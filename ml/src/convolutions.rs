@@ -1,6 +1,12 @@
 use crate::{models::InternalDataRepresentation, ImagePrecision, WeightPrecision};
 use ndarray::*;
 
+#[derive(PartialEq)]
+pub enum Padding {
+    Same,
+    Valid,
+}
+
 /// Rust implementation of a convolutional layer.
 /// The weight matrix shall have dimension (in that order)
 /// input channels x output channels x kernel width x kernel height
@@ -11,7 +17,7 @@ pub struct ConvolutionLayer {
     kernel_width: usize,
     kernel_height: usize,
     stride: usize,
-    padding: usize,
+    padding: Padding,
     num_input_channels: u16,
     num_output_channels: u16,
 }
@@ -20,7 +26,7 @@ impl ConvolutionLayer {
     pub fn new(
         weights: Array4<WeightPrecision>,
         stride: usize,
-        padding: usize,
+        padding: Padding,
     ) -> ConvolutionLayer {
         let num_input_channels = weights.len_of(Axis(0)) as u16; // Filters
         let num_output_channels = weights.len_of(Axis(1)) as u16; // Channels
@@ -46,11 +52,7 @@ impl ConvolutionLayer {
     /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
     pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
         // PADDING: we need to call a function get_padding_size() ; this function should take in (H, W, padding, stride, kernel_size) and give back int: P_h and P_w
-<<<<<<< HEAD
         // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here
-=======
-        // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here 
->>>>>>> 15a4e85ab5d41c7aacc36fbefc3cf50b02f4542a
         // conv_2d should be modified to accept two integers for the padding
         let output = ConvolutionLayer::conv_2d(self, &self.kernel, &image.view());
         output
@@ -65,8 +67,9 @@ impl ConvolutionLayer {
         V: AsArray<'a, ImagePrecision, Ix2>,
         T: AsArray<'a, ImagePrecision, Ix2>,
     {
-        if self.padding > 0 {
-            unimplemented!("Padding bigger than 0 is not supported yet.")
+        // TODO: Implement valid padding
+        if self.padding == Padding::Same {
+            unimplemented!("Padding == Same is not implemented for naive conv2d");
         }
         let im2d_arr: ArrayView2<f32> = im2d.into();
         let kernel_weights_arr: ArrayView2<f32> = kernel_weights.into();
@@ -177,8 +180,9 @@ impl ConvolutionLayer {
         // HH = self.kernel_height, WW = self.kernel_width
         // calculate output sizes
         // new_h = (H+2*P-HH) / S+1
-        let new_im_width = (im_width + 2 * self.padding - self.kernel_width) / self.stride + 1;
-        let new_im_height = (im_height + 2 * self.padding - self.kernel_height) / self.stride + 1;
+        // TODO: Add padding back in (Same Padding, we can leave valid padding unimplemented)
+        let new_im_width = (im_width - self.kernel_width) / self.stride + 1;
+        let new_im_height = (im_height - self.kernel_height) / self.stride + 1;
 
         // Alocate memory for output (?)
         let filter = self.num_input_channels as usize;
@@ -188,8 +192,6 @@ impl ConvolutionLayer {
         let filter_col = kernel_weights_arr
             .into_shape((filter, self.kernel_height * self.kernel_width * c_out))
             .unwrap(); // weights.reshape(F, HH*WW*C)
-
-        // prepare bias: TO DO
 
         // convolve
         // PADDING: here, instead of im2d_arr we need to pass an image which already has zero padding; so the todo() will be above this
@@ -217,7 +219,7 @@ mod tests {
     fn test_naive_2d_conv() {
         let test_img = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
         let kernel = Array::from_shape_vec((1, 1, 2, 2), vec![0., 1., -1., 0.]).unwrap();
-        let conv_layer = ConvolutionLayer::new(kernel, 1, 0);
+        let conv_layer = ConvolutionLayer::new(kernel, 1, Padding::Valid);
 
         let convolved_image = conv_layer.conv_2d_naive(
             &(conv_layer.kernel.slice(s![0, 0, .., ..])),
@@ -231,7 +233,7 @@ mod tests {
     fn test_naive_2d_conv_with_stride() {
         let test_img: Array2<ImagePrecision> = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
         let kernel = Array::from_shape_vec((1, 1, 1, 1), vec![1.]).unwrap();
-        let conv_layer = ConvolutionLayer::new(kernel, 2, 0);
+        let conv_layer = ConvolutionLayer::new(kernel, 2, Padding::Valid);
 
         let convolved_image =
             conv_layer.conv_2d_naive(&(conv_layer.kernel.slice(s![0, 0, .., ..])), &test_img);
@@ -266,7 +268,7 @@ mod tests {
             vec![1., 2., 1., 2., 1., 2., 1., 2., 1., 2., 1., 2.],
         );
         let testker = kernel.unwrap();
-        let conv_layer = ConvolutionLayer::new(testker, 1, 0);
+        let conv_layer = ConvolutionLayer::new(testker, 1, Padding::Valid);
         let output = arr3(&[[
             [57.0, 75.0, 93.0],
             [111.0, 129.0, 141.0],
