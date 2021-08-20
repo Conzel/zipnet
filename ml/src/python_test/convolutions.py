@@ -1,107 +1,275 @@
-import numpy as np
+use crate::{models::InternalDataRepresentation, ImagePrecision, WeightPrecision};
+use ndarray::*;
 
-def col2im(mul,h_prime,w_prime,C):
-    """
-      Args:
-      mul: (h_prime*w_prime*w,F) matrix, each col should be reshaped to C*h_prime*w_prime when C>0, or h_prime*w_prime when C = 0
-      h_prime: reshaped filter height
-      w_prime: reshaped filter width
-      C: reshaped filter channel, if 0, reshape the filter to 2D, Otherwise reshape it to 3D
-    Returns:
-      if C == 0: (F,h_prime,w_prime) matrix
-      Otherwise: (F,C,h_prime,w_prime) matrix
-    """
-    F = mul.shape[1]
-    if(C == 1):
-        out = np.zeros([F,h_prime,w_prime])
-        for i in range(F):
-            col = mul[:,i]
-            out[i,:,:] = np.reshape(col,(h_prime,w_prime))
-    else:
-        out = np.zeros([F,C,h_prime,w_prime])
-        for i in range(F):
-            col = mul[:,i]
-            out[i,:,:] = np.reshape(col,(C,h_prime,w_prime))
+/// Rust implementation of a convolutional layer.
+/// The weight matrix shall have dimension (in that order)
+/// input channels x output channels x kernel width x kernel height
+/// (to comply with the order in which pytorch weights are saved).
+pub struct ConvolutionLayer {
+    /// Weight matrix of the kernel
+    kernel: Array4<WeightPrecision>,
+    kernel_width: usize,
+    kernel_height: usize,
+    stride: usize,
+    padding: usize,
+    num_input_channels: u16,
+    num_output_channels: u16,
+}
 
-    return out
+impl ConvolutionLayer {
+    pub fn new(
+        weights: Array4<WeightPrecision>,
+        stride: usize,
+        padding: usize,
+    ) -> ConvolutionLayer {
+        let num_input_channels = weights.len_of(Axis(0)) as u16; // Filters
+        let num_output_channels = weights.len_of(Axis(1)) as u16; // Channels
+        let kernel_width = weights.len_of(Axis(2)); // Width
+        let kernel_height = weights.len_of(Axis(3)); // Height
 
-def im2col(x,hh,ww,stride):
+        debug_assert!(stride > 0, "Stride of 0 passed");
 
-    """
-    Args:
-      x: image matrix to be translated into columns, (C,H,W)
-      hh: filter height
-      ww: filter width
-      stride: stride
-    Returns:
-      col: (new_h*new_w,hh*ww*C) matrix, each column is a cube that will convolve with a filter
-            new_h = (H-hh) // stride + 1, new_w = (W-ww) // stride + 1
-    """
+        ConvolutionLayer {
+            kernel: weights,
+            kernel_width,
+            kernel_height,
+            stride,
+            num_input_channels,
+            num_output_channels,
+            padding,
+        }
+    }
 
-    c,h,w = x.shape
-    new_h = (h-hh) // stride + 1
-    new_w = (w-ww) // stride + 1
-    col = np.zeros([new_h*new_w,c*hh*ww])
-    print(new_h, new_w, c, hh, ww)
-    # print("img matrix:", x)
-    for i in range(new_h):
-       for j in range(new_w):
-           patch = x[...,i*stride:i*stride+hh,j*stride:j*stride+ww]
-           print(patch.shape)
-           col[i*new_w+j,:] = np.reshape(patch,-1)
-    return col
+    /// Performs a convolution on the given image data using this layers parameters.
+    /// We always convolve on flattened images and expect the input array in im2col
+    /// style format (read more here).
+    /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
+    pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
+        // PADDING: we need to call a function get_padding_size() ; this function should take in (H, W, padding, stride, kernel_size) and give back int: P_h and P_w
+        // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here 
+        // conv_2d should be modified to accept two integers for the padding
+        let output = ConvolutionLayer::conv_2d(self, &self.kernel, &image.view());
+    output
+    }
 
-def conv_forward_naive(x, w, b, conv_param):
-  """
-  A naive implementation of the forward pass for a convolutional layer.
+    /// Naive implementation of 2d convolution for reference implementations
+    fn conv_2d_naive<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
+    where
+        // This trait bound ensures that kernel and im2d can be passed as owned array or view.
+        // AsArray just ensures that im2d can be converted to an array view via ".into()".
+        // Read more here: https://docs.rs/ndarray/0.12.1/ndarray/trait.AsArray.html
+        V: AsArray<'a, ImagePrecision, Ix2>,
+        T: AsArray<'a, ImagePrecision, Ix2>,
+    {
+        if self.padding > 0 {
+            unimplemented!("Padding bigger than 0 is not supported yet.")
+        }
+        let im2d_arr: ArrayView2<f32> = im2d.into();
+        let kernel_weights_arr: ArrayView2<f32> = kernel_weights.into();
 
-  The input consists of N data points, each with C channels, height H and width
-  W. We convolve each input with F different filters, where each filter spans
-  all C channels and has height HH and width HH.
+        let im_width = im2d_arr.len_of(Axis(0));
+        let im_height = im2d_arr.len_of(Axis(1));
 
-  Input:
-  - x: Input data of shape (N, C, H, W)
-  - w: Filter weights of shape (F, C, HH, WW)
-  - b: Biases, of shape (F,)
-  - conv_param: A dictionary with the following keys:
-    - 'stride': The number of pixels between adjacent receptive fields in the
-      horizontal and vertical directions.
-    - 'pad': The number of pixels that will be used to zero-pad the input.
+        let new_im_width = (im_width - self.kernel_width) / self.stride + 1;
+        let new_im_height = (im_height - self.kernel_height) / self.stride + 1;
 
-  Returns a tuple of:
-  - out: Output data, of shape (N, F, H', W') where H' and W' are given by
-    H' = 1 + (H + 2 * pad - HH) / stride
-    W' = 1 + (W + 2 * pad - WW) / stride
-  - cache: (x, w, b, conv_param)
-  """
-  out = None
-  pad_num = conv_param['pad']
-  stride = conv_param['stride']
-  N,C,H,W = x.shape
-  F,C,HH,WW = w.shape
-  H_prime = (H+2*pad_num-HH) // stride + 1
-  W_prime = (W+2*pad_num-WW) // stride + 1
-  out = np.zeros([N,F,H_prime,W_prime])
-  #im2col
-  for im_num in range(N):
-      im = x[im_num,:,:,:]
-      im_pad = np.pad(im,((0,0),(pad_num,pad_num),(pad_num,pad_num)),'constant')
-      im_col = im2col(im_pad,HH,WW,stride)
-      filter_col = np.reshape(w,(F,-1))
-      mul = im_col.dot(filter_col.T) + b
-      print(mul)
-      out[im_num,:,:,:] = col2im(mul,H_prime,W_prime,1)
-  cache = (x, w, b, conv_param)
-  return out, cache
+        let mut ret = Array::zeros((new_im_width, new_im_height));
 
+        for i in 0..new_im_width {
+            let i_with_stride = i * self.stride;
+            for j in 0..new_im_height {
+                let j_with_stride = j * self.stride;
+                let imslice = im2d_arr.slice(s![
+                    i_with_stride..(i_with_stride + self.kernel_width),
+                    j_with_stride..(j_with_stride + self.kernel_height)
+                ]);
 
-input = np.array([[[[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]]]]) # N, C, H, W
-weights = np.array([[[[1.0, 2.0],[1.0, 2.0]],[[1.0, 2.0],[1.0, 2.0]], [[1.0, 2.0],[1.0, 2.0]]]]) # F, C, HH, WW
-print(input.shape)
-print(weights.shape)
-bias = np.zeros((1, 1))# null
-conv_param = {"pad":0,"stride":1}
+                let conv_entry = (&imslice * &kernel_weights_arr).sum();
+                ret[[i, j]] = conv_entry;
+            }
+        }
+        ret
+    }
 
-output, _ = conv_forward_naive(input, weights, bias, conv_param)
+    fn im2col_ref<'a, T>(
+        &self,
+        im_arr: T,
+        ker_height: usize,
+        ker_width: usize,
+        im_height_in: usize,
+        im_width_in: usize,
+        im_channel: usize,
+    ) -> Array2<ImagePrecision>
+    where
+        T: AsArray<'a, ImagePrecision, Ix3>,
+    {
+        let im2d_arr: ArrayView3<f32> = im_arr.into();
+        let new_h = (im_height_in - ker_height) / self.stride + 1;
+        let new_w = (im_width_in - ker_width) / self.stride + 1;
+        let mut img_matrix: Array2<ImagePrecision> =
+            Array::zeros((new_h * new_w, im_channel * ker_height * ker_width)); // shape: (X, Y)
+        let mut cont = 0 as usize;
+        for i in 1..new_h+1 {
+            for j in 1..new_w+1 {
+                let patch = im2d_arr.slice(s![
+                    ..,
+                    i-1 * self.stride..(i-1 * self.stride + ker_height),
+                    j-1 * self.stride..(j-1 * self.stride + ker_width),
+                ]);
+                let patchrow_unwrap: Array1<f32> = Array::from_iter(patch.map(|a| *a));
 
-print("output:", output)
+                // append it to matrix
+                img_matrix.row_mut(cont).assign(&patchrow_unwrap);
+                cont += 1;
+            }
+        }
+        img_matrix
+    }
+
+    fn col2im_ref<'a, T>(
+        &self,
+        mat: T,
+        height_prime: usize,
+        width_prime: usize,
+        C: usize,
+    ) -> Array3<ImagePrecision>
+    where
+        T: AsArray<'a, ImagePrecision, Ix2>,
+    {
+        let img_vec: ArrayView2<f32> = mat.into();
+        let filter_axis = img_vec.len_of(Axis(1));
+        // let mut img_mat: Array3<ImagePrecision> = 
+        // Array::zeros((filter_axis, height_prime, width_prime)); ALTERNATE 
+        let mut img_mat: Array3<ImagePrecision> = 
+        Array::zeros((0, height_prime, width_prime));
+        if C == 1 { 
+            for i in 0..filter_axis {
+                let col = img_vec.slice(s![.., i]);
+                let col_reshape = col.into_shape((height_prime, width_prime)).unwrap();
+                // img_mat.assign(&col_reshape);  ALTERNATE
+                img_mat.push(Axis(0), col_reshape).unwrap(); 
+            }
+        } 
+    img_mat
+
+    }
+
+    fn conv_2d<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array3<ImagePrecision>
+    where
+        // This trait bound ensures that kernel and im2d can be passed as owned array or view.
+        // AsArray just ensures that im2d can be converted to an array view via ".into()".
+        // Read more here: https://docs.rs/ndarray/0.12.1/ndarray/trait.AsArray.html
+
+        // Weights.shape = [F, C, WW, HH]
+        V: AsArray<'a, ImagePrecision, Ix3>,
+        T: AsArray<'a, ImagePrecision, Ix4>,
+    {
+        let im2d_arr: ArrayView3<f32> = im2d.into();
+        let kernel_weights_arr: ArrayView4<f32> = kernel_weights.into();
+
+        // C X H X W
+        let im_width = im2d_arr.len_of(Axis(2));
+        let im_height = im2d_arr.len_of(Axis(1));
+        let im_channel = im2d_arr.len_of(Axis(0));
+
+        // HH = self.kernel_height, WW = self.kernel_width
+        // calculate output sizes
+        // new_h = (H+2*P-HH) / S+1
+        let new_im_width = (im_width + 2 * self.padding - self.kernel_width) / self.stride + 1;
+        let new_im_height = (im_height + 2 * self.padding - self.kernel_height) / self.stride + 1;
+
+        // Alocate memory for output (?)
+        let filter = self.num_input_channels as usize;
+
+        // filter weights
+        let c_out = self.num_output_channels as usize;
+        let filter_col = kernel_weights_arr
+            .into_shape((filter, self.kernel_height * self.kernel_width * c_out))
+            .unwrap(); // weights.reshape(F, HH*WW*C)
+
+        // prepare bias: TO DO
+
+        // convolve
+        // PADDING: here, instead of im2d_arr we need to pass an image which already has zero padding; so the todo() will be above this
+        let im_col = ConvolutionLayer::im2col_ref(
+            self,
+            im2d_arr,
+            self.kernel_height,
+            self.kernel_width,
+            im_height,
+            im_width,
+            im_channel,
+        );
+        let filter_transpose = filter_col.t(); // SHAPE IS (1, N)
+        let mul = im_col.dot(&filter_transpose); // + bias_m
+        let activations = ConvolutionLayer::col2im_ref(self, &mul, new_im_height, new_im_width, 1); // filter is set to 1 (?)
+        activations
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_naive_2d_conv() {
+        let test_img = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
+        let kernel = Array::from_shape_vec((1, 1, 2, 2), vec![0., 1., -1., 0.]).unwrap();
+        let conv_layer = ConvolutionLayer::new(kernel, 1, 0);
+
+        let convolved_image = conv_layer.conv_2d_naive(
+            &(conv_layer.kernel.slice(s![0, 0, .., ..])),
+            &test_img.view(),
+        );
+
+        assert_eq!(convolved_image, array![[1., 0.], [1., 0.]]);
+    }
+
+    #[test]
+    fn test_naive_2d_conv_with_stride() {
+        let test_img: Array2<ImagePrecision> = array![[0., 1., 0.], [0., 0., 0.], [-1., 0., 0.]];
+        let kernel = Array::from_shape_vec((1, 1, 1, 1), vec![1.]).unwrap();
+        let conv_layer = ConvolutionLayer::new(kernel, 2, 0);
+
+        let convolved_image =
+            conv_layer.conv_2d_naive(&(conv_layer.kernel.slice(s![0, 0, .., ..])), &test_img);
+
+        assert_eq!(convolved_image, array![[0., 0.], [-1., 0.]]);
+    }
+
+    #[test]
+    fn test_2d_conv() {
+        let test_img = array![
+            [
+                [1.0, 2.0, 3.0, 4.0],
+                [4.0, 5.0, 6.0, 7.0],
+                [7.0, 8.0, 9.0, 9.0],
+                [7.0, 8.0, 9.0, 9.0]
+            ],
+            [
+                [1.0, 2.0, 3.0, 4.0],
+                [4.0, 5.0, 6.0, 7.0],
+                [7.0, 8.0, 9.0, 9.0],
+                [7.0, 8.0, 9.0, 9.0]
+            ],
+            [
+                [1.0, 2.0, 3.0, 4.0],
+                [4.0, 5.0, 6.0, 7.0],
+                [7.0, 8.0, 9.0, 9.0],
+                [7.0, 8.0, 9.0, 9.0]
+            ]
+        ];
+        let kernel = Array::from_shape_vec(
+            (1, 3, 2, 2),
+            vec![1., 2., 1., 2., 1., 2., 1., 2., 1., 2., 1., 2.],
+        );
+        let testker = kernel.unwrap();
+        let conv_layer = ConvolutionLayer::new(testker, 1, 0);
+        let output = arr3(&[[[ 57.0, 75.0,  93.0], [111.0, 129.0, 141.0], [138.0, 156.0, 162.0]]]);
+        let output_test = conv_layer.convolve(&test_img);
+        // let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
+        // assert_eq!(convolved_image, output);
+        
+        assert_eq!(output_test, output)
+    }
+}
