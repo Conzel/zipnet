@@ -16,6 +16,10 @@ class RandomArrayTest:
         assert layer_name == "ConvolutionLayer" or layer_name == "TransposedConvolutionLayer", "Layer name unknown"
         self.test_name = test_name
         self.layer_name = layer_name
+        if self.layer_name == "ConvolutionLayer":
+            self.function_name = "convolve"
+        elif self.layer_name == "TransposedConvolutionLayer":
+            raise ValueError("Transposed conv not yet implemented")
         self.random_test_objects = random_test_objects
 
 class RandomArrayTestObject:
@@ -30,16 +34,27 @@ class RandomArrayTestObject:
         """
         self.input_arr = numpy_array_to_rust(input_arr)
         self.output_arr = numpy_array_to_rust(output_arr)
-        self.kernel = numpy_array_to_rust(kernel)
+        self.kernel = numpy_array_to_rust(kernel, shape_vec=True)
         self.stride = stride
         self.padding = padding
 
-def numpy_array_to_rust(x):
+def numpy_array_to_rust(x, shape_vec=False):
     """
         Outputs a numpy array as a Rust ndarray.
+        If shape_vec is set to true, outputs 
+        the array creationg through the shape_vec Rust function.
+        The Rust array macro seems broken for 4-D arrays, so this is a 
+        workaround.
     """
-    array_repr = f"{x}".replace("\n", ",\n\t\t")
-    return f"array!{array_repr}"
+    if shape_vec:
+        x_shape = x.shape
+        x = x.flatten()
+    # removes leading array and closing paren tokens
+    array_repr = f"{repr(x)}"[6:][:-1].replace("\n", "\n\t\t")
+    if shape_vec:
+        return f"Array::from_shape_vec({x_shape}, vec!{array_repr}).unwrap()"
+    else:
+        return f"array!{array_repr}"
 
 def conv2d_random_array_test(num_arrays_per_case=3): 
     """Returns a Test case that can be rendered with the 
@@ -65,6 +80,23 @@ def conv2d_random_array_test(num_arrays_per_case=3):
             ker_tf = tf.constant(ker, dtype=tf.float64)
             out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[1,1,1,1], padding="VALID")
             out = np.squeeze(out_tf.numpy(), axis=0)
+
+            # reordering the images and weights
+            #
+            # For weights:
+            #   TF ordering: 
+            #     kheight x kwidth x in x out
+            #   our ordering:
+            #     in x out x kwidth x kheight
+            #
+            # For images:
+            #   TF ordering: 
+            #     height x width x channels
+            #   our ordering:
+            #     channels x height x width
+            im = np.moveaxis(im, [0,1,2], [1,2,0])
+            ker = np.moveaxis(ker, [0,1,2,3], [3,2,0,1])
+            out = np.moveaxis(out, [0,1,2], [1,2,0])
 
             test_obj = RandomArrayTestObject(im, ker, out)
             objects.append(test_obj)
