@@ -27,23 +27,29 @@ const MINNEN_HYPERENCODER_CONV_L2_KERNEL: &str = "hyper_analysis_transform/layer
 const JOHNSTON_DECODER_CONV_L0_KERNEL: &str = "synthesis_transform/layer_0/kernel_rdft";
 const JOHNSTON_DECODER_CONV_L0_BIAS: &str = "synthesis_transform/layer_0/bias";
 const JOHNSTON_DECODER_CONV_L0_IGDN_BETA: &str = "synthesis_transform/layer_0/igdn_0/reparam_beta";
-const JOHNSTON_DECODER_CONV_L0_IGDN_GAMMA: &str = "synthesis_transform/layer_0/igdn_0/reparam_gamma";
+const JOHNSTON_DECODER_CONV_L0_IGDN_GAMMA: &str =
+    "synthesis_transform/layer_0/igdn_0/reparam_gamma";
 const JOHNSTON_DECODER_CONV_L1_KERNEL: &str = "synthesis_transform/layer_1/kernel_rdft";
 const JOHNSTON_DECODER_CONV_L1_BIAS: &str = "synthesis_transform/layer_1/bias";
 const JOHNSTON_DECODER_CONV_L1_IGDN_BETA: &str = "synthesis_transform/layer_1/igdn_1/reparam_beta";
-const JOHNSTON_DECODER_CONV_L1_IGDN_GAMMA: &str = "synthesis_transform/layer_1/igdn_1/reparam_gamma";
+const JOHNSTON_DECODER_CONV_L1_IGDN_GAMMA: &str =
+    "synthesis_transform/layer_1/igdn_1/reparam_gamma";
 const JOHNSTON_DECODER_CONV_L2_KERNEL: &str = "synthesis_transform/layer_2/kernel_rdft";
 const JOHNSTON_DECODER_CONV_L2_BIAS: &str = "synthesis_transform/layer_2/bias";
 const JOHNSTON_DECODER_CONV_L2_IGDN_BETA: &str = "synthesis_transform/layer_2/igdn_2/reparam_beta";
-const JOHNSTON_DECODER_CONV_L2_IGDN_GAMMA: &str = "synthesis_transform/layer_2/igdn_2/reparam_gamma";
+const JOHNSTON_DECODER_CONV_L2_IGDN_GAMMA: &str =
+    "synthesis_transform/layer_2/igdn_2/reparam_gamma";
 const JOHNSTON_DECODER_CONV_L3_KERNEL: &str = "synthesis_transform/layer_3/kernel_rdft";
 const JOHNSTON_DECODER_CONV_L3_BIAS: &str = "synthesis_transform/layer_3/bias";
 
-const JOHNSTON_HYPERDECODER_CONV_L0_KERNEL: &str = "mb_t2018hyper_synthesis_transform/layer_0/kernel_rdft";
+const JOHNSTON_HYPERDECODER_CONV_L0_KERNEL: &str =
+    "mb_t2018hyper_synthesis_transform/layer_0/kernel_rdft";
 const JOHNSTON_HYPERDECODER_CONV_L0_BIAS: &str = "mb_t2018hyper_synthesis_transform/layer_0/bias";
-const JOHNSTON_HYPERDECODER_CONV_L1_KERNEL: &str = "mb_t2018hyper_synthesis_transform/layer_1/kernel_rdft";
+const JOHNSTON_HYPERDECODER_CONV_L1_KERNEL: &str =
+    "mb_t2018hyper_synthesis_transform/layer_1/kernel_rdft";
 const JOHNSTON_HYPERDECODER_CONV_L1_BIAS: &str = "mb_t2018hyper_synthesis_transform/layer_1/bias";
-const JOHNSTON_HYPERDECODER_CONV_L2_KERNEL: &str = "mb_t2018hyper_synthesis_transform/layer_2/kernel_rdft";
+const JOHNSTON_HYPERDECODER_CONV_L2_KERNEL: &str =
+    "mb_t2018hyper_synthesis_transform/layer_2/kernel_rdft";
 const JOHNSTON_HYPERDECODER_CONV_L2_BIAS: &str = "mb_t2018hyper_synthesis_transform/layer_2/bias";
 
 use crate::{
@@ -104,16 +110,7 @@ impl CodingModel for MinnenEncoder {
 
 impl<'a> MinnenEncoder {
     pub fn new(loader: &mut impl WeightLoader) -> MinnenEncoder {
-        // new(kernel, stride, padding)
-        // all four layers have a stride of 2 & input kernel of 5 x 5
-        let l0_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L0_KERNEL, (5, 5));
-        let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, 0);
-        let l1_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L1_KERNEL, (5, 5));
-        let layer_1 = ConvolutionLayer::new(l1_kernel_weights.unwrap(), 2, 0);
-        let l2_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L2_KERNEL, (5, 5));
-        let layer_2 = ConvolutionLayer::new(l2_kernel_weights.unwrap(), 2, 0);
-        let l3_kernel_weights = loader.get_weight(MINNEN_ENCODER_CONV_L3_KERNEL, (5, 5));
-        let layer_3 = ConvolutionLayer::new(l3_kernel_weights.unwrap(), 2, 0);
+        todo!()
     }
 }
 
@@ -139,12 +136,7 @@ impl CodingModel for MinnenHyperencoder {
 
 impl MinnenHyperencoder {
     pub fn new() -> MinnenHyperencoder {
-        let l0_kernel_weights = loader.get_weight(MINNEN_HYPERENCODER_CONV_L0_KERNEL, (3, 3));
-        let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 1, 0);
-        let l1_kernel_weights = loader.get_weight(MINNEN_HYPERENCODER_CONV_L1_KERNEL, (3, 3));
-        let layer_1 = ConvolutionLayer::new(l1_kernel_weights.unwrap(), 2, 0);
-        let l2_kernel_weights = loader.get_weight(MINNEN_HYPERENCODER_CONV_L2_KERNEL, (3, 3));
-        let layer_2 = ConvolutionLayer::new(l2_kernel_weights.unwrap(), 2, 0);
+        todo!()
     }
 }
 
@@ -180,14 +172,7 @@ impl CodingModel for JohnstonDecoder {
 
 impl JohnstonDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> JohnstonDecoder {
-        let l0_kernel_weights = loader.get_weight(JOHNSTON_DECODER_CONV_L0_KERNEL, (5, 5));
-        let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, 0);
-        let l1_kernel_weights = loader.get_weight(JOHNSTON_DECODER_CONV_L1_KERNEL, (5, 5));
-        let layer_1 = ConvolutionLayer::new(l1_kernel_weights.unwrap(), 2, 0);
-        let l2_kernel_weights = loader.get_weight(JOHNSTON_DECODER_CONV_L2_KERNEL, (5, 5));
-        let layer_2 = ConvolutionLayer::new(l2_kernel_weights.unwrap(), 2, 0);
-        let l3_kernel_weights = loader.get_weight(JOHNSTON_DECODER_CONV_L3_KERNEL, (5, 5));
-        let layer_3 = ConvolutionLayer::new(l3_kernel_weights.unwrap(), 2, 0);
+        todo!()
     }
 }
 
@@ -213,11 +198,6 @@ impl CodingModel for JohnstonHyperdecoder {
 
 impl JohnstonHyperdecoder {
     pub fn new() -> JohnstonHyperdecoder {
-        let l0_kernel_weights = loader.get_weight(JOHNSTON_HYPERDECODER_CONV_L0_KERNEL, (5, 5));
-        let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, 0);
-        let l1_kernel_weights = loader.get_weight(JOHNSTON_HYPERDECODER_CONV_L1_KERNEL, (5, 5));
-        let layer_1 = ConvolutionLayer::new(l1_kernel_weights.unwrap(), 2, 0);
-        let l2_kernel_weights = loader.get_weight(JOHNSTON_HYPERDECODER_CONV_L2_KERNEL, (3, 3));
-        let layer_2 = ConvolutionLayer::new(l2_kernel_weights.unwrap(), 1, 0);
+        todo!()
     }
 }
