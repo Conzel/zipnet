@@ -12,8 +12,8 @@ pub struct ConvolutionLayer {
     kernel_height: usize,
     stride: usize,
     padding: usize,
-    num_input_channels: u16,
-    num_output_channels: u16,
+    num_filters: u16,
+    img_channels: u16,
 }
 
 impl ConvolutionLayer {
@@ -22,8 +22,8 @@ impl ConvolutionLayer {
         stride: usize,
         padding: usize,
     ) -> ConvolutionLayer {
-        let num_input_channels = weights.len_of(Axis(0)) as u16; // Filters
-        let num_output_channels = weights.len_of(Axis(1)) as u16; // Channels
+        let num_filters = weights.len_of(Axis(0)) as u16; // Filters
+        let img_channels = weights.len_of(Axis(1)) as u16; // Channels
         let kernel_width = weights.len_of(Axis(2)); // Width
         let kernel_height = weights.len_of(Axis(3)); // Height
 
@@ -34,8 +34,8 @@ impl ConvolutionLayer {
             kernel_width,
             kernel_height,
             stride,
-            num_input_channels,
-            num_output_channels,
+            num_filters,
+            img_channels,
             padding,
         }
     }
@@ -46,11 +46,7 @@ impl ConvolutionLayer {
     /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
     pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
         // PADDING: we need to call a function get_padding_size() ; this function should take in (H, W, padding, stride, kernel_size) and give back int: P_h and P_w
-<<<<<<< HEAD
         // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here
-=======
-        // https://mmuratarat.github.io/2019-01-17/implementing-padding-schemes-of-tensorflow-in-python check formula here 
->>>>>>> 15a4e85ab5d41c7aacc36fbefc3cf50b02f4542a
         // conv_2d should be modified to accept two integers for the padding
         let output = ConvolutionLayer::conv_2d(self, &self.kernel, &image.view());
         output
@@ -181,10 +177,10 @@ impl ConvolutionLayer {
         let new_im_height = (im_height + 2 * self.padding - self.kernel_height) / self.stride + 1;
 
         // Alocate memory for output (?)
-        let filter = self.num_input_channels as usize;
+        let filter = self.num_filters as usize;
 
         // filter weights
-        let c_out = self.num_output_channels as usize;
+        let c_out = self.img_channels as usize;
         let filter_col = kernel_weights_arr
             .into_shape((filter, self.kernel_height * self.kernel_width * c_out))
             .unwrap(); // weights.reshape(F, HH*WW*C)

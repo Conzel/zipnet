@@ -78,6 +78,8 @@ def conv_forward_naive(x, w, b, conv_param):
 	W. We convolve each input with F different filters, where each filter spans
 	all C channels and has height HH and width HH.
 
+	note: C for x & w should be the same; F is the num_filters in tf, i.e number of output filters
+
 	Input:
 	- x: Input data of shape (N, C, H, W)
 	- w: Filter weights of shape (F, C, HH, WW)
@@ -96,14 +98,14 @@ def conv_forward_naive(x, w, b, conv_param):
 	out = None
 	pad_num = conv_param['pad']
 	stride = conv_param['stride']
-	N,CC,H,W = x.shape
+	N,C,H,W = x.shape
 	F,C,HH,WW = w.shape
 	pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right = get_same_padding(H, W, stride, HH, WW)
 	# H_prime = (H+2*pad_num_h-HH) // stride + 1
 	# W_prime = (W+2*pad_num_w-WW) // stride + 1
 	H_prime = int(ceil(float(H) / float(stride)))
 	W_prime = int(ceil(float(W) / float(stride)))
-	out = np.zeros([N,1,H_prime,W_prime]) #SET FILTERS AS 1
+	out = np.zeros([N,F,H_prime,W_prime]) #SET FILTERS AS 1
 	#im2col
 	for im_num in range(N):
 		im = x[im_num,:,:,:]
@@ -123,25 +125,28 @@ def conv_forward_naive(x, w, b, conv_param):
 # input = np.array([[[[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]]]]) # N, C, H, W
 # weights = np.array([[[[1.0, 2.0],[1.0, 2.0]],[[1.0, 2.0],[1.0, 2.0]], [[1.0, 2.0],[1.0, 2.0]]]]) # F, C, HH, WW
 
-# input = np.array(
-# [[[[0.17014849, 0.43056882, 0.5715329 , 0.06520256, 0.12669588],
-# [0.75015649, 0.98379819, 0.55574155, 0.04181346, 0.23677547],
-# [0.51154924, 0.02844254, 0.60484786, 0.72306337, 0.22177844],
-# [0.16487044, 0.46672951, 0.54035134, 0.69223571, 0.27845532],
-# [0.66966338, 0.41083884, 0.45831479, 0.70402897, 0.61773261]]]]
-# )
-# weights = np.array(
-# [0.92697753, 0.91485179, 0.85028299, 0.26970649, 0.55898563,
-# 0.84558665, 0.75231163, 0.90343251, 0.07658575, 0.56033562,
-# 0.33565241, 0.96145765, 0.24242379, 0.5888119 , 0.04742411,
-# 0.96925828, 0.2795916 , 0.71978642, 0.90980128, 0.37189406,
-# 0.55666793, 0.79448488, 0.44166553, 0.23985275, 0.12854726,
-# 0.75676637, 0.13313323]	
-# ).reshape(1, 3, 3, 3)
-# weights = np.random.rand(1, 5, 3, 3)
+input = np.array(
+[[[[0.17014849, 0.43056882, 0.5715329 , 0.06520256, 0.12669588],
+[0.75015649, 0.98379819, 0.55574155, 0.04181346, 0.23677547],
+[0.51154924, 0.02844254, 0.60484786, 0.72306337, 0.22177844],
+[0.16487044, 0.46672951, 0.54035134, 0.69223571, 0.27845532],
+[0.66966338, 0.41083884, 0.45831479, 0.70402897, 0.61773261]]]]
+)
 
-input = np.array([[[[3, 5, 2, 7], [4, 1, 3, 8], [6, 3, 8, 2], [9, 6, 1, 5]]]])
-weights = np.array([[[[1, 2, 1], [2, 1, 2], [1, 1, 2]]]])
+weights = np.array(
+[[[[ 0.2046923 ]],
+  [[ 0.47961783]],
+  [[ 0.28086317]],],
+ [[[ 0.31954926]],
+  [[-0.32114562]],
+  [[-0.3420902 ]]],
+ [[[-0.56219184]],
+  [[-0.26813224]],
+  [[ 0.4976151 ]]]]
+).reshape(1,1,3,3)
+
+# input = np.array([[[[3, 5, 2, 7], [4, 1, 3, 8], [6, 3, 8, 2], [9, 6, 1, 5]]]])
+# weights = np.array([[[[1, 2, 1], [2, 1, 2], [1, 1, 2]]]])
 print(input.shape)
 print(weights.shape)
 bias = np.zeros((1, 1))# null
