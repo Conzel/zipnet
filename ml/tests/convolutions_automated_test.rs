@@ -119,7 +119,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer3 = ConvolutionLayer::new(kernel3, 1, 0);
+    let conv_layer3 = ConvolutionLayer::new(kernel3, 1, Padding::Valid);
     let target_output3 = array![
         [
             [3.04491918, 2.31410617, 2.67810801],
@@ -168,7 +168,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer4 = ConvolutionLayer::new(kernel4, 1, 0);
+    let conv_layer4 = ConvolutionLayer::new(kernel4, 1, Padding::Valid);
     let target_output4 = array![[[7.1600162]], [[7.20539965]]];
     let current_output4 = conv_layer4.convolve(&test_input4);
 
@@ -201,7 +201,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer5 = ConvolutionLayer::new(kernel5, 1, 0);
+    let conv_layer5 = ConvolutionLayer::new(kernel5, 1, Padding::Valid);
     let target_output5 = array![[[7.36100675]], [[8.82961298]]];
     let current_output5 = conv_layer5.convolve(&test_input5);
 
@@ -234,7 +234,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer6 = ConvolutionLayer::new(kernel6, 1, 0);
+    let conv_layer6 = ConvolutionLayer::new(kernel6, 1, Padding::Valid);
     let target_output6 = array![[[5.47331027]], [[5.77774546]]];
     let current_output6 = conv_layer6.convolve(&test_input6);
 
@@ -308,7 +308,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer7 = ConvolutionLayer::new(kernel7, 1, 0);
+    let conv_layer7 = ConvolutionLayer::new(kernel7, 1, Padding::Valid);
     let target_output7 = array![
         [
             [
@@ -485,7 +485,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer8 = ConvolutionLayer::new(kernel8, 1, 0);
+    let conv_layer8 = ConvolutionLayer::new(kernel8, 1, Padding::Valid);
     let target_output8 = array![
         [
             [
@@ -662,7 +662,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer9 = ConvolutionLayer::new(kernel9, 1, 0);
+    let conv_layer9 = ConvolutionLayer::new(kernel9, 1, Padding::Valid);
     let target_output9 = array![
         [
             [
@@ -843,7 +843,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer10 = ConvolutionLayer::new(kernel10, 1, 0);
+    let conv_layer10 = ConvolutionLayer::new(kernel10, 1, Padding::Valid);
     let target_output10 = array![
         [
             [
@@ -974,7 +974,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer11 = ConvolutionLayer::new(kernel11, 1, 0);
+    let conv_layer11 = ConvolutionLayer::new(kernel11, 1, Padding::Valid);
     let target_output11 = array![
         [
             [
@@ -1105,7 +1105,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer12 = ConvolutionLayer::new(kernel12, 1, 0);
+    let conv_layer12 = ConvolutionLayer::new(kernel12, 1, Padding::Valid);
     let target_output12 = array![
         [
             [
@@ -1242,7 +1242,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer13 = ConvolutionLayer::new(kernel13, 1, 0);
+    let conv_layer13 = ConvolutionLayer::new(kernel13, 1, Padding::Valid);
     let target_output13 = array![
         [
             [
@@ -1489,7 +1489,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer14 = ConvolutionLayer::new(kernel14, 1, 0);
+    let conv_layer14 = ConvolutionLayer::new(kernel14, 1, Padding::Valid);
     let target_output14 = array![
         [
             [
@@ -1736,7 +1736,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer15 = ConvolutionLayer::new(kernel15, 1, 0);
+    let conv_layer15 = ConvolutionLayer::new(kernel15, 1, Padding::Valid);
     let target_output15 = array![
         [
             [
@@ -1987,7 +1987,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer16 = ConvolutionLayer::new(kernel16, 1, 0);
+    let conv_layer16 = ConvolutionLayer::new(kernel16, 1, Padding::Valid);
     let target_output16 = array![
         [
             [5.45125981, 5.54166698, 5.90192109, 6.33325154, 6.35368225, 5.48325622],
@@ -2102,7 +2102,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer17 = ConvolutionLayer::new(kernel17, 1, 0);
+    let conv_layer17 = ConvolutionLayer::new(kernel17, 1, Padding::Valid);
     let target_output17 = array![
         [
             [4.90207096, 4.64353713, 6.15417332, 5.23972967, 4.77880207, 4.25200115],
@@ -2217,7 +2217,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer18 = ConvolutionLayer::new(kernel18, 1, 0);
+    let conv_layer18 = ConvolutionLayer::new(kernel18, 1, Padding::Valid);
     let target_output18 = array![
         [
             [5.68974263, 4.67263612, 5.20769234, 4.90934195, 5.04426669, 5.38937543],
@@ -2296,7 +2296,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer19 = ConvolutionLayer::new(kernel19, 1, 0);
+    let conv_layer19 = ConvolutionLayer::new(kernel19, 1, Padding::Valid);
     let target_output19 = array![
         [
             [5.66403089, 5.48564771, 6.5403916, 6.05305521],
@@ -2361,7 +2361,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer20 = ConvolutionLayer::new(kernel20, 1, 0);
+    let conv_layer20 = ConvolutionLayer::new(kernel20, 1, Padding::Valid);
     let target_output20 = array![
         [
             [7.83251757, 8.33260758, 6.45943966, 5.94339059],
@@ -2426,7 +2426,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer21 = ConvolutionLayer::new(kernel21, 1, 0);
+    let conv_layer21 = ConvolutionLayer::new(kernel21, 1, Padding::Valid);
     let target_output21 = array![
         [
             [7.81133064, 7.71028685, 8.21225855, 8.39728176],
@@ -2505,7 +2505,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer22 = ConvolutionLayer::new(kernel22, 1, 0);
+    let conv_layer22 = ConvolutionLayer::new(kernel22, 1, Padding::Valid);
     let target_output22 = array![
         [[17.91266863, 20.74994577], [19.24522705, 17.65863752]],
         [[20.51738582, 18.64207327], [17.68614419, 17.76900578]]
@@ -2574,7 +2574,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer23 = ConvolutionLayer::new(kernel23, 1, 0);
+    let conv_layer23 = ConvolutionLayer::new(kernel23, 1, Padding::Valid);
     let target_output23 = array![
         [[19.79061354, 21.28717411], [21.47621987, 21.34644356]],
         [[17.64558934, 19.58178907], [18.72435487, 19.02098951]]
@@ -2643,7 +2643,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer24 = ConvolutionLayer::new(kernel24, 1, 0);
+    let conv_layer24 = ConvolutionLayer::new(kernel24, 1, Padding::Valid);
     let target_output24 = array![
         [[14.86341014, 13.75980764], [14.6151445, 15.22744189]],
         [[14.46060222, 16.66361035], [13.98366534, 15.98152009]]
@@ -2830,7 +2830,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer25 = ConvolutionLayer::new(kernel25, 1, 0);
+    let conv_layer25 = ConvolutionLayer::new(kernel25, 1, Padding::Valid);
     let target_output25 = array![
         [
             [
@@ -3083,7 +3083,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer26 = ConvolutionLayer::new(kernel26, 1, 0);
+    let conv_layer26 = ConvolutionLayer::new(kernel26, 1, Padding::Valid);
     let target_output26 = array![
         [
             [
@@ -3347,7 +3347,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer27 = ConvolutionLayer::new(kernel27, 1, 0);
+    let conv_layer27 = ConvolutionLayer::new(kernel27, 1, Padding::Valid);
     let target_output27 = array![
         [
             [
@@ -3658,7 +3658,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer28 = ConvolutionLayer::new(kernel28, 1, 0);
+    let conv_layer28 = ConvolutionLayer::new(kernel28, 1, Padding::Valid);
     let target_output28 = array![
         [
             [
@@ -4017,7 +4017,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer29 = ConvolutionLayer::new(kernel29, 1, 0);
+    let conv_layer29 = ConvolutionLayer::new(kernel29, 1, Padding::Valid);
     let target_output29 = array![
         [
             [
@@ -4376,7 +4376,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer30 = ConvolutionLayer::new(kernel30, 1, 0);
+    let conv_layer30 = ConvolutionLayer::new(kernel30, 1, Padding::Valid);
     let target_output30 = array![
         [
             [
@@ -4751,7 +4751,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer31 = ConvolutionLayer::new(kernel31, 1, 0);
+    let conv_layer31 = ConvolutionLayer::new(kernel31, 1, Padding::Valid);
     let target_output31 = array![
         [
             [
@@ -5074,7 +5074,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer32 = ConvolutionLayer::new(kernel32, 1, 0);
+    let conv_layer32 = ConvolutionLayer::new(kernel32, 1, Padding::Valid);
     let target_output32 = array![
         [
             [
@@ -5397,7 +5397,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer33 = ConvolutionLayer::new(kernel33, 1, 0);
+    let conv_layer33 = ConvolutionLayer::new(kernel33, 1, Padding::Valid);
     let target_output33 = array![
         [
             [
@@ -5734,7 +5734,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer34 = ConvolutionLayer::new(kernel34, 1, 0);
+    let conv_layer34 = ConvolutionLayer::new(kernel34, 1, Padding::Valid);
     let target_output34 = array![
         [
             [
@@ -6143,7 +6143,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer35 = ConvolutionLayer::new(kernel35, 1, 0);
+    let conv_layer35 = ConvolutionLayer::new(kernel35, 1, Padding::Valid);
     let target_output35 = array![
         [
             [
@@ -6552,7 +6552,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer36 = ConvolutionLayer::new(kernel36, 1, 0);
+    let conv_layer36 = ConvolutionLayer::new(kernel36, 1, Padding::Valid);
     let target_output36 = array![
         [
             [
