@@ -35,4 +35,11 @@ You can get more detailed info on why we are doing everything like that at https
 - ndarray v0.15.3 (no feature flags)
 
 ## Contributing for maintainers
+### Setting up commit hooks
+Please ensure you have git hooks installed when you push changes.
+We use [rusty-hook](https://github.com/swellaby/rusty-hook) to manage git-hooks. To install, 
+run `cargo install rusty-hook` and then `rusty-hook init` in this directory.
+We run `cargo fmt` and `cargo check` on commits.
+
+### General note
 If you make changes and push them to the main branch, they are automatically reflected on the website via a Github Action. Thus please ensure beforehand that everything works locally as you want it. Please also make sure, that the GitHub Action correctly runs and fix errors that can occur.
