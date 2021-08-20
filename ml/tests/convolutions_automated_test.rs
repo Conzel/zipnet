@@ -29,7 +29,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer1 = ConvolutionLayer::new(kernel1, 1, 0);
+    let conv_layer1 = ConvolutionLayer::new(kernel1, 1, Padding::Valid);
     let target_output1 = array![
         [
             [2.9474429, 2.44179495, 2.53109307],
@@ -74,7 +74,7 @@ fn test_py_implementation_random_arrays_conv2d() {
         ],
     )
     .unwrap();
-    let conv_layer2 = ConvolutionLayer::new(kernel2, 1, 0);
+    let conv_layer2 = ConvolutionLayer::new(kernel2, 1, Padding::Valid);
     let target_output2 = array![
         [
             [1.50500637, 1.41817504, 1.62480514],
