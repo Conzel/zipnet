@@ -52,9 +52,23 @@ const JOHNSTON_HYPERDECODER_CONV_L2_KERNEL: &str =
     "mb_t2018hyper_synthesis_transform/layer_2/kernel_rdft";
 const JOHNSTON_HYPERDECODER_CONV_L2_BIAS: &str = "mb_t2018hyper_synthesis_transform/layer_2/bias";
 
+// hyperparameters
+const NUM_ENCODER_FILTERS: usize = 192;
+
+// Refer to Johnston et al. 2019, Decoder 5
+const NUM_DECODER_FILTERS_0: usize = 79;
+const NUM_DECODER_FILTERS_1: usize = 22;
+const NUM_DECODER_FILTERS_2: usize = 43;
+const NUM_DECODER_FILTERS_3: usize = 3;
+
+// Analog: Hyperdecoder 5
+const NUM_HYPERDECODER_FILTERS_1: usize = 76;
+const NUM_HYPERDECODER_FILTERS_0: usize = 107;
+const NUM_HYPERDECODER_FILTERS_2: usize = 320;
+
 use crate::{
     activation_functions::{leaky_relu, GdnLayer, IgdnLayer},
-    convolutions::ConvolutionLayer,
+    convolutions::{ConvolutionLayer, Padding},
     weight_loader::WeightLoader,
     ImagePrecision,
 };
@@ -110,7 +124,56 @@ impl CodingModel for MinnenEncoder {
 
 impl<'a> MinnenEncoder {
     pub fn new(loader: &mut impl WeightLoader) -> MinnenEncoder {
-        todo!()
+        // hyperparameter
+        // Also called AnalysisTransform
+        // all four layers have a stride of 2 & input kernel of 5 x 5
+        let l0_kernel_weights = loader.get_weight(
+            MINNEN_ENCODER_CONV_L0_KERNEL,
+            (NUM_ENCODER_FILTERS, 3, 5, 5),
+        );
+        let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, Padding::Same);
+        let gdn_0_beta = loader.get_weight(MINNEN_ENCODER_CONV_L0_GDN_BETA, NUM_ENCODER_FILTERS);
+        let gdn_0_gamma = loader.get_weight(
+            MINNEN_ENCODER_CONV_L0_GDN_GAMMA,
+            (NUM_ENCODER_FILTERS, NUM_ENCODER_FILTERS),
+        );
+        let gdn_0 = GdnLayer::new(gdn_0_beta.unwrap(), gdn_0_gamma.unwrap());
+        let l1_kernel_weights = loader.get_weight(
+            MINNEN_ENCODER_CONV_L1_KERNEL,
+            (NUM_ENCODER_FILTERS, NUM_ENCODER_FILTERS, 5, 5),
+        );
+        let layer_1 = ConvolutionLayer::new(l1_kernel_weights.unwrap(), 2, Padding::Same);
+        let gdn_1_beta = loader.get_weight(MINNEN_ENCODER_CONV_L1_GDN_BETA, NUM_ENCODER_FILTERS);
+        let gdn_1_gamma = loader.get_weight(
+            MINNEN_ENCODER_CONV_L1_GDN_GAMMA,
+            (NUM_ENCODER_FILTERS, NUM_ENCODER_FILTERS),
+        );
+        let gdn_1 = GdnLayer::new(gdn_1_beta.unwrap(), gdn_1_gamma.unwrap());
+        let l2_kernel_weights = loader.get_weight(
+            MINNEN_ENCODER_CONV_L2_KERNEL,
+            (NUM_ENCODER_FILTERS, NUM_ENCODER_FILTERS, 5, 5),
+        );
+        let layer_2 = ConvolutionLayer::new(l2_kernel_weights.unwrap(), 2, Padding::Same);
+        let gdn_2_beta = loader.get_weight(MINNEN_ENCODER_CONV_L2_GDN_BETA, NUM_ENCODER_FILTERS);
+        let gdn_2_gamma = loader.get_weight(
+            MINNEN_ENCODER_CONV_L2_GDN_GAMMA,
+            (NUM_ENCODER_FILTERS, NUM_ENCODER_FILTERS),
+        );
+        let gdn_2 = GdnLayer::new(gdn_2_beta.unwrap(), gdn_2_gamma.unwrap());
+        let l3_kernel_weights = loader.get_weight(
+            MINNEN_ENCODER_CONV_L3_KERNEL,
+            (NUM_ENCODER_FILTERS, NUM_ENCODER_FILTERS, 5, 5),
+        );
+        let layer_3 = ConvolutionLayer::new(l3_kernel_weights.unwrap(), 2, Padding::Same);
+        MinnenEncoder {
+            layer_0,
+            gdn_0,
+            layer_1,
+            gdn_1,
+            layer_2,
+            gdn_2,
+            layer_3,
+        }
     }
 }
 
@@ -142,18 +205,18 @@ impl MinnenHyperencoder {
 
 /// Decoder / Hyperdecoder pair described in Johnston et al 2019, https://arxiv.org/abs/1912.08771
 /// Optimized Architecture for Decoder with MorphNet filter search.
-/// We are usuing Dthe Decoder 5 architecture
+/// We are usuing the Decoder 5 architecture
 pub struct JohnstonDecoder {
-    /// 5x5deconv,2,76
+    /// 5x5deconv,2,79
     layer_0: ConvolutionLayer,
     igdn_0: IgdnLayer,
-    /// 5x5deconv,2,107
+    /// 5x5deconv,2,22
     layer_1: ConvolutionLayer,
     igdn_1: IgdnLayer,
-    /// 3x3deconv,1,320
+    /// 5x5deconv,2,43
     layer_2: ConvolutionLayer,
     igdn_2: IgdnLayer,
-    /// 5x5conv,2,3
+    /// 5x5deconv,2,3
     layer_3: ConvolutionLayer,
 }
 
@@ -172,7 +235,60 @@ impl CodingModel for JohnstonDecoder {
 
 impl JohnstonDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> JohnstonDecoder {
-        todo!()
+        // also known as SynthesisTransform
+        let l0_kernel_weights = loader.get_weight(
+            JOHNSTON_DECODER_CONV_L0_KERNEL,
+            (NUM_DECODER_FILTERS_0, NUM_ENCODER_FILTERS, 5, 5),
+        );
+        let layer_0 = ConvolutionLayer::new(l0_kernel_weights.unwrap(), 2, Padding::Same);
+        let igdn_0_gamma =
+            loader.get_weight(JOHNSTON_DECODER_CONV_L0_IGDN_GAMMA, NUM_DECODER_FILTERS_0);
+        let igdn_0_beta = loader.get_weight(
+            JOHNSTON_DECODER_CONV_L0_IGDN_BETA,
+            (NUM_DECODER_FILTERS_0, NUM_DECODER_FILTERS_0),
+        );
+        let igdn_0 = IgdnLayer::new(igdn_0_gamma.unwrap(), igdn_0_beta.unwrap());
+
+        let l1_kernel_weights = loader.get_weight(
+            JOHNSTON_DECODER_CONV_L1_KERNEL,
+            (NUM_DECODER_FILTERS_1, NUM_DECODER_FILTERS_0, 5, 5),
+        );
+        let layer_1 = ConvolutionLayer::new(l1_kernel_weights.unwrap(), 2, Padding::Same);
+        let igdn_1_gamma =
+            loader.get_weight(JOHNSTON_DECODER_CONV_L1_IGDN_GAMMA, NUM_DECODER_FILTERS_1);
+        let igdn_1_beta = loader.get_weight(
+            JOHNSTON_DECODER_CONV_L1_IGDN_BETA,
+            (NUM_DECODER_FILTERS_1, NUM_DECODER_FILTERS_1),
+        );
+        let igdn_1 = IgdnLayer::new(igdn_1_gamma.unwrap(), igdn_1_beta.unwrap());
+
+        let l2_kernel_weights = loader.get_weight(
+            JOHNSTON_DECODER_CONV_L2_KERNEL,
+            (NUM_DECODER_FILTERS_2, NUM_DECODER_FILTERS_1, 5, 5),
+        );
+        let layer_2 = ConvolutionLayer::new(l2_kernel_weights.unwrap(), 2, Padding::Same);
+        let igdn_2_gamma =
+            loader.get_weight(JOHNSTON_DECODER_CONV_L2_IGDN_GAMMA, NUM_DECODER_FILTERS_2);
+        let igdn_2_beta = loader.get_weight(
+            JOHNSTON_DECODER_CONV_L2_IGDN_BETA,
+            (NUM_DECODER_FILTERS_2, NUM_DECODER_FILTERS_2),
+        );
+        let igdn_2 = IgdnLayer::new(igdn_2_gamma.unwrap(), igdn_2_beta.unwrap());
+
+        let l3_kernel_weights = loader.get_weight(
+            JOHNSTON_DECODER_CONV_L3_KERNEL,
+            (NUM_DECODER_FILTERS_3, NUM_DECODER_FILTERS_2, 5, 5),
+        );
+        let layer_3 = ConvolutionLayer::new(l3_kernel_weights.unwrap(), 2, Padding::Same);
+        JohnstonDecoder {
+            layer_0,
+            igdn_0,
+            layer_1,
+            igdn_1,
+            layer_2,
+            igdn_2,
+            layer_3,
+        }
     }
 }
 
