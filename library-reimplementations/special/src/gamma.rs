@@ -75,173 +75,177 @@ macro_rules! evaluate_polynomial(
     );
 );
 
-macro_rules! implement { ($kind:ty) => { impl Gamma for $kind {
-    fn digamma(self) -> Self {
-        let p = self;
-        if p <= 8.0 {
-            return (p + 1.0).digamma() - p.recip();
-        }
-        let q = p.recip();
-        let q2 = q * q;
-        p.ln()
-            - 0.5 * q
-            - q2 * evaluate_polynomial!(
-                q2,
-                [
-                    1.0 / 12.0,
-                    -1.0 / 120.0,
-                    1.0 / 252.0,
-                    -1.0 / 240.0,
-                    5.0 / 660.0,
-                    -691.0 / 32760.0,
-                    1.0 / 12.0,
-                    -3617.0 / 8160.0,
-                ]
-            )
-    }
+macro_rules! implement {
+    ($kind:ty) => {
+        impl Gamma for $kind {
+            fn digamma(self) -> Self {
+                let p = self;
+                if p <= 8.0 {
+                    return (p + 1.0).digamma() - p.recip();
+                }
+                let q = p.recip();
+                let q2 = q * q;
+                p.ln()
+                    - 0.5 * q
+                    - q2 * evaluate_polynomial!(
+                        q2,
+                        [
+                            1.0 / 12.0,
+                            -1.0 / 120.0,
+                            1.0 / 252.0,
+                            -1.0 / 240.0,
+                            5.0 / 660.0,
+                            -691.0 / 32760.0,
+                            1.0 / 12.0,
+                            -3617.0 / 8160.0,
+                        ]
+                    )
+            }
 
-    #[inline]
-    fn gamma(self) -> Self {
-        unsafe { math::tgamma(self as f64) as Self }
-    }
+            #[inline]
+            fn gamma(self) -> Self {
+                unsafe { math::tgamma(self as f64) as Self }
+            }
 
-    fn inc_gamma(self, p: Self) -> Self {
-        const ELIMIT: $kind = -88.0;
-        const OFLO: $kind = 1e+37;
-        const TOL: $kind = 1e-14;
-        const XBIG: $kind = 1e+08;
+            fn inc_gamma(self, p: Self) -> Self {
+                const ELIMIT: $kind = -88.0;
+                const OFLO: $kind = 1e+37;
+                const TOL: $kind = 1e-14;
+                const XBIG: $kind = 1e+08;
 
-        let x = self;
-        debug_assert!(x >= 0.0 && p > 0.0);
+                let x = self;
+                debug_assert!(x >= 0.0 && p > 0.0);
 
-        if x == 0.0 {
-            return 0.0;
-        }
+                if x == 0.0 {
+                    return 0.0;
+                }
 
-        // For `p ≥ 1000`, the original algorithm uses an approximation shown
-        // below. However, it introduces a substantial accuracy loss.
-        //
-        // ```
-        // use std::f64::consts::FRAC_1_SQRT_2;
-        //
-        // const PLIMIT: f64 = 1000.0;
-        //
-        // if PLIMIT < p {
-        //     let pn1 = 3.0 * p.sqrt() * ((x / p).powf(1.0 / 3.0) + 1.0 / (9.0 * p) - 1.0);
-        //     return 0.5 * (1.0 + (FRAC_1_SQRT_2 * pn1).error());
-        // }
-        // ```
+                // For `p ≥ 1000`, the original algorithm uses an approximation shown
+                // below. However, it introduces a substantial accuracy loss.
+                //
+                // ```
+                // use std::f64::consts::FRAC_1_SQRT_2;
+                //
+                // const PLIMIT: f64 = 1000.0;
+                //
+                // if PLIMIT < p {
+                //     let pn1 = 3.0 * p.sqrt() * ((x / p).powf(1.0 / 3.0) + 1.0 / (9.0 * p) - 1.0);
+                //     return 0.5 * (1.0 + (FRAC_1_SQRT_2 * pn1).error());
+                // }
+                // ```
 
-        if XBIG < x {
-            return 1.0;
-        }
+                if XBIG < x {
+                    return 1.0;
+                }
 
-        if x <= 1.0 || x < p {
-            let mut arg = p * x.ln() - x - (p + 1.0).ln_gamma().0;
-            let mut value = 1.0;
-            let mut a = p;
-            let mut c = 1.0;
+                if x <= 1.0 || x < p {
+                    let mut arg = p * x.ln() - x - (p + 1.0).ln_gamma().0;
+                    let mut value = 1.0;
+                    let mut a = p;
+                    let mut c = 1.0;
 
-            loop {
-                a += 1.0;
-                c *= x / a;
-                value += c;
-                if c <= TOL {
-                    break;
+                    loop {
+                        a += 1.0;
+                        c *= x / a;
+                        value += c;
+                        if c <= TOL {
+                            break;
+                        }
+                    }
+                    arg += value.ln();
+
+                    return if ELIMIT <= arg { arg.exp() } else { 0.0 };
+                }
+
+                let mut arg = p * x.ln() - x - p.ln_gamma().0;
+                let mut a = 1.0 - p;
+                let mut b = a + x + 1.0;
+                let mut c = 0.0;
+                let mut pn1 = 1.0;
+                let mut pn2 = x;
+                let mut pn3 = x + 1.0;
+                let mut pn4 = x * b;
+                let mut value = pn3 / pn4;
+
+                loop {
+                    a += 1.0;
+                    b += 2.0;
+                    c += 1.0;
+                    let an = a * c;
+                    let pn5 = b * pn3 - an * pn1;
+                    let pn6 = b * pn4 - an * pn2;
+                    if pn6 != 0.0 {
+                        let rn = pn5 / pn6;
+                        if (value - rn).abs() <= TOL.min(TOL * rn) {
+                            break;
+                        }
+                        value = rn;
+                    }
+                    pn1 = pn3;
+                    pn2 = pn4;
+                    pn3 = pn5;
+                    pn4 = pn6;
+                    if OFLO <= pn5.abs() {
+                        pn1 /= OFLO;
+                        pn2 /= OFLO;
+                        pn3 /= OFLO;
+                        pn4 /= OFLO;
+                    }
+                }
+                arg += value.ln();
+
+                if ELIMIT <= arg {
+                    1.0 - arg.exp()
+                } else {
+                    1.0
                 }
             }
-            arg += value.ln();
 
-            return if ELIMIT <= arg { arg.exp() } else { 0.0 };
-        }
+            #[inline]
+            fn ln_gamma(self) -> (Self, i32) {
+                let mut sign: i32 = 0;
+                let value = unsafe { math::lgamma(self as f64, &mut sign) as Self };
+                (value, sign)
+            }
 
-        let mut arg = p * x.ln() - x - p.ln_gamma().0;
-        let mut a = 1.0 - p;
-        let mut b = a + x + 1.0;
-        let mut c = 0.0;
-        let mut pn1 = 1.0;
-        let mut pn2 = x;
-        let mut pn3 = x + 1.0;
-        let mut pn4 = x * b;
-        let mut value = pn3 / pn4;
-
-        loop {
-            a += 1.0;
-            b += 2.0;
-            c += 1.0;
-            let an = a * c;
-            let pn5 = b * pn3 - an * pn1;
-            let pn6 = b * pn4 - an * pn2;
-            if pn6 != 0.0 {
-                let rn = pn5 / pn6;
-                if (value - rn).abs() <= TOL.min(TOL * rn) {
-                    break;
+            fn trigamma(&self) -> Self {
+                let mut x: $kind = *self;
+                if x <= 0.0 {
+                    return (<$kind>::PI * (<$kind>::PI * x).sin().recip()).powi(2)
+                        - (1.0 - x).trigamma();
                 }
-                value = rn;
+
+                let mut psi: $kind = 0.0;
+                if x < 8.0 {
+                    let n = (8.0 - x.floor()) as usize;
+                    psi += x.recip().powi(2);
+                    for v in 1..n {
+                        psi += (x + (v as $kind)).recip().powi(2);
+                    }
+                    x += n as $kind;
+                }
+                let t = x.recip();
+                let w = t * t;
+                psi += t + 0.5 * w;
+                psi + t
+                    * w
+                    * evaluate_polynomial!(
+                        w,
+                        [
+                            0.16666666666666666,
+                            -0.03333333333333333,
+                            0.023809523809523808,
+                            -0.03333333333333333,
+                            0.07575757575757576,
+                            -0.2531135531135531,
+                            1.1666666666666667,
+                            -7.092156862745098,
+                        ]
+                    )
             }
-            pn1 = pn3;
-            pn2 = pn4;
-            pn3 = pn5;
-            pn4 = pn6;
-            if OFLO <= pn5.abs() {
-                pn1 /= OFLO;
-                pn2 /= OFLO;
-                pn3 /= OFLO;
-                pn4 /= OFLO;
-            }
         }
-        arg += value.ln();
-
-        if ELIMIT <= arg {
-            1.0 - arg.exp()
-        } else {
-            1.0
-        }
-    }
-
-    #[inline]
-    fn ln_gamma(self) -> (Self, i32) {
-        let mut sign: i32 = 0;
-        let value = unsafe { math::lgamma(self as f64, &mut sign) as Self };
-        (value, sign)
-    }
-
-    fn trigamma(&self) -> Self {
-        let mut x: $kind = *self;
-        if x <= 0.0 {
-            return (<$kind>::PI * (<$kind>::PI * x).sin().recip()).powi(2)
-                - (1.0 - x).trigamma();
-        }
-
-        let mut psi: $kind = 0.0;
-        if x < 8.0 {
-            let n = (8.0 - x.floor()) as usize;
-            psi += x.recip().powi(2);
-            for v in 1..n {
-                psi += (x + (v as $kind)).recip().powi(2);
-            }
-            x += n as $kind;
-        }
-        let t = x.recip();
-        let w = t * t;
-        psi += t + 0.5 * w;
-        psi + t
-            * w
-            * evaluate_polynomial!(
-                w,
-                [
-                    0.16666666666666666,
-                    -0.03333333333333333,
-                    0.023809523809523808,
-                    -0.03333333333333333,
-                    0.07575757575757576,
-                    -0.2531135531135531,
-                    1.1666666666666667,
-                    -7.092156862745098,
-                ]
-            )
-    }
-}}}
+    };
+}
 
 implement!(f32);
 implement!(f64);

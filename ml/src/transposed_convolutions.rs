@@ -5,8 +5,9 @@
 /// - https://www.youtube.com/watch?v=ByjaPdWXKJ4&t=1019s
 /// - https://pytorch.org/docs/stable/generated/torch.nn.ConvTranspose2d.html
 use crate::{
-    convolutions::ConvolutionLayer, models::InternalDataRepresentation, ConvKernel, ImagePrecision,
-    WeightPrecision,
+    convolutions::{ConvolutionLayer, Padding},
+    models::InternalDataRepresentation,
+    ConvKernel, ImagePrecision, WeightPrecision,
 };
 use ndarray::*;
 
@@ -16,7 +17,7 @@ pub struct TransposedConvolutionLayer {
 }
 
 impl TransposedConvolutionLayer {
-    pub fn new(weights: ConvKernel, stride: usize, padding: usize) -> TransposedConvolutionLayer {
+    pub fn new(weights: ConvKernel, stride: usize, padding: Padding) -> TransposedConvolutionLayer {
         TransposedConvolutionLayer {
             convolution_layer: ConvolutionLayer::new(weights, stride, padding),
         }
