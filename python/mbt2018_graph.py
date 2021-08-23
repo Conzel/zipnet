@@ -33,12 +33,12 @@ tf.set_random_seed(seed)
 
 import tensorflow_compression as tfc
 
-Johnston = True # use optimized num_filters
+Johnston = False  # use optimized num_filters
 if Johnston:
     from nn_models import AnalysisTransform, HyperAnalysisTransform
     from nn_models import SynthesisTransform_Johnston as SynthesisTransform
     from nn_models import MBT2018HyperSynthesisTransform_Johnston as HyperSynthesisTransform
-else: # use default num_filters
+else:  # use default num_filters
     from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
     from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
 from utils import quantize_image
@@ -106,7 +106,6 @@ def _build_graph(x, num_filters, training=True):
                   :, : x_shape[1], : x_shape[2], :
                   ]  # crop reconstruction to have the same shape as input
 
-
         my_x_shape = x.shape
         my_y_shape = y.shape
         my_z_shape = z.shape
@@ -115,7 +114,6 @@ def _build_graph(x, num_filters, training=True):
 
 
 def build_train_graph(args, x):
-
     num_filters = args.num_filters
     batch_size = args.batch_size
     patch_size = args.patch_size
