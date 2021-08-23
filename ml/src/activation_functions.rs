@@ -89,6 +89,10 @@ pub struct GdnLayer {
 }
 
 impl GdnLayer {
+    pub fn new(beta: Array1<WeightPrecision>, gamma: Array2<WeightPrecision>) -> Self {
+        Self { beta, gamma }
+    }
+
     pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
         gdn(x, &self.beta, &self.gamma)
     }
@@ -100,6 +104,10 @@ pub struct IgdnLayer {
 }
 
 impl IgdnLayer {
+    pub fn new(beta: Array1<WeightPrecision>, gamma: Array2<WeightPrecision>) -> Self {
+        Self { beta, gamma }
+    }
+
     pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
         igdn(x, &self.beta, &self.gamma)
     }
