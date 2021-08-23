@@ -28,21 +28,8 @@ impl ConvolutionLayer {
         stride: usize,
         padding: Padding,
     ) -> ConvolutionLayer {
-<<<<<<< HEAD
-        // TODO: It might be necessary to swap the kernel here (rotate by 180°),
-        // as the original SignalConv2D function in the python implementation
-        // has a "corr=True" flag, which actually implements correlation instead
-        // of convolution. This would have to be checked with the automated tests
-        // and the reference implementation.
-
-        // To read more about the difference:
-        // https://towardsdatascience.com/convolution-vs-correlation-af868b6b4fb5
-        let num_input_channels = weights.len_of(Axis(0)) as u16; // Filters
-        let num_output_channels = weights.len_of(Axis(1)) as u16; // Channels
-=======
         let num_filters = weights.len_of(Axis(0)) as u16; // Filters
         let img_channels = weights.len_of(Axis(1)) as u16; // Channels
->>>>>>> feature/padding-fixed
         let kernel_width = weights.len_of(Axis(2)); // Width
         let kernel_height = weights.len_of(Axis(3)); // Height
 
