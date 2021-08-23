@@ -147,11 +147,8 @@ impl ConvolutionLayer {
         let filter_axis = img_vec.len_of(Axis(1));
         // let mut img_mat: Array3<ImagePrecision> =
         // Array::zeros((filter_axis, height_prime, width_prime)); ALTERNATE
-<<<<<<< HEAD
-        let mut img_mat: Array3<ImagePrecision> = Array::zeros((0, height_prime, width_prime));
-=======
-        let mut img_mat: Array3<ImagePrecision> = Array::zeros((filter_axis, height_prime, width_prime));
->>>>>>> feature/padding-fixed
+        let mut img_mat: Array3<ImagePrecision> =
+            Array::zeros((filter_axis, height_prime, width_prime));
         if C == 1 {
             for i in 0..filter_axis {
                 let col = img_vec.slice(s![.., i]);
@@ -272,26 +269,14 @@ mod tests {
             vec![1., 2., 1., 2., 1., 2., 1., 2., 1., 2., 1., 2.],
         );
         let testker = kernel.unwrap();
-<<<<<<< HEAD
-        let conv_layer = ConvolutionLayer::new(testker, 1, 0);
-=======
         let conv_layer = ConvolutionLayer::new(testker, 1, Padding::Valid);
->>>>>>> feature/padding-fixed
         let output = arr3(&[[
             [57.0, 75.0, 93.0],
             [111.0, 129.0, 141.0],
             [138.0, 156.0, 162.0],
         ]]);
-<<<<<<< HEAD
-        let output_test = conv_layer.convolve(&test_img);
-        // let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
-        // assert_eq!(convolved_image, output);
-
-        assert_eq!(output_test, output)
-=======
         let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
 
         assert_eq!(convolved_image, output);
->>>>>>> feature/padding-fixed
     }
 }
