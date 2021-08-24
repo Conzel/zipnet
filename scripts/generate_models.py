@@ -3,6 +3,7 @@ import jinja2
 import os
 import json
 import copy
+from ast import literal_eval
 
 
 class Activation:
@@ -67,8 +68,9 @@ class Layer:
         """
         specification: dict, containing all the layer keys
         """
-        self.kernel_height = specification["kernel_shape"][0]
-        self.kernel_width = specification["kernel_shape"][1]
+        kernel_shape = literal_eval(specification["kernel_shape"])
+        self.kernel_height = kernel_shape[0]
+        self.kernel_width = kernel_shape[1]
 
         layer_type = specification["type"]
         if layer_type == "convolution":
@@ -109,41 +111,33 @@ class Model:
         """
         self.name = specification["name"]
         self.weight_name = specification["weight_name"]
-        self.layers = list(map(Layer, add_channels(specification["layers"])))
+        layers = list(map(Layer, add_channels(specification["layers"])))
+        self.layers = layers
 
 
-# def main():
-# loading Jinja with the random array test template
-loader = jinja2.FileSystemLoader("./templates")
-env = jinja2.Environment(loader=loader)
-template = env.get_template("models_template.rs")
+def main():
+    loader = jinja2.FileSystemLoader("./templates")
+    env = jinja2.Environment(loader=loader)
+    template = env.get_template("models_template.rs")
 
-specification_file = open("specifications/model_specification.json", "r")
-specifications = json.load(specification_file)
-models = list(map(Model, specifications))
-models_rs_content = template.render(models=models, file=__file__)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    ml_src_folder = os.path.join(project_root, "ml", "src")
 
-print(models_rs_content)
+    specification_file = open("specifications/model_specification.json", "r")
+    specifications = json.load(specification_file)
+    models = list(map(Model, specifications))
+    models_rs_content = template.render(models=models, file=__file__)
 
-# project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# ml_test_folder = os.path.join(project_root, "ml", "tests")
-
-# # writing out the conv2d test cases
-# conv2d_test_case = conv2d_random_array_test()
-# conv2d_test_content = template.render(
-#     random_tests=[conv2d_test_case], file=__file__)
-
-# conv2d_output_filename = os.path.join(
-#     ml_test_folder, "convolutions_automated_test.rs")
-# with open(conv2d_output_filename, "w+") as conv2d_output_file:
-#     conv2d_output_file.write(conv2d_test_content)
-#     print(f"Successfully wrote conv2d test to {conv2d_output_filename}")
-# os.system(f"rustfmt {conv2d_output_filename}")
-# print(f"Formatted conv2d test.")
-
-# TODO:
-# writing out the transposed conv2d test cases
+    # writing out the models.rs file
+    models_rs_output_filename = os.path.join(
+        ml_src_folder, "models.rs")
+    with open(models_rs_output_filename, "w+") as models_rs_output_file:
+        models_rs_output_file.write(models_rs_content)
+        print(
+            f"Successfully wrote model specifications to {models_rs_output_filename}")
+    os.system(f"rustfmt {models_rs_output_filename}")
+    print(f"Formatted models.rs file.")
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
