@@ -3,9 +3,10 @@
 // script {{ file }}.
 // Please do not change this file by hand.
 use crate::{
-    activation_functions::{leaky_relu, GdnLayer, IgdnLayer},
+    activation_functions::{GdnLayer, IgdnLayer, ReluLayer},
     convolutions::{ConvolutionLayer, Padding},
     weight_loader::WeightLoader,
+    transposed_convolutions::TransposedConvolutionLayer,
     ImagePrecision,
 };
 use ndarray::*;
@@ -39,25 +40,32 @@ impl CodingModel for IgdnLayer {
     }
 }
 
+impl CodingModel for ReluLayer {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
+        self.activate(input)
+    }
+}
+
 {% for m in models %} 
     pub struct {{m.name}} {
         {% for l in m.layers %}
             layer_{{loop.index}}: {{l.name}},
             {% if l.activation is not none %}
-            activation_{{loop.index}}: {{l.activation.layer_name}}
+            activation_{{loop.index}}: {{l.activation.layer_name}},
             {% endif %}
         {% endfor %}
     }
 
     impl CodingModel for {{m.name}} {
         fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
-            {% for l in m.layer %}
-                let x = input;
-                let x = self.layer_{{loop.index}}.forward_pass(x);
+            let x = input.clone();
+            {% for l in m.layers %}
+                let x = self.layer_{{loop.index}}.forward_pass(&x);
                 {% if l.activation is not none %}
-                let x = self.activation_{{loop.index}}.forward_pass(x);
+                    let x = self.activation_{{loop.index}}.forward_pass(&x);
                 {% endif %}
             {% endfor %}
+            x
         }
     }
 
@@ -69,18 +77,19 @@ impl CodingModel for IgdnLayer {
                     "{{m.weight_name}}/layer_{{loop.index}}/kernel_rdft",
                     ({{l.filters}}, {{l.channels}}, {{l.kernel_width}}, {{l.kernel_height}})
                 ).unwrap();
-                let layer_{{loop.index}} = {{l.name}}::new(layer{{loop.index}}_weights, 
+                let layer_{{loop.index}} = {{l.name}}::new(layer_{{loop.index}}_weights, 
                                                            {{l.stride}}, {{l.padding}});
                 {% if l.activation is not none %}
-                {% for w in l.activation.weights %}
-                let activation_{{outer_loop.index}}_weight_{{loop.index}} 
-                    = loader.get_weight("{{m.weight_name}}/layer_{{outer_loop.index}}/{{l.activation.name}}/{{w.name}}",
-                                         {{w.shape}}).unwrap();
-                {% endfor %}
-                {% for w in l.activation.weights %}
-                let activation_{{outer_loop_index}} = {{l.activation.layer_name}}::new(
-                    activation_{{outer_loop.index}}_weight_{{loop.index}});
-                {% endfor %}
+                    {% for w in l.activation.weights %}
+                        let activation_{{outer_loop.index}}_weight_{{loop.index}} 
+                            = loader.get_weight("{{m.weight_name}}/layer_{{outer_loop.index}}/{{l.activation.name}}/{{w.name}}",
+                                                {{w.shape}}).unwrap();
+                    {% endfor %}
+                    let activation_{{outer_loop.index}} = {{l.activation.layer_name}}::new(
+                        {% for w in l.activation.weights %}
+                            activation_{{outer_loop.index}}_weight_{{loop.index}},
+                        {% endfor %}
+                    );
                 {% endif %}
             {% endfor %}
             Self {
