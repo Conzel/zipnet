@@ -113,6 +113,18 @@ impl IgdnLayer {
     }
 }
 
+pub struct ReluLayer {}
+
+impl ReluLayer {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
+        x.clone()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
