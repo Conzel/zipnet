@@ -4,8 +4,8 @@ use constriction::stream::model::{
 use constriction::stream::stack::AnsCoder;
 use constriction::stream::{model::DefaultLeakyQuantizer, stack::DefaultAnsCoder};
 use constriction::stream::{Decode, Encode};
-use ml::models::CodingModel;
-use ml::models::{JohnstonDecoder, JohnstonHyperdecoder, MinnenEncoder, MinnenHyperencoder};
+use ml::models::{CodingModel, JohnstonHyperDecoder, MinnenHyperEncoder};
+use ml::models::{JohnstonDecoder, MinnenEncoder};
 use ml::weight_loader::{NpzWeightLoader, WeightLoader};
 use ml::ImagePrecision;
 use ndarray::Array;
@@ -185,16 +185,18 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
 
         for i in 0..MINNEN_JOHNSTON_NUM_CHANNELS {
             // Encoding the hyperlatents z with p(z)
-            coder.encode_iid_symbols_reverse(
-                self.hyperlatent_prior.to_symbols(
-                    quantized_hyperlatents
-                        .slice(s![i, .., ..])
-                        .iter()
-                        .map(|x| *x)
-                        .collect(),
-                ),
-                &self.hyperlatent_prior.get_entropy_model(i),
-            );
+            coder
+                .encode_iid_symbols_reverse(
+                    self.hyperlatent_prior.to_symbols(
+                        quantized_hyperlatents
+                            .slice(s![i, .., ..])
+                            .iter()
+                            .map(|x| *x)
+                            .collect(),
+                    ),
+                    &self.hyperlatent_prior.get_entropy_model(i),
+                )
+                .unwrap();
         }
         let data = coder.into_compressed().unwrap();
 
@@ -282,8 +284,8 @@ impl MeanScaleHierarchicalEncoder {
     pub fn MinnenEncoder() -> MeanScaleHierarchicalEncoder {
         let mut loader = NpzWeightLoader::full_loader();
         let latent_encoder = Box::new(MinnenEncoder::new(&mut loader));
-        let hyperlatent_encoder = Box::new(MinnenHyperencoder::new());
-        let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
+        let hyperlatent_encoder = Box::new(MinnenHyperEncoder::new(&mut loader));
+        let hyperlatent_decoder = Box::new(JohnstonHyperDecoder::new(&mut loader));
 
         MeanScaleHierarchicalEncoder {
             latent_encoder,
