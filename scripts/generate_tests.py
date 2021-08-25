@@ -7,7 +7,8 @@ import os
 
 np.random.seed(260896)
 
-class RandomArrayTest: 
+
+class RandomArrayTest:
     def __init__(self, test_name, layer_name, random_test_objects):
         """Struct that represents one Random Array Test.
         test_name: str, name of the test case
@@ -20,8 +21,9 @@ class RandomArrayTest:
         if self.layer_name == "ConvolutionLayer":
             self.function_name = "convolve"
         elif self.layer_name == "TransposedConvolutionLayer":
-            raise ValueError("Transposed conv not yet implemented")
+            self.function_name = "transposed_convolve"
         self.random_test_objects = random_test_objects
+
 
 class RandomArrayTestObject:
     def __init__(self, input_arr, kernel, output_arr, padding, stride=1):
@@ -46,6 +48,7 @@ class RandomArrayTestObject:
         self.kernel = numpy_array_to_rust(kernel, shape_vec=True)
         self.stride = stride
 
+
 def numpy_array_to_rust(x, shape_vec=False):
     """
         Outputs a numpy array as a Rust ndarray.
@@ -64,57 +67,113 @@ def numpy_array_to_rust(x, shape_vec=False):
     else:
         return f"array!{array_repr}"
 
-def conv2d_random_array_test(num_arrays_per_case=3): 
+
+def conv2d_random_array_test(num_arrays_per_case=3):
     """Returns a Test case that can be rendered with the 
     test_py_impl_random_arrays_template.rs into a Rust test
     that tests the conv2d Rust implementation against tf.nn.conv2d.
-    
+
     num_arrays_per_case: int, number of different random arrays generated
     per (img_shape, kernel_shape) combination"""
-    img_shapes = [(5,5,1), (10,15,1), (15,10,1), (6,6,3), (10,15,3), (15,10,3)]
-    kernel_shapes = [(3,3,1,3), (5,5,1,2), (3,3,3,2), (5,5,3,2)]
+    img_shapes = [(5, 5, 1), (10, 15, 1), (15, 10, 1),
+                  (6, 6, 3), (10, 15, 3), (15, 10, 3)]
+    kernel_shapes = [(3, 3, 1, 3), (5, 5, 1, 2), (3, 3, 3, 2), (5, 5, 3, 2)]
     padding = "VALID"
 
     objects = []
     for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
         if im_shape[2] != ker_shape[2]:
-            continue # shapes are not compatible, channel size missmatch
+            continue  # shapes are not compatible, channel size missmatch
         for i in range(num_arrays_per_case):
             im = np.random.rand(*im_shape)
             ker = np.random.rand(*ker_shape)
             # axis 0 is batch dimension, which we need to remove and add back in
             im_tf = tf.constant(np.expand_dims(im, axis=0), dtype=tf.float64)
             ker_tf = tf.constant(ker, dtype=tf.float64)
-            out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[1,1,1,1], padding=padding)
+            out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
+                                  1, 1, 1, 1], padding=padding)
             out = np.squeeze(out_tf.numpy(), axis=0)
 
             # reordering the images and weights
             #
             # For weights:
-            #   TF ordering: 
+            #   TF ordering:
             #     kheight x kwidth x in x out
             #   our ordering:
             #     in x out x kwidth x kheight
             #
             # For images:
-            #   TF ordering: 
+            #   TF ordering:
             #     height x width x channels
             #   our ordering:
             #     channels x height x width
-            im = np.moveaxis(im, [0,1,2], [2,0,1])
-            ker = np.moveaxis(ker, [0,1,2,3], [2,3,1,0])
-            out = np.moveaxis(out, [0,1,2], [2,0,1])
+            im = np.moveaxis(im, [0, 1, 2], [1, 2, 0])
+            ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 1, 0])
+            out = np.moveaxis(out, [0, 1, 2], [1, 2, 0])
 
             test_obj = RandomArrayTestObject(im, ker, out, padding)
             objects.append(test_obj)
-   
+
     return RandomArrayTest("conv2d", "ConvolutionLayer", objects)
+
+
+def conv2d_transpose_random_array_test(num_arrays_per_case=3):
+    """Returns a Test case that can be rendered with the 
+    test_py_impl_random_arrays_template.rs into a Rust test
+    that tests the conv2d_transpose Rust implementation against tf.nn.conv2d.
+
+    num_arrays_per_case: int, number of different random arrays generated
+    per (img_shape, kernel_shape) combination"""
+    img_shapes = [(5, 5, 1), (10, 15, 1), (15, 10, 1),
+                  (6, 6, 3), (10, 15, 3), (15, 10, 3)]
+    kernel_shapes = [(3, 3, 3, 1), (5, 5, 2, 1), (3, 3, 2, 3), (5, 5, 2, 3)]
+    padding = "SAME"
+
+    objects = []
+    for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
+        if im_shape[2] != ker_shape[3]:
+            continue  # shapes are not compatible, channel size missmatch
+        for i in range(num_arrays_per_case):
+            im = np.random.rand(*im_shape)
+            ker = np.random.rand(*ker_shape)
+            # axis 0 is batch dimension, which we need to remove and add back in
+            im_tf = tf.constant(np.expand_dims(im, axis=0), dtype=tf.float64)
+            ker_tf = tf.constant(ker, dtype=tf.float64)
+            output_shape = (1, im_shape[0], im_shape[1], ker_shape[2])
+            # conv2d transpose expected filters as [height, width, out, in]
+            # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
+            out_tf = tf.nn.conv2d_transpose(
+                im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
+            out = np.squeeze(out_tf.numpy(), axis=0)
+
+            # reordering the images and weights
+            # ! This is different than conv2d !
+            #
+            # For weights:
+            #   TF ordering:
+            #     kheight x kwidth x out x in
+            #   our ordering:
+            #     out x in x kwidth x kheight
+            #
+            # For images:
+            #   TF ordering:
+            #     height x width x channels
+            #   our ordering:
+            #     channels x height x width
+            im = np.moveaxis(im, [0, 1, 2], [1, 2, 0])
+            ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 0, 1])
+            out = np.moveaxis(out, [0, 1, 2], [1, 2, 0])
+
+            test_obj = RandomArrayTestObject(im, ker, out, padding)
+            objects.append(test_obj)
+
+    return RandomArrayTest("conv2d_transpose", "TransposedConvolutionLayer", objects)
 
 
 def main():
     # Tensorflow conv2d inputs are given as
     # - batch_shape + [in_height, in_width, in_channels]
-    # and weights as 
+    # and weights as
     # - [filter_height * filter_width * in_channels, output_channels]
     # See also: https://www.tensorflow.org/api_docs/python/tf/nn/conv2d
     # analog for conv2d_transpose:
@@ -130,18 +189,30 @@ def main():
 
     # writing out the conv2d test cases
     conv2d_test_case = conv2d_random_array_test()
-    conv2d_test_content = template.render(random_tests=[conv2d_test_case], file=__file__)
+    conv2d_test_content = template.render(
+        random_tests=[conv2d_test_case], file=__file__)
 
-    conv2d_output_filename = os.path.join(ml_test_folder, "convolutions_automated_test.rs")
+    conv2d_output_filename = os.path.join(
+        ml_test_folder, "convolutions_automated_test.rs")
     with open(conv2d_output_filename, "w+") as conv2d_output_file:
         conv2d_output_file.write(conv2d_test_content)
         print(f"Successfully wrote conv2d test to {conv2d_output_filename}")
     os.system(f"rustfmt {conv2d_output_filename}")
     print(f"Formatted conv2d test.")
 
+    # writing out the conv2d_tranposed test cases
+    conv2d_transpose_test_case = conv2d_transpose_random_array_test()
+    conv2d_transpose_test_content = template.render(
+        random_tests=[conv2d_transpose_test_case], file=__file__)
 
-    # TODO:
-    # writing out the transposed conv2d test cases
+    conv2d_transpose_output_filename = os.path.join(
+        ml_test_folder, "convolutions_transposed_automated_test.rs")
+    with open(conv2d_transpose_output_filename, "w+") as conv2d_transpose_output_file:
+        conv2d_transpose_output_file.write(conv2d_transpose_test_content)
+        print(
+            f"Successfully wrote conv2d_transpose test to {conv2d_transpose_output_filename}")
+    os.system(f"rustfmt {conv2d_transpose_output_filename}")
+    print(f"Formatted conv2d_transpose test.")
 
 
 if __name__ == "__main__":
