@@ -1,5 +1,3 @@
-use image::Pixel;
-use image::RgbImage;
 use ndarray::*;
 use std::fmt::Display;
 

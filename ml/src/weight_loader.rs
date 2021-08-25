@@ -1,10 +1,8 @@
 use crate::WeightPrecision;
-use ndarray::{Array, Array1, ArrayBase, Dimension, Shape, ShapeError, StrideShape};
+use ndarray::{Array, ArrayBase, Dimension, ShapeError, StrideShape};
 use ndarray_npy::{NpzReader, ReadNpzError};
 use serde_json::{self, Map, Value};
-use std::borrow::Borrow;
 use std::io::{Cursor, Read, Seek};
-use std::marker::PhantomData;
 use std::{fs, path::Path};
 use thiserror::Error;
 

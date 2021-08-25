@@ -1,5 +1,5 @@
 use coders::statistics::Statistics;
-use image::{io::Reader as ImageReader, DynamicImage, RgbImage};
+use image::{io::Reader as ImageReader, DynamicImage};
 use nshare::ToNdarray3;
 use quicli::prelude::*;
 use std::path::PathBuf;
