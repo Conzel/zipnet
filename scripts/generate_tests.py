@@ -100,16 +100,22 @@ def conv2d_random_array_test(num_arrays_per_case=3):
             #   TF ordering:
             #     kheight x kwidth x in x out
             #   our ordering:
-            #     in x out x kwidth x kheight
+            #     out x in x kwidth x kheight
             #
             # For images:
             #   TF ordering:
             #     height x width x channels
             #   our ordering:
             #     channels x height x width
+<<<<<<< HEAD
             im = np.moveaxis(im, [0, 1, 2], [1, 2, 0])
             ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 1, 0])
             out = np.moveaxis(out, [0, 1, 2], [1, 2, 0])
+=======
+            im = np.moveaxis(im, [0,1,2], [1,2,0])
+            ker = np.moveaxis(ker, [0,1,2,3], [3,2,1,0])
+            out = np.moveaxis(out, [0,1,2], [1,2,0])
+>>>>>>> feature/padding-fixed
 
             test_obj = RandomArrayTestObject(im, ker, out, padding)
             objects.append(test_obj)
