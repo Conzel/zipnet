@@ -190,23 +190,14 @@ impl ConvolutionLayer {
         let filter_axis = img_vec.len_of(Axis(1));
         let mut img_mat: Array3<ImagePrecision> =
             Array::zeros((filter_axis, height_prime, width_prime));
-        // let mut img_mat = Vec::new();
         // C = 1
         for i in 0..filter_axis {
             let col = img_vec.slice(s![.., i]).to_vec();
-            // let col_reshape = col.into_shape((height_prime, width_prime)).unwrap();
-            // let col_clone = col.into_iter().cloned().collect();
             let col_reshape = Array::from_shape_vec((height_prime, width_prime), col).unwrap();
-            // let col_slice = col.as_slice_memory_order();
-            // let col_reshape = ArrayView::from_shape((height_prime, width_prime), &col_slice).unwrap();
-            // img_mat.assign(&col_reshape);  //ALTERNATE
-            // img_mat.push(Axis(0), col_reshape.view()).unwrap();
-            // img_mat.extend(&col);
             img_mat
                 .slice_mut(s![i, 0..height_prime, 0..width_prime])
                 .assign(&col_reshape);
         }
-        // let img_reshape = Array::from_shape_vec((filter_axis, height_prime, width_prime), img_mat).unwrap();
         img_mat
     }
 
