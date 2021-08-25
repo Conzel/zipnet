@@ -58,46 +58,6 @@ impl ConvolutionLayer {
         output
     }
 
-    /// Naive implementation of 2d convolution for reference implementations
-    fn conv_2d_naive<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
-    where
-        // This trait bound ensures that kernel and im2d can be passed as owned array or view.
-        // AsArray just ensures that im2d can be converted to an array view via ".into()".
-        // Read more here: https://docs.rs/ndarray/0.12.1/ndarray/trait.AsArray.html
-        V: AsArray<'a, ImagePrecision, Ix2>,
-        T: AsArray<'a, ImagePrecision, Ix2>,
-    {
-        // TODO: Implement valid padding
-        if self.padding == Padding::Same {
-            unimplemented!("Padding == Same is not implemented for naive conv2d");
-        }
-        let im2d_arr: ArrayView2<f32> = im2d.into();
-        let kernel_weights_arr: ArrayView2<f32> = kernel_weights.into();
-
-        let im_width = im2d_arr.len_of(Axis(0));
-        let im_height = im2d_arr.len_of(Axis(1));
-
-        let new_im_width = (im_width - self.kernel_width) / self.stride + 1;
-        let new_im_height = (im_height - self.kernel_height) / self.stride + 1;
-
-        let mut ret = Array::zeros((new_im_width, new_im_height));
-
-        for i in 0..new_im_width {
-            let i_with_stride = i * self.stride;
-            for j in 0..new_im_height {
-                let j_with_stride = j * self.stride;
-                let imslice = im2d_arr.slice(s![
-                    i_with_stride..(i_with_stride + self.kernel_width),
-                    j_with_stride..(j_with_stride + self.kernel_height)
-                ]);
-
-                let conv_entry = (&imslice * &kernel_weights_arr).sum();
-                ret[[i, j]] = conv_entry;
-            }
-        }
-        ret
-    }
-
     fn im2col_ref<'a, T>(
         &self,
         im_arr: T,
@@ -138,7 +98,7 @@ impl ConvolutionLayer {
         mat: T,
         height_prime: usize,
         width_prime: usize,
-        C: usize,
+        c: usize,
     ) -> Array3<ImagePrecision>
     where
         T: AsArray<'a, ImagePrecision, Ix2>,
@@ -149,7 +109,7 @@ impl ConvolutionLayer {
         // Array::zeros((filter_axis, height_prime, width_prime)); ALTERNATE
         let mut img_mat: Array3<ImagePrecision> =
             Array::zeros((filter_axis, height_prime, width_prime));
-        if C == 1 {
+        if c == 1 {
             for i in 0..filter_axis {
                 let col = img_vec.slice(s![.., i]);
                 let col_reshape = col.into_shape((height_prime, width_prime)).unwrap();
