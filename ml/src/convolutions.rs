@@ -98,6 +98,43 @@ impl ConvolutionLayer {
         ret
     }
 
+    fn get_padding_size(
+        &self,
+        input_H: usize,
+        input_W: usize,
+        stride: usize,
+        kernel_h: usize,
+        kernel_w: usize,
+    ) -> (usize, usize, usize, usize, usize, usize) {
+        let pad_along_height: usize;
+        let pad_along_width: usize;
+
+        if input_H % stride == 0 {
+            pad_along_height = (kernel_h - stride).max(0);
+        } else {
+            pad_along_height = (kernel_h - (input_H % stride)).max(0);
+        };
+        if input_W % stride == 0 {
+            pad_along_width = (kernel_w - stride).max(0);
+        } else {
+            pad_along_width = (kernel_w - (input_W % stride)).max(0);
+        };
+
+        let pad_top = pad_along_height / 2;
+        let pad_bottom = pad_along_height - pad_top;
+        let pad_left = pad_along_width / 2;
+        let pad_right = pad_along_width - pad_left;
+
+        (
+            pad_along_height,
+            pad_along_width,
+            pad_top,
+            pad_bottom,
+            pad_left,
+            pad_right,
+        )
+    }
+
     fn im2col_ref<'a, T>(
         &self,
         im_arr: T,
@@ -145,17 +182,25 @@ impl ConvolutionLayer {
     {
         let img_vec: ArrayView2<f32> = mat.into();
         let filter_axis = img_vec.len_of(Axis(1));
-        // let mut img_mat: Array3<ImagePrecision> =
-        // Array::zeros((filter_axis, height_prime, width_prime)); ALTERNATE
-        let mut img_mat: Array3<ImagePrecision> = Array::zeros((filter_axis, height_prime, width_prime));
-        if C == 1 {
-            for i in 0..filter_axis {
-                let col = img_vec.slice(s![.., i]);
-                let col_reshape = col.into_shape((height_prime, width_prime)).unwrap();
-                // img_mat.assign(&col_reshape);  ALTERNATE
-                img_mat.push(Axis(0), col_reshape).unwrap();
-            }
+        let mut img_mat: Array3<ImagePrecision> =
+            Array::zeros((filter_axis, height_prime, width_prime));
+        // let mut img_mat = Vec::new();
+        // C = 1
+        for i in 0..filter_axis {
+            let col = img_vec.slice(s![.., i]).to_vec();
+            // let col_reshape = col.into_shape((height_prime, width_prime)).unwrap();
+            // let col_clone = col.into_iter().cloned().collect();
+            let col_reshape = Array::from_shape_vec((height_prime, width_prime), col).unwrap();
+            // let col_slice = col.as_slice_memory_order();
+            // let col_reshape = ArrayView::from_shape((height_prime, width_prime), &col_slice).unwrap();
+            // img_mat.assign(&col_reshape);  //ALTERNATE
+            // img_mat.push(Axis(0), col_reshape.view()).unwrap();
+            // img_mat.extend(&col);
+            img_mat
+                .slice_mut(s![i, 0..height_prime, 0..width_prime])
+                .assign(&col_reshape);
         }
+        // let img_reshape = Array::from_shape_vec((filter_axis, height_prime, width_prime), img_mat).unwrap();
         img_mat
     }
 
@@ -171,6 +216,9 @@ impl ConvolutionLayer {
     {
         let im2d_arr: ArrayView3<f32> = im2d.into();
         let kernel_weights_arr: ArrayView4<f32> = kernel_weights.into();
+        let new_im_height: usize;
+        let new_im_width: usize;
+        let im_col: Array2<ImagePrecision>;
 
         // C X H X W
         let im_width = im2d_arr.len_of(Axis(2));
@@ -180,9 +228,21 @@ impl ConvolutionLayer {
         // HH = self.kernel_height, WW = self.kernel_width
         // calculate output sizes
         // new_h = (H+2*P-HH) / S+1
-        // TODO: Add padding back in (Same Padding, we can leave valid padding unimplemented)
-        let new_im_width = (im_width - self.kernel_width) / self.stride + 1;
-        let new_im_height = (im_height - self.kernel_height) / self.stride + 1;
+
+        if self.padding == Padding::Same {
+            let h_float = im_height as f32;
+            let w_float = im_width as f32;
+            let stride_float = self.stride as f32;
+
+            let new_im_height_float = (h_float / stride_float).ceil();
+            let new_im_width_float = (w_float / stride_float).ceil();
+
+            new_im_height = new_im_height_float as usize;
+            new_im_width = new_im_width_float as usize;
+        } else {
+            new_im_height = (im_height - self.kernel_height) / self.stride + 1;
+            new_im_width = (im_width - self.kernel_width) / self.stride + 1;
+        };
 
         // Alocate memory for output (?)
         let filter = self.num_filters as usize;
@@ -193,17 +253,44 @@ impl ConvolutionLayer {
             .into_shape((filter, self.kernel_height * self.kernel_width * c_out))
             .unwrap(); // weights.reshape(F, HH*WW*C)
 
-        // convolve
-        // PADDING: here, instead of im2d_arr we need to pass an image which already has zero padding; so the todo() will be above this
-        let im_col = ConvolutionLayer::im2col_ref(
-            self,
-            im2d_arr,
-            self.kernel_height,
-            self.kernel_width,
-            im_height,
-            im_width,
-            im_channel,
-        );
+        // https://github.com/rust-ndarray/ndarray/issues/823
+        if self.padding == Padding::Same {
+            let (pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right) =
+                ConvolutionLayer::get_padding_size(
+                    self,
+                    im_height,
+                    im_width,
+                    self.stride,
+                    self.kernel_height,
+                    self.kernel_width,
+                );
+            let mut im2d_arr_pad: Array3<ImagePrecision> =
+                Array::zeros((c_out, im_height + pad_num_h, im_width + pad_num_w));
+            let pad_bottom_int = (im_height + pad_num_h) - pad_bottom;
+            let pad_right_int = (im_width + pad_num_w) - pad_right;
+            im2d_arr_pad
+                .slice_mut(s![.., pad_top..pad_bottom_int, pad_left..pad_right_int])
+                .assign(&im2d_arr);
+            im_col = ConvolutionLayer::im2col_ref(
+                self,
+                im2d_arr_pad.view(),
+                self.kernel_height,
+                self.kernel_width,
+                im_height,
+                im_width,
+                im_channel,
+            );
+        } else {
+            im_col = ConvolutionLayer::im2col_ref(
+                self,
+                im2d_arr,
+                self.kernel_height,
+                self.kernel_width,
+                im_height,
+                im_width,
+                im_channel,
+            );
+        };
         let filter_transpose = filter_col.t(); // SHAPE IS (1, N)
         let mul = im_col.dot(&filter_transpose); // + bias_m
         let activations = ConvolutionLayer::col2im_ref(self, &mul, new_im_height, new_im_width, 1); // filter is set to 1 (?)
@@ -268,7 +355,7 @@ mod tests {
             vec![1., 2., 1., 2., 1., 2., 1., 2., 1., 2., 1., 2.],
         );
         let testker = kernel.unwrap();
-        let conv_layer = ConvolutionLayer::new(testker, 1, Padding::Valid);
+        let conv_layer = ConvolutionLayer::new(testker, 1, Padding::Same);
         let output = arr3(&[[
             [57.0, 75.0, 93.0],
             [111.0, 129.0, 141.0],
