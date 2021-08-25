@@ -147,7 +147,8 @@ impl ConvolutionLayer {
         let filter_axis = img_vec.len_of(Axis(1));
         // let mut img_mat: Array3<ImagePrecision> =
         // Array::zeros((filter_axis, height_prime, width_prime)); ALTERNATE
-        let mut img_mat: Array3<ImagePrecision> = Array::zeros((filter_axis, height_prime, width_prime));
+        let mut img_mat: Array3<ImagePrecision> =
+            Array::zeros((filter_axis, height_prime, width_prime));
         if C == 1 {
             for i in 0..filter_axis {
                 let col = img_vec.slice(s![.., i]);
