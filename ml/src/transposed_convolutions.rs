@@ -6,7 +6,7 @@
 /// - https://pytorch.org/docs/stable/generated/torch.nn.ConvTranspose2d.html
 use crate::{
     convolutions::{ConvolutionLayer, Padding},
-    models::InternalDataRepresentation,
+    models::{CodingModel, InternalDataRepresentation},
     ConvKernel, ImagePrecision, WeightPrecision,
 };
 use ndarray::*;
@@ -14,6 +14,12 @@ use ndarray::*;
 /// Analog to a Convolution Layer
 pub struct TransposedConvolutionLayer {
     convolution_layer: ConvolutionLayer,
+}
+
+impl CodingModel for TransposedConvolutionLayer {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
+        todo!()
+    }
 }
 
 impl TransposedConvolutionLayer {
