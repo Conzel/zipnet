@@ -1,0 +1,154 @@
+[
+    {
+        "name": "MinnenEncoder",
+        "weight_name": "analysis_transform",
+        "layers": [
+            {
+                "type": "convolution",
+                "filters": "192",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "gdn",
+                "channels": 3,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "convolution",
+                "filters": "192",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "gdn",
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "convolution",
+                "filters": "192",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "none",
+                "kernel_shape": "(5,5)"
+            }
+        ]
+    },
+    {
+        "name": "JohnstonDecoder",
+        "weight_name": "synthesis_transform",
+        "layers": [
+            {
+                "type": "convolution_transpose",
+                "filters": "79",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "igdn",
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "convolution_transpose",
+                "filters": "22",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "igdn",
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "convolution_transpose",
+                "filters": "43",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "igdn",
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "convolution_transpose",
+                "filters": "3",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "none",
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            }
+        ]
+    },
+    {
+        "name": "MinnenHyperEncoder",
+        "weight_name": "hyper_analysis_transform",
+        "layers": [
+            {
+                "type": "convolution",
+                "filters": "192",
+                "stride": 1,
+                "padding": "same",
+                "bias": false,
+                "activation": "relu",
+                "channels": 192,
+                "kernel_shape": "(3,3)"
+            },
+            {
+                "type": "convolution",
+                "filters": "192",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "relu",
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "convolution",
+                "filters": "192",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "none",
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            }
+        ]
+    },
+    {
+        "name": "JohnstonHyperDecoder",
+        "weight_name": "mb_t2018hyper_synthesis_transform",
+        "layers": [
+            {
+                "type": "convolution_transpose",
+                "filters": "76",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "relu",
+                "channels": "192",
+                "kernel_shape": "(3,3)"
+            },
+            {
+                "type": "convolution_transpose",
+                "filters": "107",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "relu",
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "convolution_transpose",
+                "filters": "320",
+                "stride": 1,
+                "padding": "same",
+                "bias": false,
+                "activation": "none",
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            }
+        ]
+    }
+]
