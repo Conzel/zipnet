@@ -259,6 +259,7 @@
 
 #![no_std]
 #![warn(rust_2018_idioms, missing_debug_implementations)]
+#![allow(warnings)]
 
 extern crate alloc;
 

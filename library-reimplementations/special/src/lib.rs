@@ -2,6 +2,8 @@
 //!
 //! [1]: https://en.wikipedia.org/wiki/Special_functions
 
+#![allow(warnings)]
+
 #[cfg(test)]
 extern crate assert;
 
