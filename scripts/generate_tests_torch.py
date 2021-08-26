@@ -72,10 +72,11 @@ def conv2d_random_array_test(num_arrays_per_case=3):
     
     num_arrays_per_case: int, number of different random arrays generated
     per (img_shape, kernel_shape) combination"""
-    img_shapes = [(1,5,5), (1,10,15), (1,15,10), (2,6,6), (2, 10, 15), (2, 5, 5)]
-    kernel_shapes = [(3,1,3,3), (2,1,5,5), (3,2,3,3), (3, 2, 5, 5)]
+    img_shapes = [(1,8,8), (1,10,15), (1,15,10), (2,10,10), (2, 10, 15)]
+    kernel_shapes = [(3,1,4,4), (2,1,5,5), (3,2,4,4), (3, 2, 5, 5)]
+    stride_list = [1,1] # add stride=2 but check how to fit it to input & kernel size
     padding = "VALID"
-
+    
     objects = []
     for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
         if im_shape[0] != ker_shape[1]:
@@ -85,8 +86,12 @@ def conv2d_random_array_test(num_arrays_per_case=3):
             ker = np.random.rand(*ker_shape).astype(dtype=np.float64)
             # axis 0 is batch dimension, which we need to remove and add back in
 
+            if i%2==0:
+                stride = stride_list[0]
+            else:
+                stride = stride_list[1]
             im_tf = torch.Tensor(np.expand_dims(im, axis=0))
-            conv = nn.Conv2d(im.shape[0], ker.shape[0], ker.shape[2], stride=1, bias=False, padding=0)
+            conv = nn.Conv2d(im.shape[0], ker.shape[0], ker.shape[2], stride=stride, bias=False, padding=0)
             with torch.no_grad():
                 conv.weight = torch.nn.Parameter(torch.from_numpy(ker).float())
             out_tf = conv(im_tf)
@@ -110,7 +115,7 @@ def conv2d_random_array_test(num_arrays_per_case=3):
             # ker = np.moveaxis(ker, [0,1,2,3], [3,2,1,0])
             # out = np.moveaxis(out, [0,1,2], [1,2,0])
 
-            test_obj = RandomArrayTestObject(im, ker, out, padding)
+            test_obj = RandomArrayTestObject(im, ker, out, padding, stride)
             objects.append(test_obj)
    
     return RandomArrayTest("conv2d", "ConvolutionLayer", objects)
