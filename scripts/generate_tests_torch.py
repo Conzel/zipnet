@@ -2,7 +2,8 @@
 import jinja2
 import numpy as np
 import itertools
-import tensorflow as tf
+import torch
+import torch.nn as nn
 import os
 
 np.random.seed(260896)
@@ -71,22 +72,25 @@ def conv2d_random_array_test(num_arrays_per_case=3):
     
     num_arrays_per_case: int, number of different random arrays generated
     per (img_shape, kernel_shape) combination"""
-    img_shapes = [(5,5,1), (10,15,1), (15,10,1), (6,6,3), (10,15,3), (15,10,3)]
-    kernel_shapes = [(3,3,1,3), (5,5,1,2), (3,3,3,2), (5,5,3,2)]
+    img_shapes = [(1,5,5), (1,10,15), (1,15,10), (2,6,6), (2, 10, 15), (2, 5, 5)]
+    kernel_shapes = [(3,1,3,3), (2,1,5,5), (3,2,3,3), (3, 2, 5, 5)]
     padding = "VALID"
 
     objects = []
     for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
-        if im_shape[2] != ker_shape[2]:
+        if im_shape[0] != ker_shape[1]:
             continue # shapes are not compatible, channel size missmatch
         for i in range(num_arrays_per_case):
             im = np.random.rand(*im_shape).astype(dtype=np.float64)
             ker = np.random.rand(*ker_shape).astype(dtype=np.float64)
             # axis 0 is batch dimension, which we need to remove and add back in
-            im_tf = tf.constant(np.expand_dims(im, axis=0), dtype=tf.float64)
-            ker_tf = tf.constant(ker, dtype=tf.float64)
-            out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[1,1,1,1], padding=padding)
-            out = np.squeeze(out_tf.numpy(), axis=0)
+
+            im_tf = torch.Tensor(np.expand_dims(im, axis=0))
+            conv = nn.Conv2d(im.shape[0], ker.shape[0], ker.shape[2], stride=1, bias=False, padding=0)
+            with torch.no_grad():
+                conv.weight = torch.nn.Parameter(torch.from_numpy(ker).float())
+            out_tf = conv(im_tf)
+            out = np.squeeze(out_tf.detach().numpy(), axis=0).astype(dtype=np.float64)
 
             # reordering the images and weights
             #
@@ -101,9 +105,10 @@ def conv2d_random_array_test(num_arrays_per_case=3):
             #     height x width x channels
             #   our ordering:
             #     channels x height x width
-            im = np.moveaxis(im, [0,1,2], [1,2,0])
-            ker = np.moveaxis(ker, [0,1,2,3], [3,2,1,0])
-            out = np.moveaxis(out, [0,1,2], [1,2,0])
+
+            # im = np.moveaxis(im, [0,1,2], [1,2,0])
+            # ker = np.moveaxis(ker, [0,1,2,3], [3,2,1,0])
+            # out = np.moveaxis(out, [0,1,2], [1,2,0])
 
             test_obj = RandomArrayTestObject(im, ker, out, padding)
             objects.append(test_obj)
@@ -132,7 +137,7 @@ def main():
     conv2d_test_case = conv2d_random_array_test()
     conv2d_test_content = template.render(random_tests=[conv2d_test_case], file=__file__)
 
-    conv2d_output_filename = os.path.join(ml_test_folder, "convolutions_automated_test.rs")
+    conv2d_output_filename = os.path.join(ml_test_folder, "convolutions_automated_test_torch.rs")
     with open(conv2d_output_filename, "w+") as conv2d_output_file:
         conv2d_output_file.write(conv2d_test_content)
         print(f"Successfully wrote conv2d test to {conv2d_output_filename}")
