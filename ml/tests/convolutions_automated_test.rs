@@ -48,7 +48,6 @@ fn test_py_implementation_random_arrays_conv2d() {
         ]
     ];
     let current_output1 = conv_layer1.convolve(&test_input1);
-    // let shapes = current_output1;
 
     assert!(
         arr_allclose(&current_output1, &target_output1),
