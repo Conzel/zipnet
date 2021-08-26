@@ -105,16 +105,17 @@ impl ConvolutionLayer {
     ) -> (usize, usize, usize, usize, usize, usize) {
         let pad_along_height: usize;
         let pad_along_width: usize;
+        let idx_0: usize = 0;
 
-        if input_H % stride == 0 {
-            pad_along_height = (kernel_h - stride).max(0);
+        if input_H % stride == idx_0 {
+            pad_along_height = (kernel_h - stride).max(idx_0);
         } else {
-            pad_along_height = (kernel_h - (input_H % stride)).max(0);
+            pad_along_height = (kernel_h - (input_H % stride)).max(idx_0);
         };
-        if input_W % stride == 0 {
-            pad_along_width = (kernel_w - stride).max(0);
+        if input_W % stride == idx_0 {
+            pad_along_width = (kernel_w - stride).max(idx_0);
         } else {
-            pad_along_width = (kernel_w - (input_W % stride)).max(0);
+            pad_along_width = (kernel_w - (input_W % stride)).max(idx_0);
         };
 
         let pad_top = pad_along_height / 2;
