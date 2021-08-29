@@ -1,12 +1,6 @@
 [workspace]
 
-members = [
-	"wasm",
-	"zipnet",
-	"coders",
-	"ml"
-]
-# default-members = ["zipnet"]
+members = ["wasm", "zipnet", "coders", "ml"]
 
 [profile.release]
 opt-level = 3
