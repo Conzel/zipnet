@@ -65,21 +65,9 @@ jobs:
     - name: Install frontend (npm) dependencies
       run: cd wasm/www && npm install
 
-        #     - name: Get frontend assets from current staging branch
-        #       uses: actions/checkout@v2
-        #       with:
-        #         ref: gh-pages-staging
-        #         path: wasm/www/assets.tmp
-
-          #     - name: Move over assets
-          #       run: |
-          #         cd wasm/www
-          #         mv assets.tmp/*.dwe assets/*.dwe
-          #         mv assets.tmp/*.bin assets/*.bin
-          #         rm -rf assets.tmp
-
     - name: Build frontend
       run: cd wasm/www && npm run build
+
 
     - name: Deploy to gh-pages
       uses: peaceiris/actions-gh-pages@v3
