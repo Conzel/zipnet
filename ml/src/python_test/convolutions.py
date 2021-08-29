@@ -114,7 +114,7 @@ def conv_forward_naive(x, w, b, conv_param):
 		# im_pad[:, pad_top:-pad_bottom, pad_left:-pad_right] = im
 		im_col = im2col(im_pad,HH,WW,stride)
 		# print(im_col.shape)
-		# import pdb;pdb.set_trace()
+		import pdb;pdb.set_trace()
 		filter_col = np.reshape(w,(F,-1))
 		mul = im_col.dot(filter_col.T) #+ b
 		# import pdb;pdb.set_trace()

@@ -13,13 +13,13 @@ pub enum Padding {
 /// (to comply with the order in which pytorch weights are saved).
 pub struct ConvolutionLayer {
     /// Weight matrix of the kernel
-    kernel: Array4<WeightPrecision>,
-    kernel_width: usize,
-    kernel_height: usize,
-    stride: usize,
-    padding: Padding,
-    num_filters: u16,
-    img_channels: u16,
+    pub kernel: Array4<WeightPrecision>,
+    pub kernel_width: usize,
+    pub kernel_height: usize,
+    pub stride: usize,
+    pub padding: Padding,
+    pub num_filters: u16,
+    pub img_channels: u16,
 }
 
 impl ConvolutionLayer {
@@ -51,12 +51,12 @@ impl ConvolutionLayer {
     /// style format (read more here).
     /// https://leonardoaraujosantos.gitbook.io/artificial-inteligence/machine_learning/deep_learning/convolution_layer/making_faster
     pub fn convolve(&self, image: &InternalDataRepresentation) -> InternalDataRepresentation {
-        let output = ConvolutionLayer::conv_2d(self, &self.kernel, &image.view());
+        let output = ConvolutionLayer::Conv2D(self, &self.kernel, &image.view());
         output
     }
 
     /// Naive implementation of 2d convolution for reference implementations
-    fn conv_2d_naive<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
+    fn conv2d_naive<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array2<ImagePrecision>
     where
         // This trait bound ensures that kernel and im2d can be passed as owned array or view.
         // AsArray just ensures that im2d can be converted to an array view via ".into()".
@@ -95,7 +95,7 @@ impl ConvolutionLayer {
         ret
     }
 
-    fn get_padding_size(
+    pub fn get_padding_size(
         &self,
         input_H: usize,
         input_W: usize,
@@ -133,7 +133,7 @@ impl ConvolutionLayer {
         )
     }
 
-    fn im2col_ref<'a, T>(
+    pub fn im2col_ref<'a, T>(
         &self,
         im_arr: T,
         ker_height: usize,
@@ -202,7 +202,7 @@ impl ConvolutionLayer {
         img_mat
     }
 
-    fn conv_2d<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array3<ImagePrecision>
+    fn Conv2D<'a, T, V>(&self, kernel_weights: T, im2d: V) -> Array3<ImagePrecision>
     where
         // This trait bound ensures that kernel and im2d can be passed as owned array or view.
         // AsArray just ensures that im2d can be converted to an array view via ".into()".
@@ -326,7 +326,7 @@ mod tests {
         let kernel = Array::from_shape_vec((1, 1, 2, 2), vec![0., 1., -1., 0.]).unwrap();
         let conv_layer = ConvolutionLayer::new(kernel, 1, Padding::Valid);
 
-        let convolved_image = conv_layer.conv_2d_naive(
+        let convolved_image = conv_layer.conv2d_naive(
             &(conv_layer.kernel.slice(s![0, 0, .., ..])),
             &test_img.view(),
         );
@@ -341,7 +341,7 @@ mod tests {
         let conv_layer = ConvolutionLayer::new(kernel, 2, Padding::Valid);
 
         let convolved_image =
-            conv_layer.conv_2d_naive(&(conv_layer.kernel.slice(s![0, 0, .., ..])), &test_img);
+            conv_layer.conv2d_naive(&(conv_layer.kernel.slice(s![0, 0, .., ..])), &test_img);
 
         assert_eq!(convolved_image, array![[0., 0.], [-1., 0.]]);
     }
@@ -379,7 +379,7 @@ mod tests {
             [111.0, 129.0, 141.0],
             [138.0, 156.0, 162.0],
         ]]);
-        let convolved_image = conv_layer.conv_2d(&(conv_layer.kernel), &test_img.view());
+        let convolved_image = conv_layer.Conv2D(&(conv_layer.kernel), &test_img.view());
 
         assert_eq!(convolved_image, output);
 
@@ -415,7 +415,7 @@ mod tests {
             [138.0, 156.0, 162.0, 54.0],
             [69.0, 78.0, 81.0, 27.0],
         ]]);
-        let convolved_image1 = conv_layer1.conv_2d(&(conv_layer1.kernel), &test_img1.view());
+        let convolved_image1 = conv_layer1.Conv2D(&(conv_layer1.kernel), &test_img1.view());
 
         assert_eq!(convolved_image1, output1);
     }

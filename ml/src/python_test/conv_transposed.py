@@ -87,39 +87,41 @@ def conv_trans_naive(x, w, conv_param):
 		im_pad = np.pad(im,((0,0), (pad_num,pad_num),(pad_num,pad_num)),'constant').astype('float64')
 		im_col = im2col(im_pad,HH,WW,stride)
 		# print(im_col.shape)
+		# import pdb;pdb.set_trace()
 		filter_col = np.reshape(np.flip(w, (2,3)),(F,-1))
 		mul = im_col.dot(filter_col.T)#+ b
 		output = mul.reshape(1, F, H_prime, W_prime)
 		# out = output.transpose(1, 0, 2, 3)
 		cache = (x, w, conv_param)
-		output = output[:, :, pad_left:-pad_right, pad_top:-pad_bottom]
+		if pad_type == "same":
+			output = output[:, :, pad_left:-pad_right, pad_top:-pad_bottom]
 		return output, cache
 
 
 # input = np.array([[[2,1,4,4]]]).reshape(1,1,2,2)
 # weights = np.array([[[[1, 3, 3], [3, 4, 1], [1, 4, 1]]]]) # FLIPPED
 # weights = np.array([[[[1,4,1],[1,4,3],[3,3,1]]]])
-# input = np.array([[[[55, 52], [57,50]]]])
-# weights = np.array([[[[1, 2], [2, 1]]]])
+input = np.array([[[[55, 52], [57,50]]]])
+weights = np.array([[[[1, 2], [3, 4]]]])
 # input = np.array([[[[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]]]])
 # weights = np.array([[[[80, 20], [-13, 12]]]])
 
-input = np.array(
-[[[[0.17014849, 0.43056882, 0.5715329 , 0.06520256, 0.12669588],
-[0.75015649, 0.98379819, 0.55574155, 0.04181346, 0.23677547],
-[0.51154924, 0.02844254, 0.60484786, 0.72306337, 0.22177844],
-[0.16487044, 0.46672951, 0.54035134, 0.69223571, 0.27845532],
-[0.66966338, 0.41083884, 0.45831479, 0.70402897, 0.61773261]]]]
-)
-weights = np.array(
-[
-0.92697753, 0.91485179, 0.85028299, 0.26970649, 0.55898563, 0.84558665, 0.75231163,
-0.90343251, 0.07658575
-]).reshape(1,1,3,3)
+# input = np.array(
+# [[[[0.17014849, 0.43056882, 0.5715329 , 0.06520256, 0.12669588],
+# [0.75015649, 0.98379819, 0.55574155, 0.04181346, 0.23677547],
+# [0.51154924, 0.02844254, 0.60484786, 0.72306337, 0.22177844],
+# [0.16487044, 0.46672951, 0.54035134, 0.69223571, 0.27845532],
+# [0.66966338, 0.41083884, 0.45831479, 0.70402897, 0.61773261]]]]
+# )
+# weights = np.array(
+# [
+# 0.92697753, 0.91485179, 0.85028299, 0.26970649, 0.55898563, 0.84558665, 0.75231163,
+# 0.90343251, 0.07658575
+# ]).reshape(1,1,3,3)
 print("input", input.shape)
 print("weights", weights.shape)
 bias = np.zeros((1, 1))# null
-conv_param = {"pad":"same","stride":1}
+conv_param = {"pad":"sa","stride":1}
 
 out, _ = conv_trans_naive(input, weights, conv_param)
 # out = Conv2DTranspose(input.reshape(1, 4, 4, 1), weights, padding="valid", strides=(1,1))
