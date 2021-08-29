@@ -101,24 +101,25 @@ def conv_forward_naive(x, w, b, conv_param):
 	N,C,H,W = x.shape
 	F,C,HH,WW = w.shape
 	pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right = get_same_padding(H, W, stride, HH, WW)
-	# H_prime = (H+2*pad_num-HH) // stride + 1
-	# W_prime = (W+2*pad_num-WW) // stride + 1
-	H_prime = int(ceil(float(H) / float(stride)))
-	W_prime = int(ceil(float(W) / float(stride)))
+	H_prime = (H+2*pad_num-HH) // stride + 1
+	W_prime = (W+2*pad_num-WW) // stride + 1
+	# H_prime = int(ceil(float(H) / float(stride)))
+	# W_prime = int(ceil(float(W) / float(stride)))
 	out = np.zeros([1,F,H_prime,W_prime]).astype('float64') #SET FILTERS AS 1
 	#im2col
 	for im_num in range(N):
 		im = x[im_num,:,:,:]
-		# im_pad = np.pad(im,((0,0),(pad_num,pad_num),(pad_num,pad_num)),'constant').astype('float64')
-		im_pad = np.zeros((C, H+pad_num_h, W+pad_num_w))
-		im_pad[:, pad_top:-pad_bottom, pad_left:-pad_right] = im
+		im_pad = np.pad(im,((0,0),(pad_num,pad_num),(pad_num,pad_num)),'constant').astype('float64')
+		# im_pad = np.zeros((C, H+pad_num_h, W+pad_num_w))
+		# im_pad[:, pad_top:-pad_bottom, pad_left:-pad_right] = im
 		im_col = im2col(im_pad,HH,WW,stride)
-		print(im_col.shape)
+		# print(im_col.shape)
+		# import pdb;pdb.set_trace()
 		filter_col = np.reshape(w,(F,-1))
 		mul = im_col.dot(filter_col.T) #+ b
-		print(mul.shape)
-		out[im_num,:,:,:] = col2im(mul,H_prime,W_prime,1)
 		# import pdb;pdb.set_trace()
+		# print(mul.shape)
+		out[im_num,:,:,:] = col2im(mul,H_prime,W_prime,1)
 		cache = (x, w, b, conv_param)
 		return out, cache
 
@@ -126,32 +127,33 @@ def conv_forward_naive(x, w, b, conv_param):
 # input = np.array([[[[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]], [[1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0], [7.0, 8.0, 9.0, 9.0], [7.0, 8.0, 9.0, 9.0]]]]) # N, C, H, W
 # weights = np.array([[[[1.0, 2.0],[1.0, 2.0]],[[1.0, 2.0],[1.0, 2.0]], [[1.0, 2.0],[1.0, 2.0]]]]) # F, C, HH, WW
 
-input = np.array(
-[[[[0.17014849, 0.43056882, 0.5715329 , 0.06520256, 0.12669588],
-[0.75015649, 0.98379819, 0.55574155, 0.04181346, 0.23677547],
-[0.51154924, 0.02844254, 0.60484786, 0.72306337, 0.22177844],
-[0.16487044, 0.46672951, 0.54035134, 0.69223571, 0.27845532],
-[0.66966338, 0.41083884, 0.45831479, 0.70402897, 0.61773261]]]]
-).astype('float64')
+# input = np.array(
+# [[[[0.17014849, 0.43056882, 0.5715329 , 0.06520256, 0.12669588],
+# [0.75015649, 0.98379819, 0.55574155, 0.04181346, 0.23677547],
+# [0.51154924, 0.02844254, 0.60484786, 0.72306337, 0.22177844],
+# [0.16487044, 0.46672951, 0.54035134, 0.69223571, 0.27845532],
+# [0.66966338, 0.41083884, 0.45831479, 0.70402897, 0.61773261]]]]
+# ).astype('float64')
 
-weights = np.array(
-[
-0.92697753, 0.91485179, 0.85028299, 0.26970649, 0.55898563, 0.84558665, 0.75231163,
-0.90343251, 0.07658575, 0.56033562, 0.33565241, 0.96145765, 0.24242379, 0.5888119,
-0.04742411, 0.96925828, 0.2795916, 0.71978642, 0.90980128, 0.37189406, 0.55666793,
-0.79448488, 0.44166553, 0.23985275, 0.12854726, 0.75676637, 0.13313323,
-]
-).reshape(3, 1, 3, 3).astype('float64')
+# weights = np.array(
+# [
+# 0.92697753, 0.91485179, 0.85028299, 0.26970649, 0.55898563, 0.84558665, 0.75231163,
+# 0.90343251, 0.07658575, 0.56033562, 0.33565241, 0.96145765, 0.24242379, 0.5888119,
+# 0.04742411, 0.96925828, 0.2795916, 0.71978642, 0.90980128, 0.37189406, 0.55666793,
+# 0.79448488, 0.44166553, 0.23985275, 0.12854726, 0.75676637, 0.13313323,
+# ]
+# ).reshape(3, 1, 3, 3).astype('float64')
 
-# input = np.array([[[[3, 5, 2, 7], [4, 1, 3, 8], [6, 3, 8, 2], [9, 6, 1, 5]]]])
-# weights = np.array([[[[1, 2, 1], [2, 1, 2], [1, 1, 2]]]])
-print(input.shape)
-print(weights.shape)
+# input = np.array([[[[4, 5, 8, 7], [1, 8, 8, 8], [3, 6, 6, 4], [6, 5, 7, 8]]]])
+input = np.array([[[2,1,4,4]]]).reshape(1,1,2,2)
+weights = np.array([[[[1, 4, 1], [1, 4, 3], [3,3,1]]]])
+# print(input.shape)
+# print(weights)
 bias = np.zeros((1, 1))# null
-conv_param = {"pad":0,"stride":1}
+conv_param = {"pad":2,"stride":1}
 
 output, _ = conv_forward_naive(input, weights, bias, conv_param)
-print(output.shape)
+# print(output.shape)
 print("output:", output)
 
 
