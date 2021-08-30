@@ -107,16 +107,18 @@ impl TransposedConvolutionLayer {
 
         // fn:im2col() for with padding always
         // Assuming square kernels:
-        let pad_num = self.convolution_layer.kernel_height - 1;
+        let pad_h = self.convolution_layer.kernel_height - 1;
+        let pad_w = self.convolution_layer.kernel_width - 1;
         let mut im2d_arr_pad: Array3<ImagePrecision> = Array::zeros((
             im_channel,
-            im_height + pad_num + pad_num,
-            im_width + pad_num + pad_num,
+            im_height + pad_h + pad_h,
+            im_width + pad_w + pad_w,
         ));
-        let pad_int = im_height + pad_num;
+        let pad_int_h = im_height + pad_h;
+        let pad_int_w = im_width + pad_w;
         // https://github.com/rust-ndarray/ndarray/issues/823
         im2d_arr_pad
-            .slice_mut(s![.., pad_num..pad_int, pad_num..pad_int])
+            .slice_mut(s![.., pad_h..pad_int_h, pad_w..pad_int_w])
             .assign(&im2d_arr);
 
         let im_height_pad = im2d_arr_pad.len_of(Axis(1));
