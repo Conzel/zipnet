@@ -1,6 +1,5 @@
 pub mod activation_functions;
 pub mod convolutions;
-pub mod fully_connected;
 pub mod models;
 pub mod transposed_convolutions;
 pub mod weight_loader;

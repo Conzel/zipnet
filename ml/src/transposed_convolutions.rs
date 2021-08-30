@@ -7,7 +7,7 @@
 use crate::{
     convolutions::{ConvolutionLayer, Padding},
     models::InternalDataRepresentation,
-    ConvKernel, ImagePrecision, WeightPrecision,
+    ConvKernel, ImagePrecision,
 };
 use ndarray::*;
 

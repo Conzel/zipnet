@@ -182,7 +182,7 @@ impl ConvolutionLayer {
         mat: T,
         height_prime: usize,
         width_prime: usize,
-        C: usize,
+        c: usize,
     ) -> Array3<ImagePrecision>
     where
         T: AsArray<'a, ImagePrecision, Ix2>,
