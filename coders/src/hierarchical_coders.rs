@@ -1,12 +1,10 @@
-use constriction::stream::model::{
-    DefaultContiguousCategoricalEntropyModel, NonContiguousCategoricalDecoderModel,
-};
+use constriction::stream::model::DefaultContiguousCategoricalEntropyModel;
 use constriction::stream::stack::AnsCoder;
+use constriction::stream::Decode;
 use constriction::stream::{model::DefaultLeakyQuantizer, stack::DefaultAnsCoder};
-use constriction::stream::{Decode, Encode};
-use ml::models::CodingModel;
-use ml::models::{JohnstonDecoder, JohnstonHyperdecoder, MinnenEncoder, MinnenHyperencoder};
-use ml::weight_loader::{NpzWeightLoader, WeightLoader};
+use ml::models::{CodingModel, JohnstonHyperDecoder, MinnenHyperEncoder};
+use ml::models::{JohnstonDecoder, MinnenEncoder};
+use ml::weight_loader::NpzWeightLoader;
 use ml::ImagePrecision;
 use ndarray::Array;
 use ndarray::*;
@@ -38,17 +36,6 @@ pub struct MeanScaleHierarchicalDecoder {
     hyperlatent_decoder: Box<dyn CodingModel>,
     /// This must be the same prior as used in the corresponding encoder
     hyperlatent_prior: TablePrior,
-}
-
-pub struct GaussianPrior {
-    means: Array1<f64>,
-    std: Array1<f64>,
-}
-
-impl GaussianPrior {
-    pub fn new(means: Array1<f64>, std: Array1<f64>) -> GaussianPrior {
-        GaussianPrior { means, std }
-    }
 }
 
 /// A probability distribution that just consists of a lookup-table.
@@ -185,16 +172,18 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
 
         for i in 0..MINNEN_JOHNSTON_NUM_CHANNELS {
             // Encoding the hyperlatents z with p(z)
-            coder.encode_iid_symbols_reverse(
-                self.hyperlatent_prior.to_symbols(
-                    quantized_hyperlatents
-                        .slice(s![i, .., ..])
-                        .iter()
-                        .map(|x| *x)
-                        .collect(),
-                ),
-                &self.hyperlatent_prior.get_entropy_model(i),
-            );
+            coder
+                .encode_iid_symbols_reverse(
+                    self.hyperlatent_prior.to_symbols(
+                        quantized_hyperlatents
+                            .slice(s![i, .., ..])
+                            .iter()
+                            .map(|x| *x)
+                            .collect(),
+                    ),
+                    &self.hyperlatent_prior.get_entropy_model(i),
+                )
+                .unwrap();
         }
         let data = coder.into_compressed().unwrap();
 
@@ -222,7 +211,6 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
             side_info[2] as usize,
         );
         let hyperlatents_im_len = hyperlatents_shape.1 * hyperlatents_shape.2;
-        let hyperlatents_len = hyperlatents_shape.0 * hyperlatents_im_len;
         let latents_shape = (
             side_info[3] as usize,
             side_info[4] as usize,
@@ -279,11 +267,12 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
 }
 
 impl MeanScaleHierarchicalEncoder {
-    pub fn MinnenEncoder() -> MeanScaleHierarchicalEncoder {
+    #[allow(non_snake_case)]
+    pub fn MinnenJohnstonEncoder() -> MeanScaleHierarchicalEncoder {
         let mut loader = NpzWeightLoader::full_loader();
         let latent_encoder = Box::new(MinnenEncoder::new(&mut loader));
-        let hyperlatent_encoder = Box::new(MinnenHyperencoder::new());
-        let hyperlatent_decoder = Box::new(MinnenHyperencoder::new());
+        let hyperlatent_encoder = Box::new(MinnenHyperEncoder::new(&mut loader));
+        let hyperlatent_decoder = Box::new(JohnstonHyperDecoder::new(&mut loader));
 
         MeanScaleHierarchicalEncoder {
             latent_encoder,
@@ -294,13 +283,12 @@ impl MeanScaleHierarchicalEncoder {
     }
 }
 
-impl MeanScaleHierarchicalEncoder {
-    pub fn JohnstonDecoder() -> MeanScaleHierarchicalDecoder {
+impl MeanScaleHierarchicalDecoder {
+    #[allow(non_snake_case)]
+    pub fn MinnenJohnstonDecoder() -> MeanScaleHierarchicalDecoder {
         todo!()
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-}
+mod tests {}

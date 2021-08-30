@@ -10,6 +10,7 @@
 //! let sampler = Independent(&distribution, &mut source);
 //! let samples = sampler.take(10).collect::<Vec<_>>();
 //! ```
+#![allow(warnings)]
 
 #[cfg(test)]
 extern crate assert;
