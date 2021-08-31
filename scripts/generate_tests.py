@@ -7,7 +7,6 @@ import os
 
 np.random.seed(260896)
 
-
 class RandomArrayTest:
     def __init__(self, test_name, layer_name, random_test_objects):
         """Struct that represents one Random Array Test.
@@ -57,15 +56,24 @@ def numpy_array_to_rust(x, shape_vec=False):
         The Rust array macro seems broken for 4-D arrays, so this is a 
         workaround.
     """
+    # This removes the "dtype=..." info in the representation,
+    # if needed
+    if x.dtype == np.float64:
+        ending_delimiter = -1
+    elif x.dtype == np.float32:
+        ending_delimiter = -16
+    else:
+        raise ValueError("array has an unsupported datatype: {x.dtype}")
+
     if shape_vec:
         x_shape = x.shape
         x = x.flatten()
     # removes leading array and closing paren tokens
-    array_repr = f"{repr(x)}"[6:][:-1].replace("\n", "\n\t\t")
+    array_repr = f"{repr(x)}"[6:][:ending_delimiter].replace("\n", "\n\t\t")
     if shape_vec:
         return f"Array::from_shape_vec({x_shape}, vec!{array_repr}).unwrap()"
     else:
-        return f"array!{array_repr}"
+        return f"array!{array_repr}".rstrip().rstrip(",")
 
 
 def conv2d_random_array_test(num_arrays_per_case=3):
@@ -85,11 +93,11 @@ def conv2d_random_array_test(num_arrays_per_case=3):
         if im_shape[2] != ker_shape[2]:
             continue  # shapes are not compatible, channel size missmatch
         for i in range(num_arrays_per_case):
-            im = np.random.rand(*im_shape).astype(dtype=np.float64)
-            ker = np.random.rand(*ker_shape).astype(dtype=np.float64)
+            im = np.random.rand(*im_shape).astype(dtype=np.float32)
+            ker = np.random.rand(*ker_shape).astype(dtype=np.float32)
             # axis 0 is batch dimension, which we need to remove and add back in
-            im_tf = tf.constant(np.expand_dims(im, axis=0), dtype=tf.float64)
-            ker_tf = tf.constant(ker, dtype=tf.float64)
+            im_tf = tf.constant(np.expand_dims(im, axis=0), dtype=tf.float32)
+            ker_tf = tf.constant(ker, dtype=tf.float32)
             out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
                                   1, 1, 1, 1], padding=padding)
             out = np.squeeze(out_tf.numpy(), axis=0)
@@ -107,9 +115,9 @@ def conv2d_random_array_test(num_arrays_per_case=3):
             #     height x width x channels
             #   our ordering:
             #     channels x height x width
-            im = np.moveaxis(im, [0,1,2], [1,2,0])
-            ker = np.moveaxis(ker, [0,1,2,3], [3,2,1,0])
-            out = np.moveaxis(out, [0,1,2], [1,2,0])
+            im = np.moveaxis(im, [0, 1, 2], [1, 2, 0])
+            ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 1, 0])
+            out = np.moveaxis(out, [0, 1, 2], [1, 2, 0])
 
             test_obj = RandomArrayTestObject(im, ker, out, padding)
             objects.append(test_obj)
@@ -134,11 +142,11 @@ def conv2d_transpose_random_array_test(num_arrays_per_case=3):
         if im_shape[2] != ker_shape[3]:
             continue  # shapes are not compatible, channel size missmatch
         for i in range(num_arrays_per_case):
-            im = np.random.rand(*im_shape)
-            ker = np.random.rand(*ker_shape)
+            im = np.random.rand(*im_shape).astype(np.float32)
+            ker = np.random.rand(*ker_shape).astype(np.float32)
             # axis 0 is batch dimension, which we need to remove and add back in
-            im_tf = tf.constant(np.expand_dims(im, axis=0), dtype=tf.float64)
-            ker_tf = tf.constant(ker, dtype=tf.float64)
+            im_tf = tf.constant(np.expand_dims(im, axis=0), dtype=tf.float32)
+            ker_tf = tf.constant(ker, dtype=tf.float32)
             output_shape = (1, im_shape[0], im_shape[1], ker_shape[2])
             # conv2d transpose expected filters as [height, width, out, in]
             # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
