@@ -21,7 +21,7 @@ class RandomArrayTest:
         if self.layer_name == "ConvolutionLayer":
             self.function_name = "convolve"
         elif self.layer_name == "TransposedConvolutionLayer":
-            raise ValueError("Transposed conv not yet implemented")
+            self.function_name = "transposed_convolve"
         self.random_test_objects = random_test_objects
 
 class RandomArrayTestObject:
@@ -120,6 +120,61 @@ def conv2d_random_array_test(num_arrays_per_case=3):
    
     return RandomArrayTest("conv2d", "ConvolutionLayer", objects)
 
+def conv2d_transpose_random_array_test(num_arrays_per_case=3):
+    """Returns a Test case that can be rendered with the 
+    test_py_impl_random_arrays_template.rs into a Rust test
+    that tests the conv2d_transpose Rust implementation against tf.nn.conv2d.
+
+    num_arrays_per_case: int, number of different random arrays generated
+    per (img_shape, kernel_shape) combination
+    Note: The size of C_in must match the filters of kernel
+    """
+    img_shapes = [(2,4,4), (2,4,4), (2,4,4), (2,5,5), (2, 3, 3)]
+    kernel_shapes = [(2,1,4,4), (2,1,4,4), (2,1,3,3)]
+    padding = "VALID"
+    stride_list = [1,1] # add stride=2 but check how to fit it to input & kernel size
+
+    objects = []
+    for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
+        if im_shape[0] != ker_shape[0]:
+            continue # shapes are not compatible, channel size missmatch
+        for i in range(num_arrays_per_case):
+            im = np.random.rand(*im_shape).astype(dtype=np.float64)
+            ker = np.random.rand(*ker_shape).astype(dtype=np.float64)
+            # axis 0 is batch dimension, which we need to remove and add back in
+
+            if i%2==0:
+                stride = stride_list[0]
+            else:
+                stride = stride_list[1]
+            im_tf = torch.Tensor(np.expand_dims(im, axis=0))
+            conv = nn.ConvTranspose2d(im.shape[0], ker.shape[0], ker.shape[2], stride=stride, bias=False, padding=0)
+            with torch.no_grad():
+                conv.weight = torch.nn.Parameter(torch.from_numpy(ker).float())
+            out_tf = conv(im_tf)
+            out = np.squeeze(out_tf.detach().numpy(), axis=0).astype(dtype=np.float64)
+
+            # reordering the images and weights
+            # ! This is different than conv2d !
+            #
+            # For weights:
+            #   TF ordering:
+            #     kheight x kwidth x out x in
+            #   our ordering:
+            #     out x in x kwidth x kheight
+            #
+            # For images:
+            #   TF ordering:
+            #     height x width x channels
+            #   our ordering:
+            #     channels x height x width
+            # im = np.moveaxis(im, [0, 1, 2], [1, 2, 0])
+            # ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 0, 1])
+            # out = np.moveaxis(out, [0, 1, 2], [1, 2, 0])
+            test_obj = RandomArrayTestObject(im, ker, out, padding, stride)
+            objects.append(test_obj)
+
+    return RandomArrayTest("transpose_convolve", "TransposedConvolutionLayer", objects)
 
 def main():
     # Tensorflow conv2d inputs are given as
@@ -140,18 +195,31 @@ def main():
 
     # writing out the conv2d test cases
     conv2d_test_case = conv2d_random_array_test()
-    conv2d_test_content = template.render(random_tests=[conv2d_test_case], file=__file__)
+    conv2d_test_content = template.render(
+        random_tests=[conv2d_test_case], file=__file__)
 
-    conv2d_output_filename = os.path.join(ml_test_folder, "convolutions_automated_test_torch.rs")
+    conv2d_output_filename = os.path.join(
+        ml_test_folder, "convolutions_automated_test.rs")
     with open(conv2d_output_filename, "w+") as conv2d_output_file:
         conv2d_output_file.write(conv2d_test_content)
         print(f"Successfully wrote conv2d test to {conv2d_output_filename}")
     os.system(f"rustfmt {conv2d_output_filename}")
     print(f"Formatted conv2d test.")
 
+    # writing out the conv2d_tranposed test cases
+    conv2d_transpose_test_case = conv2d_transpose_random_array_test()
+    conv2d_transpose_test_content = template.render(
+        random_tests=[conv2d_transpose_test_case], file=__file__)
 
-    # TODO:
-    # writing out the transposed conv2d test cases
+    conv2d_transpose_output_filename = os.path.join(
+        ml_test_folder, "convolutions_transposed_automated_test.rs")
+    with open(conv2d_transpose_output_filename, "w+") as conv2d_transpose_output_file:
+        conv2d_transpose_output_file.write(conv2d_transpose_test_content)
+        print(
+            f"Successfully wrote conv2d_transpose test to {conv2d_transpose_output_filename}")
+    os.system(f"rustfmt {conv2d_transpose_output_filename}")
+    print(f"Formatted conv2d_transpose test.")
+
 
 
 if __name__ == "__main__":
