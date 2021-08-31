@@ -129,8 +129,8 @@ def conv2d_transpose_random_array_test(num_arrays_per_case=3):
     per (img_shape, kernel_shape) combination
     Note: The size of C_in must match the filters of kernel
     """
-    img_shapes = [(2,4,4), (2,4,4), (2,4,4), (2,5,5), (2, 3, 3)]
-    kernel_shapes = [(2,1,4,4), (2,1,4,4), (2,1,3,3)]
+    img_shapes = [(2,5,5), (2,4,4), (2,6,6), (1,5,5), (1, 3, 3)]
+    kernel_shapes = [(2,1,4,4), (1,1,4,4), (2,1,3,3)]
     padding = "VALID"
     stride_list = [1,1] # add stride=2 but check how to fit it to input & kernel size
 
@@ -199,7 +199,7 @@ def main():
         random_tests=[conv2d_test_case], file=__file__)
 
     conv2d_output_filename = os.path.join(
-        ml_test_folder, "convolutions_automated_test.rs")
+        ml_test_folder, "convolutions_automated_test_torch.rs")
     with open(conv2d_output_filename, "w+") as conv2d_output_file:
         conv2d_output_file.write(conv2d_test_content)
         print(f"Successfully wrote conv2d test to {conv2d_output_filename}")
@@ -212,7 +212,7 @@ def main():
         random_tests=[conv2d_transpose_test_case], file=__file__)
 
     conv2d_transpose_output_filename = os.path.join(
-        ml_test_folder, "convolutions_transposed_automated_test.rs")
+        ml_test_folder, "convolutions_transposed_automated_test_torch.rs")
     with open(conv2d_transpose_output_filename, "w+") as conv2d_transpose_output_file:
         conv2d_transpose_output_file.write(conv2d_transpose_test_content)
         print(
