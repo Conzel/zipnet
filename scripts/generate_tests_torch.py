@@ -129,7 +129,7 @@ def conv2d_transpose_random_array_test(num_arrays_per_case=3):
     per (img_shape, kernel_shape) combination
     Note: The size of C_in must match the filters of kernel
     """
-    img_shapes = [(2,5,5), (2,4,4), (2,6,6), (1,5,5), (1, 3, 3)]
+    img_shapes = [(2,5,4), (2,4,3), (2,6,6), (1,4,5), (1, 3, 3)]
     kernel_shapes = [(2,1,4,4), (1,1,4,4), (2,1,3,3)]
     padding = "VALID"
     stride_list = [1,1] # add stride=2 but check how to fit it to input & kernel size
