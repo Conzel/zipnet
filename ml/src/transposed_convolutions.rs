@@ -43,11 +43,11 @@ impl TransposedConvolutionLayer {
         // This trait bound ensures that kernel and im2d can be passed as owned array or view.
         // AsArray just ensures that im2d can be converted to an array view via ".into()".
         // Read more here: https://docs.rs/ndarray/0.12.1/ndarray/trait.AsArray.html
-
+        // NOTE: THERE IS A CHANGE IN KERNEL DIMENSIONS FOR CONV TRANSPOSED
         // Input:
         // -----------------------------------------------
         // - x: Input data of shape (C, H, W)
-        // - w: Filter weights of shape (F, C, HH, WW)
+        // - w: Filter weights of shape (C, F, HH, WW) // DIFFERENT from CONV2D
         // - b: Biases, of shape (F,)
         // -----------------------------------------------
         // - 'stride': The number of pixels between adjacent receptive fields in the
@@ -66,8 +66,8 @@ impl TransposedConvolutionLayer {
         let output: Array3<ImagePrecision>;
         let new_im_height: usize;
         let new_im_width: usize;
-        let filter = self.convolution_layer.num_filters as usize;
-        let c_out = self.convolution_layer.img_channels as usize;
+        let filter = self.convolution_layer.img_channels as usize;
+        let c_out = self.convolution_layer.num_filters as usize;
 
         // Dimensions: C, H, W
         let im_channel = im2d_arr.len_of(Axis(0));
@@ -84,7 +84,7 @@ impl TransposedConvolutionLayer {
         new_im_width =
             (im_width - 1) * self.convolution_layer.stride + self.convolution_layer.kernel_width;
 
-        // weights.reshape(F, HH*WW*C)
+        // weights.reshape(F, HH*WW*C) # CHECK THIS LINE FOR FLIPPING
         let mut weights_flatten = kernel_weights_arr
             .into_shape(
                 filter

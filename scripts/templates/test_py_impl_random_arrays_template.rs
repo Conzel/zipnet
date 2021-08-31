@@ -12,7 +12,7 @@ use ml::convolutions::*;
 use ndarray::{Array, array, Dimension, Array4};
 
 fn arr_allclose<D: Dimension>(arr1: &Array<f32,D>, arr2: &Array<f32,D>) -> bool {
-    (arr1 - arr2).map(|x| (*x as f32).abs()).sum() < 1e-9
+    (arr1 - arr2).map(|x| (*x as f32).abs()).sum() < 1e-3
 }
 
 {% for t in random_tests %}
