@@ -84,26 +84,47 @@ impl TransposedConvolutionLayer {
         new_im_width =
             (im_width - 1) * self.convolution_layer.stride + self.convolution_layer.kernel_width;
 
-        // weights.reshape(F, HH*WW*C) # CHECK THIS LINE FOR FLIPPING
-        let mut weights_flatten = kernel_weights_arr
-            .into_shape(
-                filter
-                    * self.convolution_layer.kernel_height
+        // weights.reshape(F, HH*WW*C)
+        // loop over each filter and flip the kernel and append it back
+        let mut filter_col: Array2<ImagePrecision> = Array::zeros((
+            c_out,
+            self.convolution_layer.kernel_height * self.convolution_layer.kernel_width * filter,
+        ));
+        for i in 0..c_out {
+            let patch_kernel_weights = kernel_weights_arr.slice(s![i, .., .., ..]);
+            let mut weights_flatten = patch_kernel_weights
+                .into_shape(
+                    self.convolution_layer.kernel_height
+                        * self.convolution_layer.kernel_width
+                        * filter,
+                )
+                .unwrap()
+                .to_vec();
+            //FLIP
+            weights_flatten.reverse();
+            let weights_reverse = Array::from_shape_vec(
+                (self.convolution_layer.kernel_height
                     * self.convolution_layer.kernel_width
-                    * c_out,
+                    * filter,),
+                weights_flatten,
             )
-            .unwrap()
-            .to_vec();
-        //FLIP
-        weights_flatten.reverse();
-        let filter_col = Array::from_shape_vec(
-            (
+            .unwrap();
+            filter_col
+                .slice_mut(s![
+                    i,
+                    0..self.convolution_layer.kernel_height
+                        * self.convolution_layer.kernel_width
+                        * filter
+                ])
+                .assign(&weights_reverse);
+        }
+
+        let filter_col_flatten = filter_col
+            .into_shape((
                 filter,
                 self.convolution_layer.kernel_height * self.convolution_layer.kernel_width * c_out,
-            ),
-            weights_flatten,
-        )
-        .unwrap();
+            ))
+            .unwrap();
 
         // fn:im2col() for with padding always
         // Assuming square kernels:
@@ -133,8 +154,9 @@ impl TransposedConvolutionLayer {
             im_channel,
         );
 
-        let filter_transpose = filter_col.t();
+        let filter_transpose = filter_col_flatten.t();
         let mul = im_col.dot(&filter_transpose); // + bias_m
+                                                 // println!("{:?}", filter_transpose);
 
         if self.convolution_layer.padding == Padding::Same {
             let mul_reshape = mul
@@ -190,5 +212,46 @@ mod tests {
 
         let output_same = arr3(&[[[55.0, 162.0], [222.0, 540.0]]]);
         assert_eq!(convolved_image_same, output_same);
+
+        let test_img_new = array![
+            [
+                [0.23224549, 0.50588505, 0.86441349, 0.02310899],
+                [0.45685568, 0.40417363, 0.25985479, 0.09913059],
+                [0.79699722, 0.98004136, 0.25103959, 0.11597095],
+                [0.72586276, 0.09967188, 0.29483115, 0.22645573]
+            ],
+            [
+                [0.16055934, 0.43114743, 0.90784464, 0.96178347],
+                [0.63828966, 0.534928, 0.68839463, 0.58409027],
+                [0.75128938, 0.66844715, 0.66343357, 0.46953653],
+                [0.46234563, 0.26003667, 0.77429137, 0.328285]
+            ]
+        ];
+
+        let kernel_new = Array::from_shape_vec(
+            (2, 1, 4, 4),
+            vec![
+                0.83035486, 0.49730704, 0.99242497, 0.83261124, 0.8848362, 0.11227968, 0.83485613,
+                0.38707261, 0.42852716, 0.33262721, 0.92346432, 0.73501345, 0.24397685, 0.79674084,
+                0.95016545, 0.21724486, 0.86324733, 0.1932244, 0.51769137, 0.32076064, 0.96737749,
+                0.00598922, 0.39202869, 0.24141203, 0.82792129, 0.69460177, 0.75072335, 0.97536332,
+                0.24372894, 0.49899355, 0.31899844, 0.49396161,
+            ],
+        )
+        .unwrap();
+
+        let convT_layer_new = TransposedConvolutionLayer::new(kernel_new, 1, Padding::Valid);
+        let convolved_image_new = convT_layer_new.transposed_convolve(&test_img_new);
+
+        let output_new = arr3(&[[
+            [0.3314, 0.9388, 2.1500, 2.4249, 2.0847, 1.5318, 0.3277],
+            [1.2912, 2.0397, 3.8575, 3.8853, 2.6703, 1.7880, 0.5110],
+            [2.5645, 3.6251, 6.0785, 7.3845, 5.5063, 3.6227, 1.3816],
+            [3.2539, 4.0704, 7.3212, 8.8666, 6.0085, 3.7842, 1.5748],
+            [2.3201, 3.0958, 6.0149, 6.5279, 4.3343, 2.5870, 1.0202],
+            [1.0714, 2.2325, 4.3328, 4.6389, 2.8037, 2.0697, 0.7438],
+            [0.2898, 0.8967, 1.3070, 1.3203, 1.0215, 0.7664, 0.2114],
+        ]]);
+        // assert_eq!(convolved_image_new, output_new);
     }
 }
