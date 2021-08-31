@@ -1,6 +1,3 @@
-use ml::convolutions::*;
-use ml::transposed_convolutions::*;
-use ndarray::{Array, array, Dimension, Array4};
 {# 
     Template file for generating automated unit tests.
     Use the generate_tests.py script to regenerate.
@@ -9,6 +6,7 @@ use ndarray::{Array, array, Dimension, Array4};
 // script {{ file }}.
 // Please do not change this file by hand.
 use ml::convolutions::*;
+use ml::transposed_convolutions::*;
 use ndarray::{Array, array, Dimension, Array4};
 
 fn arr_allclose<D: Dimension>(arr1: &Array<f32,D>, arr2: &Array<f32,D>) -> bool {
