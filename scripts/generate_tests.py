@@ -79,14 +79,16 @@ def numpy_array_to_rust(x, shape_vec=False):
 def torch_to_tf_img(x):
     return np.moveaxis(x, 0, 2)
 
+
 def tf_to_torch_img(x):
     return np.moveaxis(x, 2, 0)
+
 
 def tf_to_torch_ker(k):
     return np.moveaxis(k, [2, 3], [1, 0])
 
 
-def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896):
+def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896, padding="VALID"):
     """Returns a Test case that can be rendered with the 
     test_py_impl_random_arrays_template.rs into a Rust test
     that tests the conv2d Rust implementation against tf.nn.conv2d.
@@ -99,7 +101,6 @@ def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896
     img_shapes = [(5, 5, 1), (10, 15, 1), (15, 10, 1),
                   (6, 6, 3), (10, 15, 3), (15, 10, 3)]
     kernel_shapes = [(3, 3, 1, 3), (5, 5, 1, 2), (3, 3, 3, 2), (5, 5, 3, 2)]
-    padding = "VALID"
 
     objects = []
     for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
@@ -110,21 +111,31 @@ def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896
             im = np.random.rand(*im_shape).astype(dtype=np.float32)
             ker = np.random.rand(*ker_shape).astype(dtype=np.float32)
 
-            if use_torch:
-                im_tensor = torch.FloatTensor(np.expand_dims(tf_to_torch_img(im), axis=0))
-                ker_tensor = torch.FloatTensor(tf_to_torch_ker(ker))
-                out_tensor = torch.nn.functional.conv2d(im_tensor, ker_tensor)
-            else:
-                # axis 0 is batch dimension, which we need to remove and add back in
-                im_tensor = tf.constant(
-                    np.expand_dims(im, axis=0), dtype=tf.float32)
-                ker_tensor = tf.constant(ker, dtype=tf.float32)
-                out_tensor = tf.nn.conv2d(im_tensor, ker_tensor, strides=[
-                    1, 1, 1, 1], padding=padding)
+            im_pt = torch.FloatTensor(
+                np.expand_dims(tf_to_torch_img(im), axis=0))
+            ker_pt = torch.FloatTensor(tf_to_torch_ker(ker))
+            out_pt = torch.nn.functional.conv2d(im_pt, ker_pt)
+            out_pt_numpy = torch_to_tf_img(np.squeeze(
+                out_pt.numpy(), axis=0).astype(np.float32))
 
-            out = np.squeeze(out_tensor.numpy(), axis=0).astype(np.float32)
+            # axis 0 is batch dimension, which we need to remove and add back in
+            im_tf = tf.constant(
+                np.expand_dims(im, axis=0), dtype=tf.float32)
+            ker_tf = tf.constant(ker, dtype=tf.float32)
+            out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
+                1, 1, 1, 1], padding=padding)
+            out_tf_numpy = np.squeeze(
+                out_tf.numpy(), axis=0).astype(np.float32)
+
+            # to make sure tf and pt implementations agree
+            assert np.allclose(
+                out_tf_numpy, out_pt_numpy), f"Torch and Tensorflow implementations didn't match.\nTorch: {out_pt_numpy}\n Tensorflow:{out_tf_numpy}"
+
             if use_torch:
-                out = torch_to_tf_img(out)
+                out = out_pt_numpy
+            else:
+                out = out_tf_numpy
+
 
             # reordering the images and weights
             #
@@ -252,7 +263,7 @@ def main():
     conv2d_transpose_test_content = template.render(
         random_tests=[conv2d_transpose_test_case], file=__file__)
     write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
-                       "conv2d_transpose_automated_test.rs")
+                       "conv2d_transpose")
 
 
 if __name__ == "__main__":
