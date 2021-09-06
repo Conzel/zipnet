@@ -88,7 +88,7 @@ def tf_to_torch_ker(k):
     return np.moveaxis(k, [2, 3], [1, 0])
 
 
-def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896, padding="VALID"):
+def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, use_torch=False, transpose=False, seed=260896, padding="VALID"):
     """Returns a Test case that can be rendered with the 
     test_py_impl_random_arrays_template.rs into a Rust test
     that tests the conv2d Rust implementation against tf.nn.conv2d.
@@ -98,9 +98,9 @@ def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896
     use_torch: bool, set to true if we should use the pytorch implementation to compare against.
     False for the tensorflow implementation"""
     np.random.seed(seed)
-    img_shapes = [(5, 5, 1), (10, 15, 1), (15, 10, 1),
-                  (6, 6, 3), (10, 15, 3), (15, 10, 3)]
-    kernel_shapes = [(3, 3, 1, 3), (5, 5, 1, 2), (3, 3, 3, 2), (5, 5, 3, 2)]
+
+    if transpose and use_torch:
+        raise ValueError("Transposed convolution with pytorch is not supported yet.")
 
     objects = []
     for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
@@ -110,6 +110,14 @@ def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896
         for i in range(num_arrays_per_case):
             im = np.random.rand(*im_shape).astype(dtype=np.float32)
             ker = np.random.rand(*ker_shape).astype(dtype=np.float32)
+
+            if transpose: 
+                output_shape = (1, im_shape[0], im_shape[1], ker_shape[2])
+                # conv2d transpose expected filters as [height, width, out, in]
+                # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
+                out_tf = tf.nn.conv2d_transpose(
+                    im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
+                out = np.squeeze(out_tf.numpy(), axis=0)
 
             im_pt = torch.FloatTensor(
                 np.expand_dims(tf_to_torch_img(im), axis=0))
@@ -122,8 +130,15 @@ def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896
             im_tf = tf.constant(
                 np.expand_dims(im, axis=0), dtype=tf.float32)
             ker_tf = tf.constant(ker, dtype=tf.float32)
-            out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
-                1, 1, 1, 1], padding=padding)
+            if transpose: 
+                output_shape = (1, im_shape[0], im_shape[1], ker_shape[2])
+                # conv2d transpose expected filters as [height, width, out, in]
+                # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
+                out_tf = tf.nn.conv2d_transpose(
+                    im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
+            else:
+                out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
+                    1, 1, 1, 1], padding=padding)
             out_tf_numpy = np.squeeze(
                 out_tf.numpy(), axis=0).astype(np.float32)
 
@@ -136,12 +151,13 @@ def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896
             else:
                 out = out_tf_numpy
 
-
             # reordering the images and weights
             #
             # For weights:
             #   TF ordering:
             #     kheight x kwidth x in x out
+            #   TF ordering for transposed conv:
+            #     kheight x kwidth x out x in
             #   our ordering:
             #     out x in x kwidth x kheight
             #
@@ -151,17 +167,25 @@ def conv2d_random_array_test(num_arrays_per_case=3, use_torch=False, seed=260896
             #   our ordering:
             #     channels x height x width
             im = np.moveaxis(im, [0, 1, 2], [1, 2, 0])
-            ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 1, 0])
+            if transpose:
+                ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 0, 1])
+            else:
+                ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 1, 0])
             out = np.moveaxis(out, [0, 1, 2], [1, 2, 0])
 
             test_obj = RandomArrayTestObject(im, ker, out, padding)
             objects.append(test_obj)
+    
+    if transpose:
+        transpose_string = "_transpose"
+    else:
+        transpose_string = ""
 
     if use_torch:
         test_name = "conv2d_torch"
     else:
         test_name = "conv2d"
-    return RandomArrayTest(test_name, "ConvolutionLayer", objects)
+    return RandomArrayTest(f"{test_name}{transpose_string}", "ConvolutionLayer", objects)
 
 
 def conv2d_transpose_random_array_test(num_arrays_per_case=3):
@@ -171,9 +195,6 @@ def conv2d_transpose_random_array_test(num_arrays_per_case=3):
 
     num_arrays_per_case: int, number of different random arrays generated
     per (img_shape, kernel_shape) combination"""
-    img_shapes = [(5, 5, 1), (10, 15, 1), (15, 10, 1),
-                  (6, 6, 3), (10, 15, 3), (15, 10, 3)]
-    kernel_shapes = [(3, 3, 3, 1), (5, 5, 2, 1), (3, 3, 2, 3), (5, 5, 2, 3)]
     padding = "SAME"
 
     objects = []
@@ -196,11 +217,6 @@ def conv2d_transpose_random_array_test(num_arrays_per_case=3):
             # reordering the images and weights
             # ! This is different than conv2d !
             #
-            # For weights:
-            #   TF ordering:
-            #     kheight x kwidth x out x in
-            #   our ordering:
-            #     out x in x kwidth x kheight
             #
             # For images:
             #   TF ordering:
@@ -237,6 +253,13 @@ def main():
     # analog for conv2d_transpose:
     # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
 
+    img_shapes = [(5, 5, 1), (10, 15, 1), (15, 10, 1),
+                         (6, 6, 3), (10, 15, 3), (15, 10, 3)]
+    kernel_shapes_conv2d = [(3, 3, 1, 3), (5, 5, 1, 2),
+                            (3, 3, 3, 2), (5, 5, 3, 2)]
+
+    kernel_shapes_transposed = [(3, 3, 3, 1), (5, 5, 2, 1), (3, 3, 2, 3), (5, 5, 2, 3)]
+
     np.set_printoptions(suppress=True)
     # loading Jinja with the random array test template
     loader = jinja2.FileSystemLoader("./templates")
@@ -246,20 +269,22 @@ def main():
     ml_test_folder = os.path.join(project_root, "ml", "tests")
 
     # writing out the conv2d test cases
-    conv2d_test_case = conv2d_random_array_test()
+    conv2d_test_case = conv2d_random_array_test(
+        img_shapes, kernel_shapes_conv2d)
     conv2d_test_content = template.render(
         random_tests=[conv2d_test_case], file=__file__)
     write_test_to_file(ml_test_folder, conv2d_test_content, "conv2d")
 
     # writing out the conv2d test cases with torch
-    conv2d_torch_test_case = conv2d_random_array_test(use_torch=True)
+    conv2d_torch_test_case = conv2d_random_array_test(
+        img_shapes, kernel_shapes_conv2d, use_torch=True)
     conv2d_torch_test_content = template.render(
         random_tests=[conv2d_torch_test_case], file=__file__)
     write_test_to_file(
         ml_test_folder, conv2d_torch_test_content, "conv2d_torch")
 
     # writing out the conv2d_tranposed test cases
-    conv2d_transpose_test_case = conv2d_transpose_random_array_test()
+    conv2d_transpose_test_case = conv2d_random_array_test(img_shapes, kernel_shapes_transposed)
     conv2d_transpose_test_content = template.render(
         random_tests=[conv2d_transpose_test_case], file=__file__)
     write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
