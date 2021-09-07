@@ -175,7 +175,7 @@ impl TransposedConvolutionLayer {
             let pad_right_int = new_im_width - pad_right;
             let pad_bottom_int = new_im_height - pad_bottom;
             output = mul_reshape
-                .slice(s![.., pad_left..pad_right_int, pad_top..pad_bottom_int])
+                .slice(s![.., pad_top..pad_bottom_int, pad_left..pad_right_int])
                 .into_owned();
         } else {
             output = mul
