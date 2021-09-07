@@ -6,7 +6,6 @@ import tensorflow as tf
 import os
 import torch
 
-
 class RandomArrayTest:
     def __init__(self, test_name, layer_name, random_test_objects):
         """Struct that represents one Random Array Test.
@@ -42,8 +41,8 @@ class RandomArrayTestObject:
         else:
             raise ValueError(f"Illegal padding value {padding}")
 
-        self.input_arr = numpy_array_to_rust(input_arr)
-        self.output_arr = numpy_array_to_rust(output_arr)
+        self.input_arr = numpy_array_to_rust(input_arr, shape_vec=True)
+        self.output_arr = numpy_array_to_rust(output_arr, shape_vec=True)
         self.kernel = numpy_array_to_rust(kernel, shape_vec=True)
         self.stride = stride
 
@@ -88,7 +87,82 @@ def tf_to_torch_ker(k):
     return np.moveaxis(k, [2, 3], [1, 0])
 
 
-def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, use_torch=False, transpose=False, seed=260896, padding="VALID"):
+def tf_to_torch_ker_transpose(k):
+    return np.moveaxis(k, [2, 3], [0, 1])
+
+
+def transform_img(orig, dest, x):
+    """Transforms img between orig and dest data formats.
+
+    orig: str, tf, rust, or pt
+    dest: str, tf, rust, or pt
+    x: ndarray to transform
+    """
+    return transform(orig, dest, x, is_kernel=False)
+
+
+def transform_ker(orig, dest, x):
+    """Transforms ker between orig and dest data formats.
+
+    orig: str, tf, rust, or pt
+    dest: str, tf, rust, or pt
+    x: ndarray to transform
+    """
+    return transform(orig, dest, x, is_kernel=True)
+
+
+def transform(orig, dest, x, is_kernel):
+    """
+    Transforms an array from the origin dataformat to the destination data format.
+    Used to convert between the different dataformats used.
+
+    These are (im, ker, im_transpose, ker_transpose):
+    B = Batch, H = Height, W = Width, C = Channel, I = Input channels, O = Output channels
+    TF = Tensorflow, PT = Pytorch, Rust = our implementation
+
+    rust: CHW, OIHW, CHW, IOHW
+    tf: BHWC, HWIO, BHWC, HWOI
+    pt: BCHW, OIHW, BCHW, IOHW
+
+    orig: str, tf, rust, or pt
+    dest: str, tf, rust, or pt
+    x: ndarray to transform
+    transpose: whether 
+    kernel: bool, True if x is a kernel
+    """
+    orig = orig.lower()
+    dest = dest.lower()
+
+    if orig == dest:
+        print("Warning: Tried to convert orig to same dest.")
+        return x
+
+    # We first convert everything to PT
+    if orig == "rust":
+        if not is_kernel:
+            x = np.expand_dims(x, axis=0)
+
+    elif orig == "tf":
+        if not is_kernel:
+            x = np.moveaxis(x, 3, 1)
+        if is_kernel:
+            x = np.moveaxis(x, [2, 3], [1, 0])
+
+    # now x is in PT format
+    if dest == "rust":
+        if not is_kernel:
+            x = np.squeeze(x, axis=0)
+
+    elif dest == "tf":
+        if not is_kernel:
+            x = np.moveaxis(x, 1, 3)
+        else:
+            x = np.moveaxis(x, [0, 1], [3, 2])
+
+    return x
+
+
+def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, use_torch=False, transpose=False, seed=260896, padding="VALID", compare_impls=True):
     """Returns a Test case that can be rendered with the 
     test_py_impl_random_arrays_template.rs into a Rust test
     that tests the conv2d Rust implementation against tf.nn.conv2d.
@@ -97,85 +171,93 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
     per (img_shape, kernel_shape) combination
     use_torch: bool, set to true if we should use the pytorch implementation to compare against.
     False for the tensorflow implementation"""
+    # The implementation works as follows with data formats:
+    #                     IMG, KER (Rust)  ---------------
+    #                   /                 \               \
+    #           to tf  /                   \ to pt         \
+    #                 v                     v               \
+    #              IMG, KER (TF)          IMG, KER (PT)      \
+    #                 /                       \               \
+    #      tf conv2d /                         \  pt conv2d    \  our implementation
+    #               v                           v               \
+    #              OUT (TF)                    OUT (PT)          \
+    #              /                             \                \
+    #     to rust /                               \ to rust        \
+    #            v                                 v                \
+    #           out1  <-- Compare (in python) --> out2               \
+    #                             |                                   v
+    #                             ------------------------------->  out3
+    #                                  Compare (in rust testcase)
+
     np.random.seed(seed)
 
-    if transpose and use_torch:
-        raise ValueError("Transposed convolution with pytorch is not supported yet.")
+    if transpose and padding == "SAME" and (compare_impls or use_torch):
+        raise ValueError(
+            "Same padding not useable with torch transposed convolution.")
+    if transpose and padding == "VALID" and (compare_impls or not use_torch):
+        raise ValueError(
+            "Valid padding not useable with tensorflow transposed convolution.")
 
     objects = []
     for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
-        if im_shape[2] != ker_shape[2]:
+        if im_shape[0] != ker_shape[1]:
             continue  # shapes are not compatible, channel size missmatch
+
+        if transpose:
+           ker_shape = ker_shape[1], ker_shape[0], ker_shape[2], ker_shape[3]
 
         for i in range(num_arrays_per_case):
             im = np.random.rand(*im_shape).astype(dtype=np.float32)
             ker = np.random.rand(*ker_shape).astype(dtype=np.float32)
 
-            if transpose: 
-                output_shape = (1, im_shape[0], im_shape[1], ker_shape[2])
-                # conv2d transpose expected filters as [height, width, out, in]
-                # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
-                out_tf = tf.nn.conv2d_transpose(
-                    im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
-                out = np.squeeze(out_tf.numpy(), axis=0)
+            # Generating the PT and TF parts
 
-            im_pt = torch.FloatTensor(
-                np.expand_dims(tf_to_torch_img(im), axis=0))
-            ker_pt = torch.FloatTensor(tf_to_torch_ker(ker))
-            out_pt = torch.nn.functional.conv2d(im_pt, ker_pt)
-            out_pt_numpy = torch_to_tf_img(np.squeeze(
-                out_pt.numpy(), axis=0).astype(np.float32))
+            if compare_impls or use_torch:
+                im_pt = torch.FloatTensor(transform_img("rust", "pt", im))
+                ker_pt = torch.FloatTensor(transform_ker("rust", "pt", ker))
 
-            # axis 0 is batch dimension, which we need to remove and add back in
-            im_tf = tf.constant(
-                np.expand_dims(im, axis=0), dtype=tf.float32)
-            ker_tf = tf.constant(ker, dtype=tf.float32)
-            if transpose: 
-                output_shape = (1, im_shape[0], im_shape[1], ker_shape[2])
-                # conv2d transpose expected filters as [height, width, out, in]
-                # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
-                out_tf = tf.nn.conv2d_transpose(
-                    im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
-            else:
-                out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
-                    1, 1, 1, 1], padding=padding)
-            out_tf_numpy = np.squeeze(
-                out_tf.numpy(), axis=0).astype(np.float32)
+                if transpose:
+                    out_pt = torch.nn.functional.conv_transpose2d(
+                        im_pt, ker_pt, padding=0)
+                else:
+                    out_pt = torch.nn.functional.conv2d(
+                        im_pt, ker_pt, padding=padding.lower())
 
-            # to make sure tf and pt implementations agree
-            assert np.allclose(
-                out_tf_numpy, out_pt_numpy), f"Torch and Tensorflow implementations didn't match.\nTorch: {out_pt_numpy}\n Tensorflow:{out_tf_numpy}"
+                out_pt_numpy = transform_img("pt", "rust", out_pt.numpy())
+
+            if compare_impls or not use_torch:
+                # axis 0 is batch dimension, which we need to remove and add back in
+                im_tf = tf.constant(transform_img(
+                    "rust", "tf", im), dtype=tf.float32)
+                ker_tf = tf.constant(transform_ker(
+                    "rust", "tf", ker), dtype=tf.float32)
+
+                if transpose:
+                    output_shape = (1, im_shape[1], im_shape[2], ker_shape[1])
+                    # conv2d transpose expected filters as [height, width, out, in]
+                    # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
+                    out_tf = tf.nn.conv2d_transpose(
+                        im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
+                else:
+                    out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
+                        1, 1, 1, 1], padding=padding)
+                out_tf_numpy = transform_img("tf", "rust", out_tf.numpy())
+
+            # Comparing implementations
+            if compare_impls:
+                # to make sure tf and pt implementations agree
+                assert np.allclose(
+                    out_tf_numpy, out_pt_numpy), f"Torch and Tensorflow implementations didn't match.\nTorch: {out_pt_numpy}\n Tensorflow:{out_tf_numpy}"
 
             if use_torch:
                 out = out_pt_numpy
             else:
                 out = out_tf_numpy
 
-            # reordering the images and weights
-            #
-            # For weights:
-            #   TF ordering:
-            #     kheight x kwidth x in x out
-            #   TF ordering for transposed conv:
-            #     kheight x kwidth x out x in
-            #   our ordering:
-            #     out x in x kwidth x kheight
-            #
-            # For images:
-            #   TF ordering:
-            #     height x width x channels
-            #   our ordering:
-            #     channels x height x width
-            im = np.moveaxis(im, [0, 1, 2], [1, 2, 0])
-            if transpose:
-                ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 0, 1])
-            else:
-                ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 1, 0])
-            out = np.moveaxis(out, [0, 1, 2], [1, 2, 0])
-
+            # Writing the test objects
             test_obj = RandomArrayTestObject(im, ker, out, padding)
             objects.append(test_obj)
-    
+
     if transpose:
         transpose_string = "_transpose"
     else:
@@ -186,51 +268,6 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
     else:
         test_name = "conv2d"
     return RandomArrayTest(f"{test_name}{transpose_string}", "ConvolutionLayer", objects)
-
-
-def conv2d_transpose_random_array_test(num_arrays_per_case=3):
-    """Returns a Test case that can be rendered with the 
-    test_py_impl_random_arrays_template.rs into a Rust test
-    that tests the conv2d_transpose Rust implementation against tf.nn.conv2d.
-
-    num_arrays_per_case: int, number of different random arrays generated
-    per (img_shape, kernel_shape) combination"""
-    padding = "SAME"
-
-    objects = []
-    for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
-        if im_shape[2] != ker_shape[3]:
-            continue  # shapes are not compatible, channel size missmatch
-        for i in range(num_arrays_per_case):
-            im = np.random.rand(*im_shape).astype(np.float32)
-            ker = np.random.rand(*ker_shape).astype(np.float32)
-            # axis 0 is batch dimension, which we need to remove and add back in
-            im_tf = tf.constant(np.expand_dims(im, axis=0), dtype=tf.float32)
-            ker_tf = tf.constant(ker, dtype=tf.float32)
-            output_shape = (1, im_shape[0], im_shape[1], ker_shape[2])
-            # conv2d transpose expected filters as [height, width, out, in]
-            # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
-            out_tf = tf.nn.conv2d_transpose(
-                im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
-            out = np.squeeze(out_tf.numpy(), axis=0)
-
-            # reordering the images and weights
-            # ! This is different than conv2d !
-            #
-            #
-            # For images:
-            #   TF ordering:
-            #     height x width x channels
-            #   our ordering:
-            #     channels x height x width
-            im = np.moveaxis(im, [0, 1, 2], [1, 2, 0])
-            ker = np.moveaxis(ker, [0, 1, 2, 3], [3, 2, 0, 1])
-            out = np.moveaxis(out, [0, 1, 2], [1, 2, 0])
-
-            test_obj = RandomArrayTestObject(im, ker, out, padding)
-            objects.append(test_obj)
-
-    return RandomArrayTest("conv2d_transpose", "TransposedConvolutionLayer", objects)
 
 
 def write_test_to_file(ml_test_folder, test_content, test_name):
@@ -253,19 +290,20 @@ def main():
     # analog for conv2d_transpose:
     # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
 
-    img_shapes = [(5, 5, 1), (10, 15, 1), (15, 10, 1),
-                         (6, 6, 3), (10, 15, 3), (15, 10, 3)]
-    kernel_shapes_conv2d = [(3, 3, 1, 3), (5, 5, 1, 2),
-                            (3, 3, 3, 2), (5, 5, 3, 2)]
-
-    kernel_shapes_transposed = [(3, 3, 3, 1), (5, 5, 2, 1), (3, 3, 2, 3), (5, 5, 2, 3)]
+    # Im shapes: Channels, Height, Width. Ker shapes are Out, In, Height, Width
+    # (the format used in Rust)
+    img_shapes = [(1, 5, 12), (1, 10, 15), (1, 15, 10),
+                  (3, 6, 6), (3, 10, 15), (3, 15, 10)]
+    kernel_shapes_conv2d = [(2, 1, 3, 4), (2, 1, 5, 5),
+                            (2, 3, 3, 3), (2, 3, 5, 5)]
 
     np.set_printoptions(suppress=True)
     # loading Jinja with the random array test template
-    loader = jinja2.FileSystemLoader("./templates")
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    loader = jinja2.FileSystemLoader(
+        os.path.join(project_root, "scripts", "templates"))
     env = jinja2.Environment(loader=loader)
     template = env.get_template("test_py_impl_random_arrays_template.rs")
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     ml_test_folder = os.path.join(project_root, "ml", "tests")
 
     # writing out the conv2d test cases
@@ -284,11 +322,21 @@ def main():
         ml_test_folder, conv2d_torch_test_content, "conv2d_torch")
 
     # writing out the conv2d_tranposed test cases
-    conv2d_transpose_test_case = conv2d_random_array_test(img_shapes, kernel_shapes_transposed)
+    conv2d_transpose_test_case = conv2d_random_array_test(
+        img_shapes, kernel_shapes_conv2d, transpose=True, padding="SAME", compare_impls=False)
     conv2d_transpose_test_content = template.render(
         random_tests=[conv2d_transpose_test_case], file=__file__)
     write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
                        "conv2d_transpose")
+
+    # Torch tests not working at the moment
+    # writing out the conv2d_tranposed test cases
+    # conv2d_transpose_test_case = conv2d_random_array_test(
+    #     img_shapes, kernel_shapes_conv2d, transpose=True, padding="VALID", compare_impls=False, use_torch=True)
+    # conv2d_transpose_test_content = template.render(
+    #     random_tests=[conv2d_transpose_test_case], file=__file__)
+    # write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
+    #                    "conv2d_transpose_torch")
 
 
 if __name__ == "__main__":

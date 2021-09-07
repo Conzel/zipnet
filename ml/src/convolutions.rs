@@ -30,8 +30,8 @@ impl ConvolutionLayer {
     ) -> ConvolutionLayer {
         let num_filters = weights.len_of(Axis(0)) as u16; // Filters
         let img_channels = weights.len_of(Axis(1)) as u16; // Channels
-        let kernel_width = weights.len_of(Axis(2)); // Width
-        let kernel_height = weights.len_of(Axis(3)); // Height
+        let kernel_height = weights.len_of(Axis(2)); // Height
+        let kernel_width = weights.len_of(Axis(3)); // Width
 
         debug_assert!(stride > 0, "Stride of 0 passed");
 
