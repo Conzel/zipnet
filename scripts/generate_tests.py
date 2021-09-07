@@ -217,6 +217,8 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
                 ker_pt = torch.FloatTensor(transform_ker("rust", "pt", ker))
 
                 if transpose:
+                    if padding == "SAME": 
+                        raise ValueError("Same padding not useable with torch transposed convolution.")
                     out_pt = torch.nn.functional.conv_transpose2d(
                         im_pt, ker_pt, padding=0)
                 else:
@@ -335,14 +337,13 @@ def main():
     write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
                        "conv2d_transpose")
 
-    # Torch tests not working at the moment
     # writing out the conv2d_tranposed test cases
-    # conv2d_transpose_test_case = conv2d_random_array_test(
-    #     img_shapes, kernel_shapes_conv2d, transpose=True, padding="VALID", compare_impls=False, use_torch=True)
-    # conv2d_transpose_test_content = template.render(
-    #     random_tests=[conv2d_transpose_test_case], file=__file__)
-    # write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
-    #                    "conv2d_transpose_torch")
+    conv2d_transpose_test_case = conv2d_random_array_test(
+        img_shapes_trans, kernel_shapes_trans, transpose=True, padding="VALID", compare_impls=False, use_torch=True)
+    conv2d_transpose_test_content = template.render(
+        random_tests=[conv2d_transpose_test_case], file=__file__)
+    write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
+                       "conv2d_transpose_torch")
 
 
 if __name__ == "__main__":
