@@ -6,6 +6,7 @@ import tensorflow as tf
 import os
 import torch
 
+
 class RandomArrayTest:
     def __init__(self, test_name, layer_name, random_test_objects):
         """Struct that represents one Random Array Test.
@@ -152,6 +153,8 @@ def transform(orig, dest, x, is_kernel):
     if dest == "rust":
         if not is_kernel:
             x = np.squeeze(x, axis=0)
+        # if is_kernel:
+            # x = np.moveaxis(x, 0, 1)
 
     elif dest == "tf":
         if not is_kernel:
@@ -204,7 +207,7 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
             continue  # shapes are not compatible, channel size missmatch
 
         if transpose:
-           ker_shape = ker_shape[1], ker_shape[0], ker_shape[2], ker_shape[3]
+            ker_shape = ker_shape[1], ker_shape[0], ker_shape[2], ker_shape[3]
 
         for i in range(num_arrays_per_case):
             im = np.random.rand(*im_shape).astype(dtype=np.float32)
@@ -260,14 +263,16 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
 
     if transpose:
         transpose_string = "_transpose"
+        layer_name = "TransposedConvolutionLayer"
     else:
         transpose_string = ""
+        layer_name = "ConvolutionLayer"
 
     if use_torch:
         test_name = "conv2d_torch"
     else:
         test_name = "conv2d"
-    return RandomArrayTest(f"{test_name}{transpose_string}", "ConvolutionLayer", objects)
+    return RandomArrayTest(f"{test_name}{transpose_string}", layer_name, objects)
 
 
 def write_test_to_file(ml_test_folder, test_content, test_name):
