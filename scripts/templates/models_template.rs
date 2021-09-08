@@ -31,6 +31,13 @@ impl CodingModel for ConvolutionLayer {
     }
 }
 
+impl CodingModel for TransposedConvolutionLayer {
+        fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
+            self.transposed_convolve(input)
+        }
+}
+    
+
 impl CodingModel for GdnLayer {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         self.activate(input)
@@ -106,3 +113,19 @@ impl CodingModel for ReluLayer {
         }
     }
 {% endfor %}
+
+mod tests {
+    use crate::weight_loader::NpzWeightLoader;
+    use super::*;
+
+    // Smoke tests cannot be run on Github CI, only designed for manual running,
+    // thats why we need the ignore tag
+    {% for m in models %}
+    #[test]
+    #[ignore]
+    fn smoke_test_{{m.name.lower()}}() {
+        let mut loader = NpzWeightLoader::full_loader();
+        let _encoder = {{m.name}}::new(&mut loader);
+    }
+    {% endfor %}
+}
