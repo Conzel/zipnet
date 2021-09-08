@@ -198,13 +198,13 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
             l_shape[1] as u32,
             l_shape[2] as u32,
         ];
-        (data, side_info)
+        EncodedData::new(data, side_info)
     }
 }
 
 impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
     fn decode(&mut self, encoded_data: EncodedData) -> CodingResult<Array3<ImagePrecision>> {
-        let side_info = encoded_data.1;
+        let side_info = encoded_data.side_info;
         let hyperlatents_shape = (
             side_info[0] as usize,
             side_info[1] as usize,
@@ -217,7 +217,7 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
             side_info[5] as usize,
         );
         let latents_len = latents_shape.0 * latents_shape.1 * latents_shape.2;
-        let mut coder = DefaultAnsCoder::from_compressed(encoded_data.0).unwrap();
+        let mut coder = DefaultAnsCoder::from_compressed(encoded_data.main_info).unwrap();
 
         let mut hyperlatents = Array::zeros(hyperlatents_shape);
         // Decode the data:
