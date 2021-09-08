@@ -114,7 +114,7 @@ impl ZipnetOpts for DecompressOpts {
         let encoded = bincode::deserialize(&encoded_bin).unwrap();
 
         let decoded = decoder.decode(encoded).unwrap();
-        let image = array_to_image(decoded.map(to_pixel));
+        let image = array_to_image(decoded.map(|x| to_pixel(x, self.debug)));
         image.save(&self.output).unwrap();
     }
     fn get_verbosity(&self) -> &Verbosity {
@@ -123,21 +123,12 @@ impl ZipnetOpts for DecompressOpts {
 }
 
 // Turns output from neural net into a pixel value
-// TODO: Translate correct python conversion code:
-//
-// def write_png(filename, image):
-//     """Saves an image to a PNG file."""
-//     image = quantize_image(image)
-//     string = tf.image.encode_png(image)
-//     return tf.write_file(filename, string)
-//
-// def quantize_image(image):
-//     image = tf.round(image * 255)
-//     image = tf.saturate_cast(image, tf.uint8)
-//     return image
-//
-fn to_pixel(x: &f32) -> u8 {
-    x.round().clamp(0.0, 255.0) as u8
+fn to_pixel(x: &f32, debug: bool) -> u8 {
+    if debug {
+        x.round().clamp(0.0, 255.0) as u8
+    } else {
+        (x * 255.0).round().clamp(0.0, 255.0) as u8
+    }
 }
 
 // From: https://stackoverflow.com/questions/56762026/how-to-save-ndarray-in-rust-as-image
