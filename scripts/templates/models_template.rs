@@ -122,7 +122,6 @@ mod tests {
     // thats why we need the ignore tag
     {% for m in models %}
     #[test]
-    #[ignore]
     fn smoke_test_{{m.name.lower()}}() {
         let mut loader = NpzWeightLoader::full_loader();
         let _encoder = {{m.name}}::new(&mut loader);
