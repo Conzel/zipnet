@@ -396,28 +396,24 @@ mod tests {
     // thats why we need the ignore tag
 
     #[test]
-    #[ignore]
     fn smoke_test_minnenencoder() {
         let mut loader = NpzWeightLoader::full_loader();
         let _encoder = MinnenEncoder::new(&mut loader);
     }
 
     #[test]
-    #[ignore]
     fn smoke_test_johnstondecoder() {
         let mut loader = NpzWeightLoader::full_loader();
         let _encoder = JohnstonDecoder::new(&mut loader);
     }
 
     #[test]
-    #[ignore]
     fn smoke_test_minnenhyperencoder() {
         let mut loader = NpzWeightLoader::full_loader();
         let _encoder = MinnenHyperEncoder::new(&mut loader);
     }
 
     #[test]
-    #[ignore]
     fn smoke_test_johnstonhyperdecoder() {
         let mut loader = NpzWeightLoader::full_loader();
         let _encoder = JohnstonHyperDecoder::new(&mut loader);
