@@ -1,8 +1,20 @@
-use coders::statistics::Statistics;
+use bincode::serialize;
+use coders::{
+    dummy_coders::DummyCoder,
+    hierarchical_coders::{MeanScaleHierarchicalDecoder, MeanScaleHierarchicalEncoder},
+    statistics::Statistics,
+    Decoder, Encoder,
+};
+use image::RgbImage;
 use image::{io::Reader as ImageReader, DynamicImage};
+use ndarray::Array3;
 use nshare::ToNdarray3;
 use quicli::prelude::*;
-use std::path::PathBuf;
+use std::{
+    array, fs,
+    io::{Read, Write},
+};
+use std::{fs::File, path::PathBuf};
 use structopt::StructOpt;
 
 /// Compresses an image using a neural network
@@ -17,6 +29,9 @@ struct CompressOpts {
     /// Sets the desired bitrate per pixel
     #[structopt(short = "b", long = "bitrate")]
     bitrate: Option<f64>,
+    /// Reserved for debugging and testing. Encodes with a dummy encoder.
+    #[structopt(short, long)]
+    debug: bool,
     #[structopt(flatten)]
     verbosity: Verbosity,
 }
@@ -27,10 +42,13 @@ struct DecompressOpts {
     /// Path to the Zipnet-compressed image
     #[structopt(parse(from_os_str))]
     compressed: PathBuf,
-    /// Output path, if none given, just writes to input path with file
-    /// ending removed.
-    #[structopt(short = "o", long = "output", parse(from_os_str))]
-    output: Option<PathBuf>,
+    /// Output path
+    #[structopt(parse(from_os_str))]
+    output: PathBuf,
+    /// Reserved for debugging and testing. Encodes with a dummy encoder.
+    #[structopt(short, long)]
+    debug: bool,
+
     #[structopt(flatten)]
     verbosity: Verbosity,
 }
@@ -82,30 +100,100 @@ trait ZipnetOpts {
 
 impl ZipnetOpts for DecompressOpts {
     // Performs Decompression
-    fn run(&self) {}
+    fn run(&self) {
+        let mut file = File::open(&self.compressed).unwrap();
+        let mut decoder: Box<dyn Decoder<_>> = if self.debug {
+            Box::new(DummyCoder::new())
+        } else {
+            Box::new(MeanScaleHierarchicalDecoder::MinnenJohnstonDecoder())
+        };
+        let metadata = fs::metadata(&self.compressed).unwrap();
+        let mut encoded_bin = vec![0; metadata.len() as usize];
+        file.read(&mut encoded_bin).unwrap();
+
+        let encoded = bincode::deserialize(&encoded_bin).unwrap();
+
+        let decoded = decoder.decode(encoded).unwrap();
+        let image = array_to_image(decoded.map(to_pixel));
+        image.save(&self.output).unwrap();
+    }
     fn get_verbosity(&self) -> &Verbosity {
         &self.verbosity
     }
 }
 
+// Turns output from neural net into a pixel value
+// TODO: Translate correct python conversion code:
+//
+// def write_png(filename, image):
+//     """Saves an image to a PNG file."""
+//     image = quantize_image(image)
+//     string = tf.image.encode_png(image)
+//     return tf.write_file(filename, string)
+//
+// def quantize_image(image):
+//     image = tf.round(image * 255)
+//     image = tf.saturate_cast(image, tf.uint8)
+//     return image
+//
+fn to_pixel(x: &f32) -> u8 {
+    x.round().clamp(0.0, 255.0) as u8
+}
+
+// From: https://stackoverflow.com/questions/56762026/how-to-save-ndarray-in-rust-as-image
+fn array_to_image(arr: Array3<u8>) -> RgbImage {
+    assert!(arr.is_standard_layout());
+
+    let (height, width, _) = arr.dim();
+    let raw = arr.into_raw_vec();
+
+    RgbImage::from_raw(width as u32, height as u32, raw)
+        .expect("container should have the right size for the image dimensions")
+}
+
 impl ZipnetOpts for CompressOpts {
     // Performs Compression
-    fn run(&self) {}
+    fn run(&self) {
+        let img_data = get_image(&self.image).map(|x| *x as f32);
+        let mut encoder: Box<dyn Encoder<_>> = if self.debug {
+            Box::new(DummyCoder::new())
+        } else {
+            Box::new(MeanScaleHierarchicalEncoder::MinnenJohnstonEncoder())
+        };
+
+        let encoded = encoder.encode(&img_data);
+        let encoded_bin = bincode::serialize(&encoded).unwrap();
+
+        let mut alternate_output_name = self.image.clone();
+        alternate_output_name.set_extension("bin");
+
+        let filepath = match &self.output {
+            Some(p) => p,
+            None => &alternate_output_name,
+        };
+        let mut file = File::create(filepath).unwrap();
+        file.write(&encoded_bin).unwrap();
+    }
+
     fn get_verbosity(&self) -> &Verbosity {
         &self.verbosity
+    }
+}
+
+fn get_image(im_path: &PathBuf) -> Array3<u8> {
+    let img = ImageReader::open(im_path).unwrap().decode().unwrap();
+    match img {
+        DynamicImage::ImageRgb8(i) => i.into_ndarray3(),
+        DynamicImage::ImageRgba8(i) => i.into_ndarray3(),
+        // TODO: Handle this more gracefully
+        _ => panic!("Wrong image type given."),
     }
 }
 
 impl ZipnetOpts for StatsOpts {
     // Prints out statistics to StdOut
     fn run(&self) {
-        let img = ImageReader::open(&self.image).unwrap().decode().unwrap();
-        let img_data = match img {
-            DynamicImage::ImageRgb8(i) => i.into_ndarray3(),
-            DynamicImage::ImageRgba8(i) => i.into_ndarray3(),
-            // TODO: Handle this more gracefully
-            _ => panic!("Wrong image type given."),
-        };
+        let img_data = get_image(&self.image);
         let stats = Statistics::new(&img_data);
         println!("{}", stats);
     }
