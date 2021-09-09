@@ -84,37 +84,43 @@ impl CodingModel for MinnenEncoder {
 impl MinnenEncoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
         let layer_1_weights = loader
-            .get_weight("analysis_transform/layer_1/kernel_rdft", (192, 3, 5, 5))
+            .get_weight("analysis_transform/layer_1/kernel_rdft.npy", (192, 3, 5, 5))
             .unwrap();
         let layer_1 = ConvolutionLayer::new(layer_1_weights, 2, Padding::Same);
 
         let activation_1_weight_1 = loader
-            .get_weight("analysis_transform/layer_1/gdn/gamma", 192)
+            .get_weight("analysis_transform/layer_1/gdn/gamma.npy", 192)
             .unwrap();
 
         let activation_1_weight_2 = loader
-            .get_weight("analysis_transform/layer_1/gdn/beta", (192, 192))
+            .get_weight("analysis_transform/layer_1/gdn/beta.npy", (192, 192))
             .unwrap();
 
         let activation_1 = GdnLayer::new(activation_1_weight_1, activation_1_weight_2);
 
         let layer_2_weights = loader
-            .get_weight("analysis_transform/layer_2/kernel_rdft", (192, 192, 5, 5))
+            .get_weight(
+                "analysis_transform/layer_2/kernel_rdft.npy",
+                (192, 192, 5, 5),
+            )
             .unwrap();
         let layer_2 = ConvolutionLayer::new(layer_2_weights, 2, Padding::Same);
 
         let activation_2_weight_1 = loader
-            .get_weight("analysis_transform/layer_2/gdn/gamma", 192)
+            .get_weight("analysis_transform/layer_2/gdn/gamma.npy", 192)
             .unwrap();
 
         let activation_2_weight_2 = loader
-            .get_weight("analysis_transform/layer_2/gdn/beta", (192, 192))
+            .get_weight("analysis_transform/layer_2/gdn/beta.npy", (192, 192))
             .unwrap();
 
         let activation_2 = GdnLayer::new(activation_2_weight_1, activation_2_weight_2);
 
         let layer_3_weights = loader
-            .get_weight("analysis_transform/layer_3/kernel_rdft", (192, 192, 5, 5))
+            .get_weight(
+                "analysis_transform/layer_3/kernel_rdft.npy",
+                (192, 192, 5, 5),
+            )
             .unwrap();
         let layer_3 = ConvolutionLayer::new(layer_3_weights, 2, Padding::Same);
 
@@ -173,52 +179,61 @@ impl CodingModel for JohnstonDecoder {
 impl JohnstonDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
         let layer_1_weights = loader
-            .get_weight("synthesis_transform/layer_1/kernel_rdft", (79, 192, 5, 5))
+            .get_weight(
+                "synthesis_transform/layer_1/kernel_rdft.npy",
+                (79, 192, 5, 5),
+            )
             .unwrap();
         let layer_1 = TransposedConvolutionLayer::new(layer_1_weights, 2, Padding::Same);
 
         let activation_1_weight_1 = loader
-            .get_weight("synthesis_transform/layer_1/igdn/gamma", 79)
+            .get_weight("synthesis_transform/layer_1/igdn/gamma.npy", 79)
             .unwrap();
 
         let activation_1_weight_2 = loader
-            .get_weight("synthesis_transform/layer_1/igdn/beta", (79, 79))
+            .get_weight("synthesis_transform/layer_1/igdn/beta.npy", (79, 79))
             .unwrap();
 
         let activation_1 = IgdnLayer::new(activation_1_weight_1, activation_1_weight_2);
 
         let layer_2_weights = loader
-            .get_weight("synthesis_transform/layer_2/kernel_rdft", (22, 79, 5, 5))
+            .get_weight(
+                "synthesis_transform/layer_2/kernel_rdft.npy",
+                (22, 79, 5, 5),
+            )
             .unwrap();
         let layer_2 = TransposedConvolutionLayer::new(layer_2_weights, 2, Padding::Same);
 
         let activation_2_weight_1 = loader
-            .get_weight("synthesis_transform/layer_2/igdn/gamma", 22)
+            .get_weight("synthesis_transform/layer_2/igdn/gamma.npy", 22)
             .unwrap();
 
         let activation_2_weight_2 = loader
-            .get_weight("synthesis_transform/layer_2/igdn/beta", (22, 22))
+            .get_weight("synthesis_transform/layer_2/igdn/beta.npy", (22, 22))
             .unwrap();
 
         let activation_2 = IgdnLayer::new(activation_2_weight_1, activation_2_weight_2);
 
         let layer_3_weights = loader
-            .get_weight("synthesis_transform/layer_3/kernel_rdft", (43, 22, 5, 5))
+            .get_weight(
+                "synthesis_transform/layer_3/kernel_rdft.npy",
+                (43, 22, 5, 5),
+            )
             .unwrap();
         let layer_3 = TransposedConvolutionLayer::new(layer_3_weights, 2, Padding::Same);
 
         let activation_3_weight_1 = loader
-            .get_weight("synthesis_transform/layer_3/igdn/gamma", 43)
+            .get_weight("synthesis_transform/layer_3/igdn/gamma.npy", 43)
             .unwrap();
 
         let activation_3_weight_2 = loader
-            .get_weight("synthesis_transform/layer_3/igdn/beta", (43, 43))
+            .get_weight("synthesis_transform/layer_3/igdn/beta.npy", (43, 43))
             .unwrap();
 
         let activation_3 = IgdnLayer::new(activation_3_weight_1, activation_3_weight_2);
 
         let layer_4_weights = loader
-            .get_weight("synthesis_transform/layer_4/kernel_rdft", (3, 43, 5, 5))
+            .get_weight("synthesis_transform/layer_4/kernel_rdft.npy", (3, 43, 5, 5))
             .unwrap();
         let layer_4 = TransposedConvolutionLayer::new(layer_4_weights, 2, Padding::Same);
 
@@ -274,7 +289,7 @@ impl MinnenHyperEncoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
         let layer_1_weights = loader
             .get_weight(
-                "hyper_analysis_transform/layer_1/kernel_rdft",
+                "hyper_analysis_transform/layer_1/kernel_rdft.npy",
                 (192, 192, 3, 3),
             )
             .unwrap();
@@ -284,7 +299,7 @@ impl MinnenHyperEncoder {
 
         let layer_2_weights = loader
             .get_weight(
-                "hyper_analysis_transform/layer_2/kernel_rdft",
+                "hyper_analysis_transform/layer_2/kernel_rdft.npy",
                 (192, 192, 5, 5),
             )
             .unwrap();
@@ -294,7 +309,7 @@ impl MinnenHyperEncoder {
 
         let layer_3_weights = loader
             .get_weight(
-                "hyper_analysis_transform/layer_3/kernel_rdft",
+                "hyper_analysis_transform/layer_3/kernel_rdft.npy",
                 (192, 192, 5, 5),
             )
             .unwrap();
@@ -348,7 +363,7 @@ impl JohnstonHyperDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
         let layer_1_weights = loader
             .get_weight(
-                "mb_t2018hyper_synthesis_transform/layer_1/kernel_rdft",
+                "mb_t2018hyper_synthesis_transform/layer_1/kernel_rdft.npy",
                 (76, 192, 3, 3),
             )
             .unwrap();
@@ -358,7 +373,7 @@ impl JohnstonHyperDecoder {
 
         let layer_2_weights = loader
             .get_weight(
-                "mb_t2018hyper_synthesis_transform/layer_2/kernel_rdft",
+                "mb_t2018hyper_synthesis_transform/layer_2/kernel_rdft.npy",
                 (107, 76, 5, 5),
             )
             .unwrap();
@@ -368,7 +383,7 @@ impl JohnstonHyperDecoder {
 
         let layer_3_weights = loader
             .get_weight(
-                "mb_t2018hyper_synthesis_transform/layer_3/kernel_rdft",
+                "mb_t2018hyper_synthesis_transform/layer_3/kernel_rdft.npy",
                 (320, 107, 5, 5),
             )
             .unwrap();
