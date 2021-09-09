@@ -250,11 +250,11 @@ class MBT2018HyperSynthesisTransform_Johnston(tf.keras.layers.Layer):
         names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
         self._layers = [
             tf.layers.Conv2DTranspose(76, (3, 3), name=names[0], strides=2,
-                             padding="same", use_bias=False, activation=tf.nn.relu, kernel_parameterizer=None),
+                             padding="same", use_bias=False, activation=tf.nn.relu),
             tf.layers.Conv2DTranspose(107, (5, 5), name=names[1], strides=2,
-                             padding="same", use_bias=False, activation=tf.nn.relu, kernel_paramaterizer=None),
+                             padding="same", use_bias=False, activation=tf.nn.relu),
             tf.layers.Conv2DTranspose(320, (5, 5), name=names[2], strides=1,
-                             padding="same", use_bias=False, activation=None, kernel_parameterized=None),
+                             padding="same", use_bias=False, activation=None),
 
             # tfc.SignalConv2D(
             #     76, (5, 5), name="layer_0", corr=False, strides_up=2,
