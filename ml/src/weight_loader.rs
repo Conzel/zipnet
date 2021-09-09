@@ -109,7 +109,8 @@ impl NpzWeightLoader<Cursor<&[u8]>> {
     /// Returns a weight loader that has full access to all weight.
     /// The weights are compiled into the struct, so no file access is needed.
     pub fn full_loader() -> NpzWeightLoader<Cursor<&'static [u8]>> {
-        todo!()
+        let bytes = include_bytes!("../../model_weights/weights.npz");
+        NpzWeightLoader::from_buffer(bytes).unwrap()
     }
 }
 

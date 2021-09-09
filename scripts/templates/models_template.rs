@@ -84,7 +84,7 @@ impl CodingModel for ReluLayer {
             {% for l in m.layers %}
                 {% set outer_loop = loop %}
                 let layer_{{loop.index}}_weights = loader.get_weight(
-                    "{{m.weight_name}}/layer_{{loop.index}}/kernel_rdft",
+                    "{{m.weight_name}}/layer_{{loop.index}}/kernel_rdft.npy",
                     ({{l.filters}}, {{l.channels}}, {{l.kernel_width}}, {{l.kernel_height}})
                 ).unwrap();
                 let layer_{{loop.index}} = {{l.name}}::new(layer_{{loop.index}}_weights, 
@@ -92,7 +92,7 @@ impl CodingModel for ReluLayer {
                 {% if l.activation is not none %}
                     {% for w in l.activation.weights %}
                         let activation_{{outer_loop.index}}_weight_{{loop.index}} 
-                            = loader.get_weight("{{m.weight_name}}/layer_{{outer_loop.index}}/{{l.activation.name}}/{{w.name}}",
+                            = loader.get_weight("{{m.weight_name}}/layer_{{outer_loop.index}}/{{l.activation.name}}/{{w.name}}.npy",
                                                 {{w.shape}}).unwrap();
                     {% endfor %}
                     let activation_{{outer_loop.index}} = {{l.activation.layer_name}}::new(
