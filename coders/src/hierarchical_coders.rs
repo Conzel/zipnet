@@ -286,9 +286,31 @@ impl MeanScaleHierarchicalEncoder {
 impl MeanScaleHierarchicalDecoder {
     #[allow(non_snake_case)]
     pub fn MinnenJohnstonDecoder() -> MeanScaleHierarchicalDecoder {
-        todo!()
+        let mut loader = NpzWeightLoader::full_loader();
+        let latent_decoder = Box::new(JohnstonDecoder::new(&mut loader));
+        let hyperlatent_decoder = Box::new(JohnstonHyperDecoder::new(&mut loader));
+
+        MeanScaleHierarchicalDecoder {
+            latent_decoder,
+            hyperlatent_decoder,
+            hyperlatent_prior: TablePrior::create_minnen_johnston_hyperlatent_prior(),
+        }
     }
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::*;
+
+    use super::{MeanScaleHierarchicalDecoder, MeanScaleHierarchicalEncoder};
+
+    #[test]
+    pub fn smoke_test_decoder() {
+        MeanScaleHierarchicalEncoder::MinnenJohnstonEncoder();
+    }
+
+    #[test]
+    pub fn smoke_test_encoder() {
+        MeanScaleHierarchicalDecoder::MinnenJohnstonDecoder();
+    }
+}
