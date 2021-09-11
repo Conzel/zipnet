@@ -1,5 +1,5 @@
 use crate::WeightPrecision;
-use ndarray::{Array, ArrayBase, Dimension, ShapeError, StrideShape};
+use ndarray::{Array, Array1, ArrayBase, Dimension, ShapeError, StrideShape};
 use ndarray_npy::{NpzReader, ReadNpzError};
 use serde_json::{self, Map, Value};
 use std::io::{Cursor, Read, Seek};

@@ -1,5 +1,5 @@
 [hooks]
-pre-commit = "cargo check && cargo fmt -- --check"
+pre-commit = "cargo check && cargo fmt -- --check && cargo test -p ml -p coders -p wasm -p zipnet"
 
 [logging]
 verbose = true

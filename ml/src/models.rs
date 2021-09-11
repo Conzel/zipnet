@@ -28,6 +28,12 @@ impl CodingModel for ConvolutionLayer {
     }
 }
 
+impl CodingModel for TransposedConvolutionLayer {
+    fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
+        self.transposed_convolve(input)
+    }
+}
+
 impl CodingModel for GdnLayer {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         self.activate(input)
