@@ -33,7 +33,7 @@ tf.set_random_seed(seed)
 
 import tensorflow_compression as tfc
 
-Johnston = False  # use optimized num_filters
+Johnston = True  # use optimized num_filters
 if Johnston:
     from nn_models import AnalysisTransform, HyperAnalysisTransform
     from nn_models import SynthesisTransform_Johnston as SynthesisTransform
