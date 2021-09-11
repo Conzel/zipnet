@@ -10,7 +10,7 @@ class AnalysisTransform(tf.keras.layers.Layer):
         super(AnalysisTransform, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
-        names = ['ana_layer_0', 'ana_layer_1', 'ana_layer_2', 'ana_layer_3']
+        names = ['anal_layer_0', 'anal_layer_1', 'anal_layer_2', 'anal_layer_3']
         self._layers = [
             tf.layers.Conv2D(self.num_filters, (5, 5), name=names[0], strides=2,
                              padding="same", use_bias=False, activation=tfc.GDN(name="gnd_0")),
@@ -86,7 +86,7 @@ class SynthesisTransform(tf.keras.layers.Layer):
         super(SynthesisTransform, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
-        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
+        names = ['synth_layer_0', 'synth_layer_1', 'synth_layer_2', 'synth_layer_3']
         filters = [79, 22, 43, 3]
         self._layers = [
 
@@ -135,7 +135,7 @@ class HyperAnalysisTransform(tf.keras.layers.Layer):
         super(HyperAnalysisTransform, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
-        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
+        names = ['hypanal_layer_0', 'hypanal_layer_1', 'hypanal_layer_2', 'hypanal_layer_3']
         self._layers = [
             tf.layers.Conv2D(self.num_filters, (3, 3), name=names[0], strides=1,
                              padding="same", use_bias=False, activation=tf.nn.relu),
@@ -247,7 +247,7 @@ class MBT2018HyperSynthesisTransform(tf.keras.layers.Layer):
         super().__init__(*args, **kwargs)
 
     def build(self, input_shape):
-        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
+        names = ['hypsynth_layer_0', 'hypsynth_layer_1', 'hypsynth_layer_2', 'hypsynth_layer_3']
         self._layers = [
             tf.layers.Conv2DTranspose(76, (3, 3), name=names[0], strides=2,
                              padding="same", use_bias=False, activation=tf.nn.relu),
