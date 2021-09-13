@@ -173,12 +173,7 @@ impl ZipnetOpts for CompressOpts {
 
 fn get_image(im_path: &PathBuf) -> Array3<u8> {
     let img = ImageReader::open(im_path).unwrap().decode().unwrap();
-    match img {
-        DynamicImage::ImageRgb8(i) => i.into_ndarray3(),
-        DynamicImage::ImageRgba8(i) => i.into_ndarray3(),
-        // TODO: Handle this more gracefully
-        _ => panic!("Wrong image type given."),
-    }
+    img.to_rgb8().into_ndarray3()
 }
 
 impl ZipnetOpts for StatsOpts {
