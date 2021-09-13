@@ -57,8 +57,15 @@ impl ConvolutionLayer {
         stride: usize,
         padding: Padding,
     ) -> ConvolutionLayer {
-        let permuted = weights.view().permuted_axes([3, 2, 0, 1]);
-        ConvolutionLayer::new(permuted.map(|x| *x), stride, padding)
+        let permuted_view = weights.view().permuted_axes([3, 2, 0, 1]);
+        // Hack to fix the memory layout, permuted axes makes a
+        // col major array / non-contiguous array from weights
+        let permuted_array: Array4<WeightPrecision> = Array::from_shape_vec(
+            permuted_view.dim(),
+            permuted_view.iter().map(|x| *x).collect(),
+        )
+        .unwrap();
+        ConvolutionLayer::new(permuted_array, stride, padding)
     }
 
     /// Performs a convolution on the given image data using this layers parameters.
@@ -433,5 +440,38 @@ mod tests {
         let convolved_image1 = conv_layer1.Conv2D(&(conv_layer1.kernel), &test_img1.view());
 
         assert_eq!(convolved_image1, output1);
+    }
+
+    #[test]
+    fn test_conv2d_tf_layout() {
+        let weights_pt = Array::from_shape_vec(
+            (2, 1, 3, 3),
+            vec![
+                0.06664403, 0.65961174, 0.49895822, 0.80375346, 0.20159994, 0.25319365, 0.0520944,
+                0.33067411, 0.76843672, 0.08252145, 0.22638044, 0.09291164, 0.63277792, 0.50181511,
+                0.40393298, 0.19495441, 0.30511827, 0.28940649,
+            ],
+        )
+        .unwrap();
+
+        let weights_tf = Array::from_shape_vec(
+            (3, 3, 1, 2),
+            vec![
+                0.06664403, 0.08252145, 0.65961174, 0.22638044, 0.49895822, 0.09291164, 0.80375346,
+                0.63277792, 0.20159994, 0.50181511, 0.25319365, 0.40393298, 0.0520944, 0.19495441,
+                0.33067411, 0.30511827, 0.76843672, 0.28940649,
+            ],
+        )
+        .unwrap();
+
+        let im = array![[
+            [0.56494069, 0.3395626, 0.71270928],
+            [0.04827336, 0.12623257, 0.30822787],
+            [0.82976574, 0.8590054, 0.90254945]
+        ]];
+
+        let conv_pt = ConvolutionLayer::new(weights_pt, 1, Padding::Valid);
+        let conv_tf = ConvolutionLayer::new_tf(weights_tf, 1, Padding::Valid);
+        assert_eq!(conv_pt.convolve(&im), conv_tf.convolve(&im));
     }
 }

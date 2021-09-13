@@ -87,7 +87,7 @@ impl CodingModel for ReluLayer {
                     "{{m.layer_name}}_{{loop.index0}}/kernel.npy",
                     ({{l.kernel_height}}, {{l.kernel_width}}, {{l.channels}}, {{l.filters}})
                 ).unwrap();
-                let layer_{{loop.index0}} = {{l.name}}::new(layer_{{loop.index0}}_weights, 
+                let layer_{{loop.index0}} = {{l.name}}::new_tf(layer_{{loop.index0}}_weights, 
                                                            {{l.stride}}, {{l.padding}});
                 {% if l.activation is not none %}
                     {% for w in l.activation.weights %}
