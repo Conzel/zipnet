@@ -17,9 +17,25 @@ pub struct TransposedConvolutionLayer {
 }
 
 impl TransposedConvolutionLayer {
+    /// Creates new transposed_convolutionLayer. The weights are given in
+    /// Pytorch layout.
+    /// (in channels, out channels, kernel_height, kernel_width)
     pub fn new(weights: ConvKernel, stride: usize, padding: Padding) -> TransposedConvolutionLayer {
         TransposedConvolutionLayer {
             convolution_layer: ConvolutionLayer::new(weights, stride, padding),
+        }
+    }
+
+    /// Creates new transposed_convolutionLayer. The weights are given in
+    /// Tensorflow layout.
+    /// (kernel height, kernel width, out channels, in channels)
+    pub fn new_tf(
+        weights: ConvKernel,
+        stride: usize,
+        padding: Padding,
+    ) -> TransposedConvolutionLayer {
+        TransposedConvolutionLayer {
+            convolution_layer: ConvolutionLayer::new_tf(weights, stride, padding),
         }
     }
 
