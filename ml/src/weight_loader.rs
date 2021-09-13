@@ -23,6 +23,9 @@ pub enum WeightError {
 }
 
 pub trait WeightLoader {
+    /// Gets the weights out from the weight loader.
+    /// We assume that the shapes in the weight loader have
+    /// the given shape.
     fn get_weight<D, Sh>(
         &mut self,
         param_name: &str,
@@ -121,7 +124,7 @@ where
     fn get_weight<D, Sh>(
         &mut self,
         param_name: &str,
-        _shape: Sh,
+        shape: Sh,
     ) -> WeightResult<Array<WeightPrecision, D>>
     where
         D: Dimension,
@@ -133,10 +136,22 @@ where
         // We hope that this doesn't hurt perforrmance, we'll have to see.
         let mut reader = NpzReader::new(&mut self.handle)?;
 
-        let arr: ArrayBase<_, D> = reader.by_name(param_name)?;
-
-        debug_assert_eq!(&arr.raw_dim(), _shape.into().raw_dim());
-        Ok(arr)
+        // First tries to load array with the shape given.
+        // If this is not possible, we assume that weights were saved flat
+        // and now try to retrieve them flat and reshape
+        let arr: Result<ArrayBase<_, D>, _> = reader.by_name(param_name);
+        Ok(match arr {
+            Ok(a) => {
+                debug_assert_eq!(&a.raw_dim(), shape.into().raw_dim());
+                a
+            }
+            Err(_) => {
+                let arr_flat: Array1<_> = reader.by_name(param_name)?;
+                let arr_reshaped =
+                    Array::from_shape_vec(shape, arr_flat.iter().map(|x| *x).collect())?;
+                arr_reshaped
+            }
+        })
     }
 }
 
