@@ -2,10 +2,11 @@
     {
         "name": "MinnenEncoder",
         "weight_name": "analysis_transform",
+        "layer_name": "encoder_layer",
         "layers": [
             {
                 "type": "convolution",
-                "filters": "192",
+                "filters": "160",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
@@ -15,7 +16,7 @@
             },
             {
                 "type": "convolution",
-                "filters": "192",
+                "filters": "160",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
@@ -24,7 +25,7 @@
             },
             {
                 "type": "convolution",
-                "filters": "192",
+                "filters": "160",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
@@ -36,6 +37,7 @@
     {
         "name": "JohnstonDecoder",
         "weight_name": "synthesis_transform",
+        "layer_name": "decoder_layer",
         "layers": [
             {
                 "type": "convolution_transpose",
@@ -44,7 +46,7 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "igdn",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
@@ -54,7 +56,7 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "igdn",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
@@ -64,7 +66,7 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "igdn",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
@@ -74,50 +76,52 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "none",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(5,5)"
             }
         ]
     },
     {
         "name": "MinnenHyperEncoder",
-        "weight_name": "hyper_analysis_transform",
+        "weight_name": "",
+        "layer_name": "hyperencoder_layer",
         "layers": [
             {
                 "type": "convolution",
-                "filters": "192",
+                "filters": "160",
                 "stride": 1,
                 "padding": "same",
                 "bias": false,
                 "activation": "relu",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(3,3)"
             },
             {
                 "type": "convolution",
-                "filters": "192",
+                "filters": "160",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
                 "activation": "relu",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
                 "type": "convolution",
-                "filters": "192",
+                "filters": "160",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
                 "activation": "none",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(5,5)"
             }
         ]
     },
     {
         "name": "JohnstonHyperDecoder",
-        "weight_name": "mb_t2018hyper_synthesis_transform",
+        "weight_name": "",
+        "layer_name": "hyperdecoder_layer",
         "layers": [
             {
                 "type": "convolution_transpose",
@@ -126,7 +130,7 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "relu",
-                "channels": "192",
+                "channels": "160",
                 "kernel_shape": "(3,3)"
             },
             {
@@ -136,7 +140,7 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "relu",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
@@ -146,7 +150,7 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "none",
-                "channels": 192,
+                "channels": 160,
                 "kernel_shape": "(5,5)"
             }
         ]

@@ -52,20 +52,24 @@ impl CodingModel for ReluLayer {
 }
 
 pub struct MinnenEncoder {
+    layer_0: ConvolutionLayer,
+
+    activation_0: GdnLayer,
+
     layer_1: ConvolutionLayer,
 
     activation_1: GdnLayer,
 
     layer_2: ConvolutionLayer,
-
-    activation_2: GdnLayer,
-
-    layer_3: ConvolutionLayer,
 }
 
 impl CodingModel for MinnenEncoder {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
+
+        let x = self.layer_0.forward_pass(&x);
+
+        let x = self.activation_0.forward_pass(&x);
 
         let x = self.layer_1.forward_pass(&x);
 
@@ -73,72 +77,78 @@ impl CodingModel for MinnenEncoder {
 
         let x = self.layer_2.forward_pass(&x);
 
-        let x = self.activation_2.forward_pass(&x);
-
-        let x = self.layer_3.forward_pass(&x);
-
         x
     }
 }
 
 impl MinnenEncoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
+        let layer_0_weights = loader
+            .get_weight("encoder_layer_0/kernel.npy", (5, 5, 3, 160))
+            .unwrap();
+        let layer_0 = ConvolutionLayer::new(layer_0_weights, 2, Padding::Same);
+
+        let activation_0_weight_0 = loader
+            .get_weight(
+                "analysis_transform/encoder_layer_0/gnd_0/reparam_beta.npy",
+                160,
+            )
+            .unwrap();
+
+        let activation_0_weight_1 = loader
+            .get_weight(
+                "analysis_transform/encoder_layer_0/gnd_0/reparam_gamma.npy",
+                (160, 160),
+            )
+            .unwrap();
+
+        let activation_0 = GdnLayer::new(activation_0_weight_0, activation_0_weight_1);
+
         let layer_1_weights = loader
-            .get_weight("analysis_transform/layer_1/kernel_rdft.npy", (192, 3, 5, 5))
+            .get_weight("encoder_layer_1/kernel.npy", (5, 5, 160, 160))
             .unwrap();
         let layer_1 = ConvolutionLayer::new(layer_1_weights, 2, Padding::Same);
 
+        let activation_1_weight_0 = loader
+            .get_weight(
+                "analysis_transform/encoder_layer_1/gnd_1/reparam_beta.npy",
+                160,
+            )
+            .unwrap();
+
         let activation_1_weight_1 = loader
-            .get_weight("analysis_transform/layer_1/gdn/gamma.npy", 192)
+            .get_weight(
+                "analysis_transform/encoder_layer_1/gnd_1/reparam_gamma.npy",
+                (160, 160),
+            )
             .unwrap();
 
-        let activation_1_weight_2 = loader
-            .get_weight("analysis_transform/layer_1/gdn/beta.npy", (192, 192))
-            .unwrap();
-
-        let activation_1 = GdnLayer::new(activation_1_weight_1, activation_1_weight_2);
+        let activation_1 = GdnLayer::new(activation_1_weight_0, activation_1_weight_1);
 
         let layer_2_weights = loader
-            .get_weight(
-                "analysis_transform/layer_2/kernel_rdft.npy",
-                (192, 192, 5, 5),
-            )
+            .get_weight("encoder_layer_2/kernel.npy", (5, 5, 160, 160))
             .unwrap();
         let layer_2 = ConvolutionLayer::new(layer_2_weights, 2, Padding::Same);
 
-        let activation_2_weight_1 = loader
-            .get_weight("analysis_transform/layer_2/gdn/gamma.npy", 192)
-            .unwrap();
-
-        let activation_2_weight_2 = loader
-            .get_weight("analysis_transform/layer_2/gdn/beta.npy", (192, 192))
-            .unwrap();
-
-        let activation_2 = GdnLayer::new(activation_2_weight_1, activation_2_weight_2);
-
-        let layer_3_weights = loader
-            .get_weight(
-                "analysis_transform/layer_3/kernel_rdft.npy",
-                (192, 192, 5, 5),
-            )
-            .unwrap();
-        let layer_3 = ConvolutionLayer::new(layer_3_weights, 2, Padding::Same);
-
         Self {
+            layer_0,
+
+            activation_0,
+
             layer_1,
 
             activation_1,
 
             layer_2,
-
-            activation_2,
-
-            layer_3,
         }
     }
 }
 
 pub struct JohnstonDecoder {
+    layer_0: TransposedConvolutionLayer,
+
+    activation_0: IgdnLayer,
+
     layer_1: TransposedConvolutionLayer,
 
     activation_1: IgdnLayer,
@@ -148,15 +158,15 @@ pub struct JohnstonDecoder {
     activation_2: IgdnLayer,
 
     layer_3: TransposedConvolutionLayer,
-
-    activation_3: IgdnLayer,
-
-    layer_4: TransposedConvolutionLayer,
 }
 
 impl CodingModel for JohnstonDecoder {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
+
+        let x = self.layer_0.forward_pass(&x);
+
+        let x = self.activation_0.forward_pass(&x);
 
         let x = self.layer_1.forward_pass(&x);
 
@@ -167,10 +177,6 @@ impl CodingModel for JohnstonDecoder {
         let x = self.activation_2.forward_pass(&x);
 
         let x = self.layer_3.forward_pass(&x);
-
-        let x = self.activation_3.forward_pass(&x);
-
-        let x = self.layer_4.forward_pass(&x);
 
         x
     }
@@ -178,66 +184,79 @@ impl CodingModel for JohnstonDecoder {
 
 impl JohnstonDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
-        let layer_1_weights = loader
+        let layer_0_weights = loader
+            .get_weight("decoder_layer_0/kernel.npy", (5, 5, 160, 79))
+            .unwrap();
+        let layer_0 = TransposedConvolutionLayer::new(layer_0_weights, 2, Padding::Same);
+
+        let activation_0_weight_0 = loader
             .get_weight(
-                "synthesis_transform/layer_1/kernel_rdft.npy",
-                (79, 192, 5, 5),
+                "synthesis_transform/decoder_layer_0/igdn_0/reparam_beta.npy",
+                79,
             )
+            .unwrap();
+
+        let activation_0_weight_1 = loader
+            .get_weight(
+                "synthesis_transform/decoder_layer_0/igdn_0/reparam_gamma.npy",
+                (79, 79),
+            )
+            .unwrap();
+
+        let activation_0 = IgdnLayer::new(activation_0_weight_0, activation_0_weight_1);
+
+        let layer_1_weights = loader
+            .get_weight("decoder_layer_1/kernel.npy", (5, 5, 79, 22))
             .unwrap();
         let layer_1 = TransposedConvolutionLayer::new(layer_1_weights, 2, Padding::Same);
 
+        let activation_1_weight_0 = loader
+            .get_weight(
+                "synthesis_transform/decoder_layer_1/igdn_1/reparam_beta.npy",
+                22,
+            )
+            .unwrap();
+
         let activation_1_weight_1 = loader
-            .get_weight("synthesis_transform/layer_1/igdn/gamma.npy", 79)
+            .get_weight(
+                "synthesis_transform/decoder_layer_1/igdn_1/reparam_gamma.npy",
+                (22, 22),
+            )
             .unwrap();
 
-        let activation_1_weight_2 = loader
-            .get_weight("synthesis_transform/layer_1/igdn/beta.npy", (79, 79))
-            .unwrap();
-
-        let activation_1 = IgdnLayer::new(activation_1_weight_1, activation_1_weight_2);
+        let activation_1 = IgdnLayer::new(activation_1_weight_0, activation_1_weight_1);
 
         let layer_2_weights = loader
-            .get_weight(
-                "synthesis_transform/layer_2/kernel_rdft.npy",
-                (22, 79, 5, 5),
-            )
+            .get_weight("decoder_layer_2/kernel.npy", (5, 5, 22, 43))
             .unwrap();
         let layer_2 = TransposedConvolutionLayer::new(layer_2_weights, 2, Padding::Same);
 
+        let activation_2_weight_0 = loader
+            .get_weight(
+                "synthesis_transform/decoder_layer_2/igdn_2/reparam_beta.npy",
+                43,
+            )
+            .unwrap();
+
         let activation_2_weight_1 = loader
-            .get_weight("synthesis_transform/layer_2/igdn/gamma.npy", 22)
+            .get_weight(
+                "synthesis_transform/decoder_layer_2/igdn_2/reparam_gamma.npy",
+                (43, 43),
+            )
             .unwrap();
 
-        let activation_2_weight_2 = loader
-            .get_weight("synthesis_transform/layer_2/igdn/beta.npy", (22, 22))
-            .unwrap();
-
-        let activation_2 = IgdnLayer::new(activation_2_weight_1, activation_2_weight_2);
+        let activation_2 = IgdnLayer::new(activation_2_weight_0, activation_2_weight_1);
 
         let layer_3_weights = loader
-            .get_weight(
-                "synthesis_transform/layer_3/kernel_rdft.npy",
-                (43, 22, 5, 5),
-            )
+            .get_weight("decoder_layer_3/kernel.npy", (5, 5, 43, 3))
             .unwrap();
         let layer_3 = TransposedConvolutionLayer::new(layer_3_weights, 2, Padding::Same);
 
-        let activation_3_weight_1 = loader
-            .get_weight("synthesis_transform/layer_3/igdn/gamma.npy", 43)
-            .unwrap();
-
-        let activation_3_weight_2 = loader
-            .get_weight("synthesis_transform/layer_3/igdn/beta.npy", (43, 43))
-            .unwrap();
-
-        let activation_3 = IgdnLayer::new(activation_3_weight_1, activation_3_weight_2);
-
-        let layer_4_weights = loader
-            .get_weight("synthesis_transform/layer_4/kernel_rdft.npy", (3, 43, 5, 5))
-            .unwrap();
-        let layer_4 = TransposedConvolutionLayer::new(layer_4_weights, 2, Padding::Same);
-
         Self {
+            layer_0,
+
+            activation_0,
+
             layer_1,
 
             activation_1,
@@ -247,39 +266,35 @@ impl JohnstonDecoder {
             activation_2,
 
             layer_3,
-
-            activation_3,
-
-            layer_4,
         }
     }
 }
 
 pub struct MinnenHyperEncoder {
+    layer_0: ConvolutionLayer,
+
+    activation_0: ReluLayer,
+
     layer_1: ConvolutionLayer,
 
     activation_1: ReluLayer,
 
     layer_2: ConvolutionLayer,
-
-    activation_2: ReluLayer,
-
-    layer_3: ConvolutionLayer,
 }
 
 impl CodingModel for MinnenHyperEncoder {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
 
+        let x = self.layer_0.forward_pass(&x);
+
+        let x = self.activation_0.forward_pass(&x);
+
         let x = self.layer_1.forward_pass(&x);
 
         let x = self.activation_1.forward_pass(&x);
 
         let x = self.layer_2.forward_pass(&x);
-
-        let x = self.activation_2.forward_pass(&x);
-
-        let x = self.layer_3.forward_pass(&x);
 
         x
     }
@@ -287,63 +302,58 @@ impl CodingModel for MinnenHyperEncoder {
 
 impl MinnenHyperEncoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
-        let layer_1_weights = loader
-            .get_weight(
-                "hyper_analysis_transform/layer_1/kernel_rdft.npy",
-                (192, 192, 3, 3),
-            )
+        let layer_0_weights = loader
+            .get_weight("hyperencoder_layer_0/kernel.npy", (3, 3, 160, 160))
             .unwrap();
-        let layer_1 = ConvolutionLayer::new(layer_1_weights, 1, Padding::Same);
+        let layer_0 = ConvolutionLayer::new(layer_0_weights, 1, Padding::Same);
+
+        let activation_0 = ReluLayer::new();
+
+        let layer_1_weights = loader
+            .get_weight("hyperencoder_layer_1/kernel.npy", (5, 5, 160, 160))
+            .unwrap();
+        let layer_1 = ConvolutionLayer::new(layer_1_weights, 2, Padding::Same);
 
         let activation_1 = ReluLayer::new();
 
         let layer_2_weights = loader
-            .get_weight(
-                "hyper_analysis_transform/layer_2/kernel_rdft.npy",
-                (192, 192, 5, 5),
-            )
+            .get_weight("hyperencoder_layer_2/kernel.npy", (5, 5, 160, 160))
             .unwrap();
         let layer_2 = ConvolutionLayer::new(layer_2_weights, 2, Padding::Same);
 
-        let activation_2 = ReluLayer::new();
-
-        let layer_3_weights = loader
-            .get_weight(
-                "hyper_analysis_transform/layer_3/kernel_rdft.npy",
-                (192, 192, 5, 5),
-            )
-            .unwrap();
-        let layer_3 = ConvolutionLayer::new(layer_3_weights, 2, Padding::Same);
-
         Self {
+            layer_0,
+
+            activation_0,
+
             layer_1,
 
             activation_1,
 
             layer_2,
-
-            activation_2,
-
-            layer_3,
         }
     }
 }
 
 pub struct JohnstonHyperDecoder {
+    layer_0: TransposedConvolutionLayer,
+
+    activation_0: ReluLayer,
+
     layer_1: TransposedConvolutionLayer,
 
     activation_1: ReluLayer,
 
     layer_2: TransposedConvolutionLayer,
-
-    activation_2: ReluLayer,
-
-    layer_3: TransposedConvolutionLayer,
 }
 
 impl CodingModel for JohnstonHyperDecoder {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
+
+        let x = self.layer_0.forward_pass(&x);
+
+        let x = self.activation_0.forward_pass(&x);
 
         let x = self.layer_1.forward_pass(&x);
 
@@ -351,54 +361,41 @@ impl CodingModel for JohnstonHyperDecoder {
 
         let x = self.layer_2.forward_pass(&x);
 
-        let x = self.activation_2.forward_pass(&x);
-
-        let x = self.layer_3.forward_pass(&x);
-
         x
     }
 }
 
 impl JohnstonHyperDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
+        let layer_0_weights = loader
+            .get_weight("hyperdecoder_layer_0/kernel.npy", (3, 3, 160, 76))
+            .unwrap();
+        let layer_0 = TransposedConvolutionLayer::new(layer_0_weights, 2, Padding::Same);
+
+        let activation_0 = ReluLayer::new();
+
         let layer_1_weights = loader
-            .get_weight(
-                "mb_t2018hyper_synthesis_transform/layer_1/kernel_rdft.npy",
-                (76, 192, 3, 3),
-            )
+            .get_weight("hyperdecoder_layer_1/kernel.npy", (5, 5, 76, 107))
             .unwrap();
         let layer_1 = TransposedConvolutionLayer::new(layer_1_weights, 2, Padding::Same);
 
         let activation_1 = ReluLayer::new();
 
         let layer_2_weights = loader
-            .get_weight(
-                "mb_t2018hyper_synthesis_transform/layer_2/kernel_rdft.npy",
-                (107, 76, 5, 5),
-            )
+            .get_weight("hyperdecoder_layer_2/kernel.npy", (5, 5, 107, 320))
             .unwrap();
-        let layer_2 = TransposedConvolutionLayer::new(layer_2_weights, 2, Padding::Same);
-
-        let activation_2 = ReluLayer::new();
-
-        let layer_3_weights = loader
-            .get_weight(
-                "mb_t2018hyper_synthesis_transform/layer_3/kernel_rdft.npy",
-                (320, 107, 5, 5),
-            )
-            .unwrap();
-        let layer_3 = TransposedConvolutionLayer::new(layer_3_weights, 1, Padding::Same);
+        let layer_2 = TransposedConvolutionLayer::new(layer_2_weights, 1, Padding::Same);
 
         Self {
+            layer_0,
+
+            activation_0,
+
             layer_1,
 
             activation_1,
 
             layer_2,
-
-            activation_2,
-
-            layer_3,
         }
     }
 }

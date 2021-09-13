@@ -59,9 +59,9 @@ impl CodingModel for ReluLayer {
 {% for m in models %} 
     pub struct {{m.name}} {
         {% for l in m.layers %}
-            layer_{{loop.index}}: {{l.name}},
+            layer_{{loop.index0}}: {{l.name}},
             {% if l.activation is not none %}
-            activation_{{loop.index}}: {{l.activation.layer_name}},
+            activation_{{loop.index0}}: {{l.activation.layer_name}},
             {% endif %}
         {% endfor %}
     }
@@ -70,9 +70,9 @@ impl CodingModel for ReluLayer {
         fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
             let x = input.clone();
             {% for l in m.layers %}
-                let x = self.layer_{{loop.index}}.forward_pass(&x);
+                let x = self.layer_{{loop.index0}}.forward_pass(&x);
                 {% if l.activation is not none %}
-                    let x = self.activation_{{loop.index}}.forward_pass(&x);
+                    let x = self.activation_{{loop.index0}}.forward_pass(&x);
                 {% endif %}
             {% endfor %}
             x
@@ -83,30 +83,30 @@ impl CodingModel for ReluLayer {
         pub fn new(loader: &mut impl WeightLoader) -> Self {
             {% for l in m.layers %}
                 {% set outer_loop = loop %}
-                let layer_{{loop.index}}_weights = loader.get_weight(
-                    "{{m.weight_name}}/layer_{{loop.index}}/kernel_rdft.npy",
-                    ({{l.filters}}, {{l.channels}}, {{l.kernel_width}}, {{l.kernel_height}})
+                let layer_{{loop.index0}}_weights = loader.get_weight(
+                    "{{m.layer_name}}_{{loop.index0}}/kernel.npy",
+                    ({{l.kernel_height}}, {{l.kernel_width}}, {{l.channels}}, {{l.filters}})
                 ).unwrap();
-                let layer_{{loop.index}} = {{l.name}}::new(layer_{{loop.index}}_weights, 
+                let layer_{{loop.index0}} = {{l.name}}::new(layer_{{loop.index0}}_weights, 
                                                            {{l.stride}}, {{l.padding}});
                 {% if l.activation is not none %}
                     {% for w in l.activation.weights %}
-                        let activation_{{outer_loop.index}}_weight_{{loop.index}} 
-                            = loader.get_weight("{{m.weight_name}}/layer_{{outer_loop.index}}/{{l.activation.name}}/{{w.name}}.npy",
+                        let activation_{{outer_loop.index0}}_weight_{{loop.index0}} 
+                            = loader.get_weight("{{m.weight_name}}/{{m.layer_name}}_{{outer_loop.index0}}/{{l.activation.name}}_{{outer_loop.index0}}/{{w.name}}.npy",
                                                 {{w.shape}}).unwrap();
                     {% endfor %}
-                    let activation_{{outer_loop.index}} = {{l.activation.layer_name}}::new(
+                    let activation_{{outer_loop.index0}} = {{l.activation.layer_name}}::new(
                         {% for w in l.activation.weights %}
-                            activation_{{outer_loop.index}}_weight_{{loop.index}},
+                            activation_{{outer_loop.index0}}_weight_{{loop.index0}},
                         {% endfor %}
                     );
                 {% endif %}
             {% endfor %}
             Self {
                 {% for l in m.layers %}
-                    layer_{{loop.index}},
+                    layer_{{loop.index0}},
                     {% if l.activation is not none %}
-                    activation_{{loop.index}},
+                    activation_{{loop.index0}},
                     {% endif %}
                 {% endfor %}
             }
