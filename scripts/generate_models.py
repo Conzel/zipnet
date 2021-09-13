@@ -36,12 +36,13 @@ class Activation:
 
     def preinit_weights_gdn_type(self, corresponding_layer):
         filters = corresponding_layer["filters"]
-        self.weights = [self.Weight("gamma", f"{filters}"), self.Weight(
-            "beta", f"({filters},{filters})")]
+        self.weights = [self.Weight("reparam_beta", f"{filters}"), self.Weight(
+            "reparam_gamma", f"({filters},{filters})")]
 
     def gdn_init(self):
         self.layer_name = "GdnLayer"
-        self.name = "gdn"
+        # Johan made a typo in the weights.
+        self.name = "gnd"
 
     def igdn_init(self):
         self.layer_name = "IgdnLayer"
@@ -111,6 +112,7 @@ class Model:
         """
         self.name = specification["name"]
         self.weight_name = specification["weight_name"]
+        self.layer_name = specification["layer_name"]
         layers = list(map(Layer, add_channels(specification["layers"])))
         self.layers = layers
 
