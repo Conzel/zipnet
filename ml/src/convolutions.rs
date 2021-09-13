@@ -1,7 +1,7 @@
 use crate::{models::InternalDataRepresentation, ImagePrecision, WeightPrecision};
 use ndarray::*;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum Padding {
     Same,
     Valid,
@@ -23,6 +23,9 @@ pub struct ConvolutionLayer {
 }
 
 impl ConvolutionLayer {
+    /// Creates new convolution layer. The weights are given in
+    /// Pytorch layout.
+    /// (out channels, in channels, kernel height, kernel width)
     pub fn new(
         weights: Array4<WeightPrecision>,
         stride: usize,
@@ -44,6 +47,18 @@ impl ConvolutionLayer {
             img_channels,
             padding,
         }
+    }
+
+    /// Creates new convolution layer. The weights are given in
+    /// Tensorflow layout.
+    /// (kernel height, kernel width, in channels, out channels)
+    pub fn new_tf(
+        weights: Array4<WeightPrecision>,
+        stride: usize,
+        padding: Padding,
+    ) -> ConvolutionLayer {
+        let permuted = weights.view().permuted_axes([3, 2, 0, 1]);
+        ConvolutionLayer::new(permuted.map(|x| *x), stride, padding)
     }
 
     /// Performs a convolution on the given image data using this layers parameters.
