@@ -239,11 +239,11 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
                     "rust", "tf", ker), dtype=tf.float32)
 
                 if transpose:
-                    output_shape = (1, im_shape[1], im_shape[2], ker_shape[1])
+                    output_shape = (1, stride*im_shape[1], stride*im_shape[2], ker_shape[1])
                     # conv2d transpose expected filters as [height, width, out, in]
                     # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
                     out_tf = tf.nn.conv2d_transpose(
-                        im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
+                        im_tf, ker_tf, output_shape=output_shape, strides=[1, stride, stride, 1], padding=padding)
                 else:
                     out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
                         1, stride, stride, 1], padding=padding)
