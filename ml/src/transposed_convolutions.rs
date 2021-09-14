@@ -144,7 +144,7 @@ impl TransposedConvolutionLayer {
             ))
             .unwrap();
 
-        // stride > 1
+        // STRIDE > 1
         if stride != 1 {
             // https://github.com/akutzer/numpy_cnn/blob/master/CNN/Layer/TransposedConv.py
             // ASSUMPTION: stride[0] == stride[1]
@@ -167,6 +167,8 @@ impl TransposedConvolutionLayer {
         let im_channel_stride = im2d_stride.len_of(Axis(0));
         let im_height_stride = im2d_stride.len_of(Axis(1));
         let im_width_stride = im2d_stride.len_of(Axis(2));
+
+        // PADDING
         // fn:im2col() for with padding always
         let pad_h = self.convolution_layer.kernel_height - 1;
         let pad_w = self.convolution_layer.kernel_width - 1;
@@ -194,10 +196,10 @@ impl TransposedConvolutionLayer {
             im_channel,
             1,
         );
+        // NOTE: The kernel strides across the image at 1 regardless of the stride we provide
 
         let filter_transpose = filter_col_flatten.t();
         let mul = im_col.dot(&filter_transpose); // + bias_m
-                                                 // println!("{:?}", filter_transpose);
 
         if self.convolution_layer.padding == Padding::Same {
             let mul_reshape = mul
