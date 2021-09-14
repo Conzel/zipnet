@@ -10,18 +10,18 @@ fn gdn_base(
     gamma: &Array2<WeightPrecision>,
     inverse: bool,
 ) -> InternalDataRepresentation {
-    let num_channels = x.len_of(Axis(2));
-    let width = x.len_of(Axis(0));
+    let num_channels = x.len_of(Axis(0));
     let height = x.len_of(Axis(1));
+    let width = x.len_of(Axis(2));
 
-    let mut z: Array3<ImagePrecision> = Array::zeros((width, height, num_channels));
+    let mut z: Array3<ImagePrecision> = Array::zeros((num_channels, height, width));
 
     for i in 0..num_channels {
-        let x_i = x.slice(s![.., .., i]);
+        let x_i = x.slice(s![i, .., ..]);
 
-        let mut normalization: Array2<ImagePrecision> = Array::zeros((width, height));
+        let mut normalization: Array2<ImagePrecision> = Array::zeros((height, width));
         for j in 0..num_channels {
-            let x_j = x.slice(s![.., .., j]);
+            let x_j = x.slice(s![j, .., ..]);
             // TODO: Should we run into some performance problems, this is a bit bad,
             // since it copies the array in a loop...
             normalization = normalization + gamma[[i, j]] * x_j.mapv(|a| a.abs());
@@ -36,7 +36,7 @@ fn gdn_base(
         // TODO: Same thing here, a lot of unnecessary assignments :(
         for k in 0..width {
             for l in 0..height {
-                z[[k, l, i]] = z_i[[k, l]];
+                z[[i, l, k]] = z_i[[l, k]];
             }
         }
     }
@@ -50,6 +50,8 @@ fn gdn_base(
 /// as elaborated in https://arxiv.org/abs/1912.08771.
 /// i and j here indicate channel parameters (so the different channels in the image influence each other
 /// in the activation)
+
+/// We expect the data x to be passed in Pytorch layout (channels, height, width).
 pub fn gdn(
     x: &InternalDataRepresentation,
     beta: &Array1<WeightPrecision>,
@@ -67,6 +69,8 @@ pub fn gdn(
 /// Source code: https://github.com/tensorflow/compression/blob/master/tensorflow_compression/python/layers/gdn.py#L31-L461
 /// We essentially just replace the division operation with a multiplication operation in the normalization calculation,
 /// leveraging the fact, that we only perform one step of iteration.
+
+/// We expect the data x to be passed in Pytorch layout (channels, height, width).
 pub fn igdn(
     x: &InternalDataRepresentation,
     beta: &Array1<WeightPrecision>,
@@ -131,21 +135,21 @@ mod tests {
 
     #[test]
     fn test_gdn() {
-        let input = array![[[0., 0.], [1., 0.]], [[0., 0.], [1., 1.]]];
+        let input = array![[[0., 1.], [0., 1.]], [[0., 0.], [0., 1.]]];
         let beta = array![1., 1.];
         let gamma = array![[1., 1.], [0., 1.]];
 
-        let res = array![[[0., 0.], [0.5, 0.]], [[0., 0.], [(1. / 3.), 0.5]]];
+        let res = array![[[0., 0.5], [0., 0.33333333]], [[0., 0.], [0., 0.5]]];
         assert_eq!(gdn(&input, &beta, &gamma), res);
     }
 
     #[test]
     fn test_igdn() {
-        let input = array![[[0., 0.], [1., 0.]], [[0., 0.], [1., 1.]]];
+        let input = array![[[0., 1.], [0., 1.]], [[0., 0.], [0., 1.]]];
         let beta = array![1., 1.];
         let gamma = array![[1., 1.], [0., 1.]];
 
-        let res_i = array![[[0., 0.], [2., 0.]], [[0., 0.], [3., 2.]]];
+        let res_i = array![[[0., 2.], [0., 3.]], [[0., 0.], [0., 2.]]];
 
         assert_eq!(igdn(&input, &beta, &gamma), res_i);
     }
