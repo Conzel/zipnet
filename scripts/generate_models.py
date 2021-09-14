@@ -76,8 +76,13 @@ class Layer:
         layer_type = specification["type"]
         if layer_type == "convolution":
             self.name = "ConvolutionLayer"
+            self.filters = specification["filters"]
+            self.channels = specification["channels"]
         elif layer_type == "convolution_transpose":
             self.name = "TransposedConvolutionLayer"
+            # we have to swap the displayed way for transposed convolution layers
+            self.channels = specification["filters"]
+            self.filters = specification["channels"]
         else:
             raise ValueError(f"Unknown layer type: {layer_type}")
 
@@ -96,9 +101,7 @@ class Layer:
         else:
             raise ValueError(f"Unknown padding mode: {padding}")
 
-        self.filters = specification["filters"]
         self.stride = specification["stride"]
-        self.channels = specification["channels"]
 
 
 class Model:

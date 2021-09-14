@@ -118,8 +118,6 @@ mod tests {
     use crate::weight_loader::NpzWeightLoader;
     use super::*;
 
-    // Smoke tests cannot be run on Github CI, only designed for manual running,
-    // thats why we need the ignore tag
     {% for m in models %}
     #[test]
     fn smoke_test_{{m.name.lower()}}() {
