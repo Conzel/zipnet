@@ -187,8 +187,8 @@ impl ConvolutionLayer {
             for j in 1..new_w + 1 {
                 let patch = im2d_arr.slice(s![
                     ..,
-                    i - 1 * self.stride..(i - 1 * self.stride + ker_height),
-                    j - 1 * self.stride..(j - 1 * self.stride + ker_width),
+                    (i - 1) * self.stride..((i - 1) * self.stride + ker_height),
+                    (j - 1) * self.stride..((j - 1) * self.stride + ker_width),
                 ]);
                 let patchrow_unwrap: Array1<f32> = Array::from_iter(patch.map(|a| *a));
 
