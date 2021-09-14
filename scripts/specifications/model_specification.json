@@ -56,7 +56,6 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "igdn",
-                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
@@ -66,7 +65,6 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "igdn",
-                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
@@ -76,7 +74,6 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "none",
-                "channels": 160,
                 "kernel_shape": "(5,5)"
             }
         ]
@@ -103,7 +100,6 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "relu",
-                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
@@ -113,7 +109,6 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "none",
-                "channels": 160,
                 "kernel_shape": "(5,5)"
             }
         ]
@@ -140,7 +135,6 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "relu",
-                "channels": 160,
                 "kernel_shape": "(5,5)"
             },
             {
@@ -150,7 +144,6 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "none",
-                "channels": 160,
                 "kernel_shape": "(5,5)"
             }
         ]
