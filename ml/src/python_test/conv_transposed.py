@@ -76,7 +76,7 @@ def conv_trans_naive(x, w, conv_param):
 		for i in range(x.shape[2]):
 			for j in range(x.shape[3]):
 				x_stride[:, :, i*stride, j*stride] = x[:, :, i, j]
-		import pdb;pdb.set_trace()
+		# import pdb;pdb.set_trace()
 		x = x_stride[:,:,:-stride+1,:-stride+1]
 	# pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right = get_same_padding(H, W, stride, HH, WW)
 	# assert((W + 2 * pad_num - WW) % stride == 0)
@@ -89,7 +89,7 @@ def conv_trans_naive(x, w, conv_param):
 	W_prime = (W - 1)*stride + WW # THIS IS CORRECT
 	# out = np.zeros([1,F,H_prime,W_prime]).astype('float32') #SET FILTERS AS 1
 	#im2col
-	pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right = get_same_padding(H, W, stride, HH, WW)
+	pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right = get_same_padding(x.shape[2], x.shape[3], stride, HH, WW)
 	pad_num = HH - 1 # kernel - 1
 	for im_num in range(N):
 		im = x[im_num,:,:,:]
@@ -98,7 +98,7 @@ def conv_trans_naive(x, w, conv_param):
 		im_col = im2col(im_pad,HH,WW,1)
 		print(im_pad.shape)
 		print(im_col.shape)
-		import pdb;pdb.set_trace()
+		# import pdb;pdb.set_trace()
 		filter_col = np.reshape(np.flip(w, (2,3)),(F,-1))
 		mul = im_col.dot(filter_col.T)#+ b
 		# print(mul)
@@ -129,7 +129,7 @@ weights = np.array([
 print("input", input.shape)
 print("weights", weights.shape)
 bias = np.zeros((1, 1))# null
-conv_param = {"pad":"val","stride":2}
+conv_param = {"pad":"same","stride":2}
 
 out, _ = conv_trans_naive(input, weights, conv_param)
 # out = Conv2DTranspose(input.reshape(1, 4, 4, 1), weights, padding="valid", strides=(1,1))

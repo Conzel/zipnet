@@ -83,6 +83,9 @@ impl TransposedConvolutionLayer {
         let im2d_stride: Array3<ImagePrecision>;
         let new_im_height: usize;
         let new_im_width: usize;
+        let im_channel_stride: usize;
+        let im_height_stride: usize;
+        let im_width_stride: usize;
         let filter = self.convolution_layer.img_channels as usize;
         let c_out = self.convolution_layer.num_filters as usize;
         let stride = self.convolution_layer.stride as usize;
@@ -164,9 +167,9 @@ impl TransposedConvolutionLayer {
             im2d_stride = im2d_arr.into_owned();
         };
 
-        let im_channel_stride = im2d_stride.len_of(Axis(0));
-        let im_height_stride = im2d_stride.len_of(Axis(1));
-        let im_width_stride = im2d_stride.len_of(Axis(2));
+        im_channel_stride = im2d_stride.len_of(Axis(0));
+        im_height_stride = im2d_stride.len_of(Axis(1));
+        im_width_stride = im2d_stride.len_of(Axis(2));
 
         // PADDING
         // fn:im2col() for with padding always
@@ -208,8 +211,8 @@ impl TransposedConvolutionLayer {
                 .into_owned();
             let (pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right) =
                 self.convolution_layer.get_padding_size(
-                    im_height,
-                    im_width,
+                    im_height * stride,
+                    im_width * stride,
                     self.convolution_layer.stride,
                     self.convolution_layer.kernel_height,
                     self.convolution_layer.kernel_width,
