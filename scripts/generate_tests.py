@@ -201,8 +201,6 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
     if transpose and padding == "VALID" and (compare_impls or not use_torch):
         raise ValueError(
             "Valid padding not useable with tensorflow transposed convolution.")
-    if transpose and (stride != 1) and (compare_impls or not use_torch):
-        raise ValueError("Tensorflow transposed conv cannot handle strides != 1")
     if stride != 1 and (compare_impls or use_torch) and padding.lower()=="same":
         raise ValueError("Pytorch cannot handle stride != 1 with same padding")
     
@@ -378,6 +376,14 @@ def main():
         random_tests=[conv2d_transpose_test_case], file=__file__)
     write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
                        "conv2d_transpose_torch")
+
+    # writing out the conv2d_tranposed test cases
+    conv2d_transpose_test_case = conv2d_random_array_test(
+        img_shapes_trans, kernel_shapes_trans, transpose=True, padding="SAME", compare_impls=False, stride=2)
+    conv2d_transpose_test_content = template.render(
+        random_tests=[conv2d_transpose_test_case], file=__file__)
+    write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
+                       "conv2d_transpose_stride2")
 
 
 if __name__ == "__main__":
