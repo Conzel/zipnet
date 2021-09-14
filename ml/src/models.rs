@@ -185,7 +185,7 @@ impl CodingModel for JohnstonDecoder {
 impl JohnstonDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
         let layer_0_weights = loader
-            .get_weight("decoder_layer_0/kernel.npy", (5, 5, 160, 79))
+            .get_weight("decoder_layer_0/kernel.npy", (5, 5, 79, 160))
             .unwrap();
         let layer_0 = TransposedConvolutionLayer::new_tf(layer_0_weights, 2, Padding::Same);
 
@@ -206,7 +206,7 @@ impl JohnstonDecoder {
         let activation_0 = IgdnLayer::new(activation_0_weight_0, activation_0_weight_1);
 
         let layer_1_weights = loader
-            .get_weight("decoder_layer_1/kernel.npy", (5, 5, 79, 22))
+            .get_weight("decoder_layer_1/kernel.npy", (5, 5, 22, 79))
             .unwrap();
         let layer_1 = TransposedConvolutionLayer::new_tf(layer_1_weights, 2, Padding::Same);
 
@@ -227,7 +227,7 @@ impl JohnstonDecoder {
         let activation_1 = IgdnLayer::new(activation_1_weight_0, activation_1_weight_1);
 
         let layer_2_weights = loader
-            .get_weight("decoder_layer_2/kernel.npy", (5, 5, 22, 43))
+            .get_weight("decoder_layer_2/kernel.npy", (5, 5, 43, 22))
             .unwrap();
         let layer_2 = TransposedConvolutionLayer::new_tf(layer_2_weights, 2, Padding::Same);
 
@@ -248,7 +248,7 @@ impl JohnstonDecoder {
         let activation_2 = IgdnLayer::new(activation_2_weight_0, activation_2_weight_1);
 
         let layer_3_weights = loader
-            .get_weight("decoder_layer_3/kernel.npy", (5, 5, 43, 3))
+            .get_weight("decoder_layer_3/kernel.npy", (5, 5, 3, 43))
             .unwrap();
         let layer_3 = TransposedConvolutionLayer::new_tf(layer_3_weights, 2, Padding::Same);
 
@@ -368,21 +368,21 @@ impl CodingModel for JohnstonHyperDecoder {
 impl JohnstonHyperDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
         let layer_0_weights = loader
-            .get_weight("hyperdecoder_layer_0/kernel.npy", (3, 3, 160, 76))
+            .get_weight("hyperdecoder_layer_0/kernel.npy", (3, 3, 76, 160))
             .unwrap();
         let layer_0 = TransposedConvolutionLayer::new_tf(layer_0_weights, 2, Padding::Same);
 
         let activation_0 = ReluLayer::new();
 
         let layer_1_weights = loader
-            .get_weight("hyperdecoder_layer_1/kernel.npy", (5, 5, 76, 107))
+            .get_weight("hyperdecoder_layer_1/kernel.npy", (5, 5, 107, 76))
             .unwrap();
         let layer_1 = TransposedConvolutionLayer::new_tf(layer_1_weights, 2, Padding::Same);
 
         let activation_1 = ReluLayer::new();
 
         let layer_2_weights = loader
-            .get_weight("hyperdecoder_layer_2/kernel.npy", (5, 5, 107, 320))
+            .get_weight("hyperdecoder_layer_2/kernel.npy", (5, 5, 320, 107))
             .unwrap();
         let layer_2 = TransposedConvolutionLayer::new_tf(layer_2_weights, 1, Padding::Same);
 
