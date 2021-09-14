@@ -12,9 +12,9 @@ use ml::transposed_convolutions::*;
 #[allow(unused_imports)]
 use ndarray::{Array, array, Dimension, Array3, Array4};
 
-fn arr_allclose<D: Dimension>(input: &Array<f32,D>, target: &Array<f32,D>) -> bool {
-    assert_eq!(input.shape(), target.shape(), "\ninput had shape {:?}, but target had shape {:?}", input.shape(), target.shape());
-    (input - target).map(|x| (*x as f32).abs()).sum() < 1e-3
+fn arr_allclose<D: Dimension>(current: &Array<f32,D>, target: &Array<f32,D>) -> bool {
+    assert_eq!(current.shape(), target.shape(), "\ngiven array had shape {:?}, but target had shape {:?}", current.shape(), target.shape());
+    (current - target).map(|x| (*x as f32).abs()).sum() < 1e-3
 }
 
 {% for t in random_tests %}
