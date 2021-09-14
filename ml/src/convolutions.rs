@@ -163,6 +163,7 @@ impl ConvolutionLayer {
         im_height: usize,
         im_width: usize,
         im_channel: usize,
+        stride: usize,
     ) -> Array2<ImagePrecision>
     where
         // Args:
@@ -178,8 +179,8 @@ impl ConvolutionLayer {
         T: AsArray<'a, ImagePrecision, Ix3>,
     {
         let im2d_arr: ArrayView3<f32> = im_arr.into();
-        let new_h = (im_height - ker_height) / self.stride + 1;
-        let new_w = (im_width - ker_width) / self.stride + 1;
+        let new_h = (im_height - ker_height) / stride + 1;
+        let new_w = (im_width - ker_width) / stride + 1;
         let mut cols_img: Array2<ImagePrecision> =
             Array::zeros((new_h * new_w, im_channel * ker_height * ker_width));
         let mut cont = 0 as usize;
@@ -187,8 +188,8 @@ impl ConvolutionLayer {
             for j in 1..new_w + 1 {
                 let patch = im2d_arr.slice(s![
                     ..,
-                    (i - 1) * self.stride..((i - 1) * self.stride + ker_height),
-                    (j - 1) * self.stride..((j - 1) * self.stride + ker_width),
+                    (i - 1) * stride..((i - 1) * stride + ker_height),
+                    (j - 1) * stride..((j - 1) * stride + ker_width),
                 ]);
                 let patchrow_unwrap: Array1<f32> = Array::from_iter(patch.map(|a| *a));
 
@@ -319,6 +320,7 @@ impl ConvolutionLayer {
                 im_height_pad,
                 im_width_pad,
                 im_channel,
+                self.stride,
             );
         } else {
             im_col = ConvolutionLayer::im2col_ref(
@@ -329,6 +331,7 @@ impl ConvolutionLayer {
                 im_height,
                 im_width,
                 im_channel,
+                self.stride,
             );
         };
         let filter_transpose = filter_col.t();
