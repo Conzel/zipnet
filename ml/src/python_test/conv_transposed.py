@@ -76,6 +76,7 @@ def conv_trans_naive(x, w, conv_param):
 		for i in range(x.shape[2]):
 			for j in range(x.shape[3]):
 				x_stride[:, :, i*stride, j*stride] = x[:, :, i, j]
+		import pdb;pdb.set_trace()
 		x = x_stride[:,:,:-stride+1,:-stride+1]
 	# pad_num_h, pad_num_w, pad_top, pad_bottom, pad_left, pad_right = get_same_padding(H, W, stride, HH, WW)
 	# assert((W + 2 * pad_num - WW) % stride == 0)
@@ -92,14 +93,15 @@ def conv_trans_naive(x, w, conv_param):
 	pad_num = HH - 1 # kernel - 1
 	for im_num in range(N):
 		im = x[im_num,:,:,:]
-		im_pad_ = np.pad(im,((0,0), (1,1),(1,1)),'constant').astype('float32')
-		im_pad = np.pad(im_pad_,((0,0), (pad_num,pad_num),(pad_num,pad_num)),'constant').astype('float32')
-		im_col = im2col(im_pad,HH,WW,stride)
-		# print(im_col.shape)
-
+		# im_pad_ = np.pad(im,((0,0), (1,1),(1,1)),'constant').astype('float32')
+		im_pad = np.pad(im,((0,0), (pad_num,pad_num),(pad_num,pad_num)),'constant').astype('float32')
+		im_col = im2col(im_pad,HH,WW,1)
+		print(im_pad.shape)
+		print(im_col.shape)
+		import pdb;pdb.set_trace()
 		filter_col = np.reshape(np.flip(w, (2,3)),(F,-1))
 		mul = im_col.dot(filter_col.T)#+ b
-		print(mul)
+		# print(mul)
 		output = mul.reshape(1, F, H_prime, W_prime)
 		# out = output.transpose(1, 0, 2, 3)
 		cache = (x, w, conv_param)

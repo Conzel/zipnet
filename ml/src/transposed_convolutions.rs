@@ -80,10 +80,12 @@ impl TransposedConvolutionLayer {
         let im2d_arr: ArrayView3<f32> = im2d.into();
         let kernel_weights_arr: ArrayView4<f32> = kernel_weights.into();
         let output: Array3<ImagePrecision>;
+        let im2d_stride: Array3<ImagePrecision>;
         let new_im_height: usize;
         let new_im_width: usize;
         let filter = self.convolution_layer.img_channels as usize;
         let c_out = self.convolution_layer.num_filters as usize;
+        let stride = self.convolution_layer.stride as usize;
 
         // Dimensions: C, H, W
         let im_channel = im2d_arr.len_of(Axis(0));
@@ -142,21 +144,43 @@ impl TransposedConvolutionLayer {
             ))
             .unwrap();
 
+        // stride > 1
+        if stride != 1 {
+            // https://github.com/akutzer/numpy_cnn/blob/master/CNN/Layer/TransposedConv.py
+            // ASSUMPTION: stride[0] == stride[1]
+            let stride_h = stride * im_height;
+            let stride_w = stride * im_width;
+            let mut im2d_stride_full: Array3<ImagePrecision> =
+                Array::zeros((im_channel, stride_h, stride_w));
+            im2d_stride_full
+                .slice_mut(s![.., ..;stride, ..;stride])
+                .assign(&im2d_arr);
+            let stride_h_crop = (stride_h - stride) + 1;
+            let stride_w_crop = (stride_w - stride) + 1;
+            im2d_stride = im2d_stride_full
+                .slice_mut(s![.., ..stride_h_crop, ..stride_w_crop])
+                .into_owned();
+        } else {
+            im2d_stride = im2d_arr.into_owned();
+        };
+
+        let im_channel_stride = im2d_stride.len_of(Axis(0));
+        let im_height_stride = im2d_stride.len_of(Axis(1));
+        let im_width_stride = im2d_stride.len_of(Axis(2));
         // fn:im2col() for with padding always
-        // Assuming square kernels:
         let pad_h = self.convolution_layer.kernel_height - 1;
         let pad_w = self.convolution_layer.kernel_width - 1;
         let mut im2d_arr_pad: Array3<ImagePrecision> = Array::zeros((
-            im_channel,
-            im_height + pad_h + pad_h,
-            im_width + pad_w + pad_w,
+            im_channel_stride,
+            im_height_stride + pad_h + pad_h,
+            im_width_stride + pad_w + pad_w,
         ));
-        let pad_int_h = im_height + pad_h;
-        let pad_int_w = im_width + pad_w;
+        let pad_int_h = im_height_stride + pad_h;
+        let pad_int_w = im_width_stride + pad_w;
         // https://github.com/rust-ndarray/ndarray/issues/823
         im2d_arr_pad
             .slice_mut(s![.., pad_h..pad_int_h, pad_w..pad_int_w])
-            .assign(&im2d_arr);
+            .assign(&im2d_stride);
 
         let im_height_pad = im2d_arr_pad.len_of(Axis(1));
         let im_width_pad = im2d_arr_pad.len_of(Axis(2));
@@ -168,6 +192,7 @@ impl TransposedConvolutionLayer {
             im_height_pad,
             im_width_pad,
             im_channel,
+            1,
         );
 
         let filter_transpose = filter_col_flatten.t();
