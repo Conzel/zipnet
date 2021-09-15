@@ -83,7 +83,7 @@ impl TablePrior {
     pub fn from_symbols(&self, symbols: Vec<usize>) -> Vec<i32> {
         symbols
             .iter()
-            .map(|a| (a + self.support.0 as usize) as i32)
+            .map(|a| (*a as i32 + self.support.0))
             .collect()
     }
 
@@ -325,9 +325,16 @@ impl MeanScaleHierarchicalDecoder {
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
+    use super::*;
 
-    use super::{MeanScaleHierarchicalDecoder, MeanScaleHierarchicalEncoder};
+    #[test]
+    pub fn test_table_prior_symbols() {
+        let prior = TablePrior::create_minnen_johnston_hyperlatent_prior();
+        let ints = vec![0, 123847, -234762734, 1, 2];
+        let symbols = prior.to_symbols(ints);
+        let ints_rec = prior.from_symbols(symbols);
+        assert_eq!(ints_rec, vec![0, prior.support.1, prior.support.0, 1, 2]);
+    }
 
     #[test]
     pub fn smoke_test_decoder() {
