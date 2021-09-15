@@ -29,6 +29,15 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
+                "activation": "gdn",
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "convolution",
+                "filters": "160",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
                 "activation": "none",
                 "kernel_shape": "(5,5)"
             }
@@ -73,7 +82,7 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "none",
+                "activation": "igdn",
                 "kernel_shape": "(5,5)"
             }
         ]
@@ -126,7 +135,7 @@
                 "bias": false,
                 "activation": "relu",
                 "channels": "160",
-                "kernel_shape": "(3,3)"
+                "kernel_shape": "(5,5)"
             },
             {
                 "type": "convolution_transpose",
@@ -144,7 +153,7 @@
                 "padding": "same",
                 "bias": false,
                 "activation": "none",
-                "kernel_shape": "(5,5)"
+                "kernel_shape": "(3,3)"
             }
         ]
     }

@@ -61,6 +61,10 @@ pub struct MinnenEncoder {
     activation_1: GdnLayer,
 
     layer_2: ConvolutionLayer,
+
+    activation_2: GdnLayer,
+
+    layer_3: ConvolutionLayer,
 }
 
 impl CodingModel for MinnenEncoder {
@@ -76,6 +80,10 @@ impl CodingModel for MinnenEncoder {
         let x = self.activation_1.forward_pass(&x);
 
         let x = self.layer_2.forward_pass(&x);
+
+        let x = self.activation_2.forward_pass(&x);
+
+        let x = self.layer_3.forward_pass(&x);
 
         x
     }
@@ -130,6 +138,27 @@ impl MinnenEncoder {
             .unwrap();
         let layer_2 = ConvolutionLayer::new_tf(layer_2_weights, 2, Padding::Same);
 
+        let activation_2_weight_0 = loader
+            .get_weight(
+                "analysis_transform/encoder_layer_2/gnd_2/reparam_beta.npy",
+                160,
+            )
+            .unwrap();
+
+        let activation_2_weight_1 = loader
+            .get_weight(
+                "analysis_transform/encoder_layer_2/gnd_2/reparam_gamma.npy",
+                (160, 160),
+            )
+            .unwrap();
+
+        let activation_2 = GdnLayer::new(activation_2_weight_0, activation_2_weight_1);
+
+        let layer_3_weights = loader
+            .get_weight("encoder_layer_3/kernel.npy", (5, 5, 160, 160))
+            .unwrap();
+        let layer_3 = ConvolutionLayer::new_tf(layer_3_weights, 2, Padding::Same);
+
         Self {
             layer_0,
 
@@ -140,6 +169,10 @@ impl MinnenEncoder {
             activation_1,
 
             layer_2,
+
+            activation_2,
+
+            layer_3,
         }
     }
 }
@@ -158,6 +191,8 @@ pub struct JohnstonDecoder {
     activation_2: IgdnLayer,
 
     layer_3: TransposedConvolutionLayer,
+
+    activation_3: IgdnLayer,
 }
 
 impl CodingModel for JohnstonDecoder {
@@ -177,6 +212,8 @@ impl CodingModel for JohnstonDecoder {
         let x = self.activation_2.forward_pass(&x);
 
         let x = self.layer_3.forward_pass(&x);
+
+        let x = self.activation_3.forward_pass(&x);
 
         x
     }
@@ -252,6 +289,22 @@ impl JohnstonDecoder {
             .unwrap();
         let layer_3 = TransposedConvolutionLayer::new_tf(layer_3_weights, 2, Padding::Same);
 
+        let activation_3_weight_0 = loader
+            .get_weight(
+                "synthesis_transform/decoder_layer_3/igdn_3/reparam_beta.npy",
+                3,
+            )
+            .unwrap();
+
+        let activation_3_weight_1 = loader
+            .get_weight(
+                "synthesis_transform/decoder_layer_3/igdn_3/reparam_gamma.npy",
+                (3, 3),
+            )
+            .unwrap();
+
+        let activation_3 = IgdnLayer::new(activation_3_weight_0, activation_3_weight_1);
+
         Self {
             layer_0,
 
@@ -266,6 +319,8 @@ impl JohnstonDecoder {
             activation_2,
 
             layer_3,
+
+            activation_3,
         }
     }
 }
@@ -368,7 +423,7 @@ impl CodingModel for JohnstonHyperDecoder {
 impl JohnstonHyperDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
         let layer_0_weights = loader
-            .get_weight("hyperdecoder_layer_0/kernel.npy", (3, 3, 76, 160))
+            .get_weight("hyperdecoder_layer_0/kernel.npy", (5, 5, 76, 160))
             .unwrap();
         let layer_0 = TransposedConvolutionLayer::new_tf(layer_0_weights, 2, Padding::Same);
 
@@ -382,7 +437,7 @@ impl JohnstonHyperDecoder {
         let activation_1 = ReluLayer::new();
 
         let layer_2_weights = loader
-            .get_weight("hyperdecoder_layer_2/kernel.npy", (5, 5, 320, 107))
+            .get_weight("hyperdecoder_layer_2/kernel.npy", (3, 3, 320, 107))
             .unwrap();
         let layer_2 = TransposedConvolutionLayer::new_tf(layer_2_weights, 1, Padding::Same);
 
@@ -403,9 +458,6 @@ impl JohnstonHyperDecoder {
 mod tests {
     use super::*;
     use crate::weight_loader::NpzWeightLoader;
-
-    // Smoke tests cannot be run on Github CI, only designed for manual running,
-    // thats why we need the ignore tag
 
     #[test]
     fn smoke_test_minnenencoder() {
