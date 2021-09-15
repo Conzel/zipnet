@@ -423,7 +423,7 @@ impl CodingModel for JohnstonHyperDecoder {
 impl JohnstonHyperDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
         let layer_0_weights = loader
-            .get_weight("hyperdecoder_layer_0/kernel.npy", (5, 5, 76, 160))
+            .get_weight("hyperdecoder_layer_0/kernel.npy", (3, 3, 76, 160))
             .unwrap();
         let layer_0 = TransposedConvolutionLayer::new_tf(layer_0_weights, 2, Padding::Same);
 
@@ -437,7 +437,7 @@ impl JohnstonHyperDecoder {
         let activation_1 = ReluLayer::new();
 
         let layer_2_weights = loader
-            .get_weight("hyperdecoder_layer_2/kernel.npy", (3, 3, 320, 107))
+            .get_weight("hyperdecoder_layer_2/kernel.npy", (5, 5, 320, 107))
             .unwrap();
         let layer_2 = TransposedConvolutionLayer::new_tf(layer_2_weights, 1, Padding::Same);
 
