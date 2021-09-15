@@ -7,7 +7,7 @@ use coders::{
 };
 use image::RgbImage;
 use image::{io::Reader as ImageReader, DynamicImage};
-use ndarray::Array3;
+use ndarray::{Array, Array3};
 use nshare::ToNdarray3;
 use quicli::prelude::*;
 use std::{
@@ -133,10 +133,19 @@ fn to_pixel(x: &f32, debug: bool) -> u8 {
 
 // From: https://stackoverflow.com/questions/56762026/how-to-save-ndarray-in-rust-as-image
 fn array_to_image(arr: Array3<u8>) -> RgbImage {
-    assert!(arr.is_standard_layout());
+    // we get the image in PT layout, which is (C,H,W), but need (H,W,C)
+    let permuted_view = arr.view().permuted_axes([1,2,0]);
+    // again hack to fix the memory layout
+    let permuted_array: Array3<u8> = Array::from_shape_vec(
+        permuted_view.dim(),
+        permuted_view.iter().map(|x| *x).collect(),
+    )
+    .unwrap();
 
-    let (height, width, _) = arr.dim();
-    let raw = arr.into_raw_vec();
+    assert!(permuted_array.is_standard_layout());
+
+    let (height, width, _) = permuted_array.dim();
+    let raw = permuted_array.into_raw_vec();
 
     RgbImage::from_raw(width as u32, height as u32, raw)
         .expect("container should have the right size for the image dimensions")

@@ -236,10 +236,12 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
             side_info[2] as usize,
         );
         let hyperlatents_im_len = hyperlatents_shape.1 * hyperlatents_shape.2;
+        // TODO: Still debate what we do about the latent even/uneven problem.
+        // The make_even stuff is just a hack basically.
         let latents_shape = (
             side_info[3] as usize,
-            side_info[4] as usize,
-            side_info[5] as usize,
+            make_even(side_info[4] as usize) as usize,
+            make_even(side_info[5] as usize) as usize,
         );
         let latents_len = latents_shape.0 * latents_shape.1 * latents_shape.2;
         let mut coder = DefaultAnsCoder::from_compressed(encoded_data.main_info).unwrap();
@@ -271,15 +273,24 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
         let latent_parameters = self
             .hyperlatent_decoder
             .forward_pass(&hyperlatents.map(|a| *a as ImagePrecision));
-        let flat_latent_parameters = Array::from_iter(latent_parameters);
 
-        let means = flat_latent_parameters.slice(s![0..latents_len]);
-        let stds = flat_latent_parameters.slice(s![latents_len..flat_latent_parameters.len()]);
+        // TODO: Extract to function with encoder functionality
+        let means = latent_parameters.slice(s![0..MINNEN_JOHNSTON_NUM_CHANNELS, .., ..]);
+        let stds = latent_parameters
+            .slice(s![
+                MINNEN_JOHNSTON_NUM_CHANNELS..(2 * MINNEN_JOHNSTON_NUM_CHANNELS),
+                ..,
+                ..
+            ])
+            .map(|x| x.exp());
+
+        let flat_means = Array::from_iter(means.iter());
+        let flat_stds = Array::from_iter(stds.iter());
 
         let flat_latents_vec = decode_gaussians(
             &mut coder,
-            &means.map(|a| *a as f64),
-            &stds.map(|a| *a as f64),
+            &flat_means.map(|a| **a as f64),
+            &flat_stds.map(|a| **a as f64),
         )
         .unwrap();
 
