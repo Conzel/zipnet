@@ -73,6 +73,27 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug zipnet compression with small sample img",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=zipnet",
+                    "--package=zipnet"
+                ],
+                "filter": {
+                    "name": "zipnet",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "compress",
+                "${workspaceFolder}/debug-assets/chess-small.png"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug zipnet compression with very small sample img",
             "cargo": {
                 "args": [
