@@ -10,7 +10,7 @@ class AnalysisTransform(tf.keras.layers.Layer):
         super(AnalysisTransform, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
-        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
+        names = ['encoder_layer_0', 'encoder_layer_1', 'encoder_layer_2', 'encoder_layer_3']
         self._layers = [
             tf.layers.Conv2D(self.num_filters, (5, 5), name=names[0], strides=2,
                              padding="same", use_bias=False, activation=tfc.GDN(name="gnd_0")),
@@ -45,48 +45,48 @@ class AnalysisTransform(tf.keras.layers.Layer):
         return tensor
 
 
+# class SynthesisTransform(tf.keras.layers.Layer):
+#     """The synthesis transform."""
+#
+#     def __init__(self, num_filters, *args, **kwargs):
+#         self.num_filters = num_filters
+#         super(SynthesisTransform, self).__init__(*args, **kwargs)
+#
+#     def build(self, input_shape):
+#         self._layers = [
+#             tfc.SignalConv2D(
+#                 self.num_filters, (5, 5), name="layer_0", corr=False, strides_up=2,
+#                 padding="same_zeros", use_bias=True,
+#                 activation=tfc.GDN(name="igdn_0", inverse=True)),
+#             tfc.SignalConv2D(
+#                 self.num_filters, (5, 5), name="layer_1", corr=False, strides_up=2,
+#                 padding="same_zeros", use_bias=True,
+#                 activation=tfc.GDN(name="igdn_1", inverse=True)),
+#             tfc.SignalConv2D(
+#                 self.num_filters, (5, 5), name="layer_2", corr=False, strides_up=2,
+#                 padding="same_zeros", use_bias=True,
+#                 activation=tfc.GDN(name="igdn_2", inverse=True)),
+#             tfc.SignalConv2D(
+#                 3, (5, 5), name="layer_3", corr=False, strides_up=2,
+#                 padding="same_zeros", use_bias=True,
+#                 activation=None),
+#         ]
+#         super(SynthesisTransform, self).build(input_shape)
+#
+#     def call(self, tensor):
+#         for layer in self._layers:
+#             tensor = layer(tensor)
+#         return tensor
+
+
 class SynthesisTransform(tf.keras.layers.Layer):
     """The synthesis transform."""
 
     def __init__(self, num_filters, *args, **kwargs):
-        self.num_filters = num_filters
         super(SynthesisTransform, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
-        self._layers = [
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_0", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="igdn_0", inverse=True)),
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_1", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="igdn_1", inverse=True)),
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_2", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True,
-                activation=tfc.GDN(name="igdn_2", inverse=True)),
-            tfc.SignalConv2D(
-                3, (5, 5), name="layer_3", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True,
-                activation=None),
-        ]
-        super(SynthesisTransform, self).build(input_shape)
-
-    def call(self, tensor):
-        for layer in self._layers:
-            tensor = layer(tensor)
-        return tensor
-
-
-class SynthesisTransform_Johnston(tf.keras.layers.Layer):
-    """The synthesis transform."""
-
-    def __init__(self, num_filters, *args, **kwargs):
-        super(SynthesisTransform_Johnston, self).__init__(*args, **kwargs)
-
-    def build(self, input_shape):
-        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
+        names = ['decoder_layer_0', 'decoder_layer_1', 'decoder_layer_2', 'decoder_layer_3']
         filters = [79, 22, 43, 3]
         self._layers = [
 
@@ -116,7 +116,7 @@ class SynthesisTransform_Johnston(tf.keras.layers.Layer):
             #     padding="same_zeros", use_bias=True,
             #     activation=None),
         ]
-        super(SynthesisTransform_Johnston, self).build(input_shape)
+        super(SynthesisTransform, self).build(input_shape)
 
     def call(self, tensor):
         for layer in self._layers:
@@ -135,7 +135,7 @@ class HyperAnalysisTransform(tf.keras.layers.Layer):
         super(HyperAnalysisTransform, self).__init__(*args, **kwargs)
 
     def build(self, input_shape):
-        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
+        names = ['hyperencoder_layer_0', 'hyperencoder_layer_1', 'hyperencoder_layer_2', 'hyperencoder_layer_3']
         self._layers = [
             tf.layers.Conv2D(self.num_filters, (3, 3), name=names[0], strides=1,
                              padding="same", use_bias=False, activation=tf.nn.relu),
@@ -165,96 +165,96 @@ class HyperAnalysisTransform(tf.keras.layers.Layer):
         return tensor
 
 
-class HyperSynthesisTransform(tf.keras.layers.Layer):
-    """The synthesis transform for the entropy model parameters."""
+# class HyperSynthesisTransform(tf.keras.layers.Layer):
+#     """The synthesis transform for the entropy model parameters."""
+#
+#     def __init__(self, num_filters, num_output_filters=None, *args, **kwargs):
+#         self.num_filters = num_filters
+#         if num_output_filters is None:  # default to the same
+#             num_output_filters = num_filters
+#         self.num_output_filters = num_output_filters
+#         super(HyperSynthesisTransform, self).__init__(*args, **kwargs)
+#
+#     def build(self, input_shape):
+#         self._layers = [
+#             tfc.SignalConv2D(
+#                 self.num_filters, (5, 5), name="layer_0", corr=False, strides_up=2,
+#                 padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+#                 activation=tf.nn.relu),
+#             tfc.SignalConv2D(
+#                 self.num_filters, (5, 5), name="layer_1", corr=False, strides_up=2,
+#                 padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+#                 activation=tf.nn.relu),
+#             tfc.SignalConv2D(
+#                 self.num_output_filters, (3, 3), name="layer_2", corr=False, strides_up=1,
+#                 padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+#                 activation=None),
+#         ]
+#         super(HyperSynthesisTransform, self).build(input_shape)
+#
+#     def call(self, tensor):
+#         for layer in self._layers:
+#             tensor = layer(tensor)
+#         return tensor
 
-    def __init__(self, num_filters, num_output_filters=None, *args, **kwargs):
-        self.num_filters = num_filters
-        if num_output_filters is None:  # default to the same
-            num_output_filters = num_filters
-        self.num_output_filters = num_output_filters
-        super(HyperSynthesisTransform, self).__init__(*args, **kwargs)
 
-    def build(self, input_shape):
-        self._layers = [
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_0", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=tf.nn.relu),
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_1", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=tf.nn.relu),
-            tfc.SignalConv2D(
-                self.num_output_filters, (3, 3), name="layer_2", corr=False, strides_up=1,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=None),
-        ]
-        super(HyperSynthesisTransform, self).build(input_shape)
+# # Architecture (mean-scale, no context model) based on Table 1 of https://papers.nips.cc/paper/8275-joint-autoregressive-and-hierarchical-priors-for-learned-image-compression.pdf
+# class MBT2018HyperSynthesisTransform(tf.keras.layers.Layer):
+#     """The synthesis transform for the entropy model parameters."""
+#
+#     def __init__(self, num_filters, num_output_filters=None, *args, **kwargs):
+#         self.num_filters = num_filters
+#         if num_output_filters is None:  # default to the same
+#             num_output_filters = num_filters
+#         self.num_output_filters = num_output_filters
+#         super().__init__(*args, **kwargs)
+#
+#     def build(self, input_shape):
+#         self._layers = [
+#             tfc.SignalConv2D(
+#                 self.num_filters, (5, 5), name="layer_0", corr=False, strides_up=2,
+#                 padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+#                 activation=tf.nn.relu),
+#             tfc.SignalConv2D(
+#                 int(self.num_filters * 1.5), (5, 5), name="layer_1", corr=False, strides_up=2,
+#                 padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+#                 activation=tf.nn.relu),
+#             tfc.SignalConv2D(
+#                 self.num_output_filters, (3, 3), name="layer_2", corr=False, strides_up=1,
+#                 padding="same_zeros", use_bias=True, kernel_parameterizer=None,
+#                 activation=None),
+#         ]
+#         super().build(input_shape)
+#
+#     def call(self, tensor):
+#         for layer in self._layers:
+#             tensor = layer(tensor)
+#         return tensor
+#
+# if __name__ == '__main__':
+#     num_filters = 192
+#     encoder = AnalysisTransform(num_filters)
+#     img = tf.random.uniform(shape=[1, 3, 4, 4])
+#     y = encoder(img)
 
-    def call(self, tensor):
-        for layer in self._layers:
-            tensor = layer(tensor)
-        return tensor
 
 
 # Architecture (mean-scale, no context model) based on Table 1 of https://papers.nips.cc/paper/8275-joint-autoregressive-and-hierarchical-priors-for-learned-image-compression.pdf
 class MBT2018HyperSynthesisTransform(tf.keras.layers.Layer):
     """The synthesis transform for the entropy model parameters."""
 
-    def __init__(self, num_filters, num_output_filters=None, *args, **kwargs):
-        self.num_filters = num_filters
-        if num_output_filters is None:  # default to the same
-            num_output_filters = num_filters
-        self.num_output_filters = num_output_filters
-        super().__init__(*args, **kwargs)
-
-    def build(self, input_shape):
-        self._layers = [
-            tfc.SignalConv2D(
-                self.num_filters, (5, 5), name="layer_0", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=tf.nn.relu),
-            tfc.SignalConv2D(
-                int(self.num_filters * 1.5), (5, 5), name="layer_1", corr=False, strides_up=2,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=tf.nn.relu),
-            tfc.SignalConv2D(
-                self.num_output_filters, (3, 3), name="layer_2", corr=False, strides_up=1,
-                padding="same_zeros", use_bias=True, kernel_parameterizer=None,
-                activation=None),
-        ]
-        super().build(input_shape)
-
-    def call(self, tensor):
-        for layer in self._layers:
-            tensor = layer(tensor)
-        return tensor
-
-if __name__ == '__main__':
-    num_filters = 192
-    encoder = AnalysisTransform(num_filters)
-    img = tf.random.uniform(shape=[1, 3, 4, 4])
-    y = encoder(img)
-
-
-
-# Architecture (mean-scale, no context model) based on Table 1 of https://papers.nips.cc/paper/8275-joint-autoregressive-and-hierarchical-priors-for-learned-image-compression.pdf
-class MBT2018HyperSynthesisTransform_Johnston(tf.keras.layers.Layer):
-    """The synthesis transform for the entropy model parameters."""
-
     def __init__(self, num_filters, num_output_filters=320, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def build(self, input_shape):
-        names = ['layer_0', 'layer_1', 'layer_2', 'layer_3']
+        names = ['hyperdecoder_layer_0', 'hyperdecoder_layer_1', 'hyperdecoder_layer_2', 'hyperdecoder_layer_3']
         self._layers = [
             tf.layers.Conv2DTranspose(76, (3, 3), name=names[0], strides=2,
-                             padding="same", use_bias=False, activation=tf.nn.relu, kernel_parameterizer=None),
+                             padding="same", use_bias=False, activation=tf.nn.relu),
             tf.layers.Conv2DTranspose(107, (5, 5), name=names[1], strides=2,
-                             padding="same", use_bias=False, activation=tf.nn.relu, kernel_paramaterizer=None),
+                             padding="same", use_bias=False, activation=tf.nn.relu),
             tf.layers.Conv2DTranspose(320, (5, 5), name=names[2], strides=1,
-                             padding="same", use_bias=False, activation=None, kernel_parameterized=None),
+                             padding="same", use_bias=False, activation=None),
 
             # tfc.SignalConv2D(
             #     76, (5, 5), name="layer_0", corr=False, strides_up=2,
