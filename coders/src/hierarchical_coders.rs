@@ -132,6 +132,14 @@ fn decode_gaussians(
         .ok()
 }
 
+fn make_even(i: usize) -> usize {
+    if i % 2 == 0 {
+        i
+    } else {
+        i + 1
+    }
+}
+
 impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
     /// The encoded Data contains the actual data in the first tuple entry.
     /// The second entry consists of
@@ -143,17 +151,34 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
 
         let latent_length = latents.len();
 
-        debug_assert_eq!(latent_length, 2 * latent_parameters.len());
+        // If we give in an uneven latent shape, then the latent parameters will
+        // have even shape and the naive comparison doesn't work
+        debug_assert_eq!(
+            make_even(latents.shape()[1]) * make_even(latents.shape()[2]),
+            make_even(latent_parameters.shape()[1]) * make_even(latent_parameters.shape()[2]),
+        );
         // ensures that we use the correct number of channels for the model
         debug_assert_eq!(hyperlatents.shape()[0], MINNEN_JOHNSTON_NUM_CHANNELS);
+        debug_assert_eq!(
+            latent_parameters.shape()[0],
+            2 * MINNEN_JOHNSTON_NUM_CHANNELS
+        );
 
         let flat_latents = Array::from_iter(latents.iter());
-        // let flat_hyperlatents = Array::from_iter(hyperlatents.iter());
-        let flat_latent_parameters = Array::from_iter(latent_parameters.iter());
 
-        // This slice here is wrong, we need to slice along the last axis...
-        let means = flat_latent_parameters.slice(s![0..latent_length]);
-        let stds = flat_latent_parameters.slice(s![latent_length..flat_latent_parameters.len()]);
+        // TODO: what to do if we have more latent parameters than latents? throw away the last
+        // latents?
+        let means = latent_parameters.slice(s![0..MINNEN_JOHNSTON_NUM_CHANNELS, .., ..]);
+        let stds = latent_parameters
+            .slice(s![
+                MINNEN_JOHNSTON_NUM_CHANNELS..(2 * MINNEN_JOHNSTON_NUM_CHANNELS),
+                ..,
+                ..
+            ])
+            .map(|x| x.exp());
+
+        let flat_means = Array::from_iter(means.iter());
+        let flat_stds = Array::from_iter(stds.iter());
 
         let mut coder = DefaultAnsCoder::new();
 
@@ -164,8 +189,8 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
         encode_gaussians(
             &mut coder,
             flat_latents.mapv(|a| a.round() as i32),
-            &means.mapv(|a| *a as f64),
-            &stds.mapv(|a| *a as f64),
+            &flat_means.mapv(|a| *a as f64),
+            &flat_stds.mapv(|a| *a as f64),
         );
 
         let quantized_hyperlatents = hyperlatents.map(|x| x.round() as i32);
