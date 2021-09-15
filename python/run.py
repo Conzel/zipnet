@@ -9,7 +9,7 @@ args = {
     "results_dir": "results",
     "input_file": "dog.jpg",
     "lmbda": 0.01,
-    "num_filters": 192,
+    "num_filters": 160,
 }
 args["model_file"] = "{}-num_filters={}-lmbda={}".format(
     args["model"], args["num_filters"], args["lmbda"]

@@ -33,15 +33,17 @@ tf.set_random_seed(seed)
 
 import tensorflow_compression as tfc
 
-Johnston = False  # use optimized num_filters
-if Johnston:
-    from nn_models import AnalysisTransform, HyperAnalysisTransform
-    from nn_models import SynthesisTransform_Johnston as SynthesisTransform
-    from nn_models import MBT2018HyperSynthesisTransform_Johnston as HyperSynthesisTransform
-else:  # use default num_filters
-    from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
-    from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
+# Johnston = True  # use optimized num_filters
+# if Johnston:
+#     from nn_models import AnalysisTransform, HyperAnalysisTransform
+#     from nn_models import SynthesisTransform_Johnston as SynthesisTransform
+#     from nn_models import MBT2018HyperSynthesisTransform_Johnston as HyperSynthesisTransform
+# else:  # use default num_filters
+#     from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
+#     from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
 from utils import quantize_image
+from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
+from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
 
 SCALES_MIN = 0.11
 SCALES_MAX = 256
