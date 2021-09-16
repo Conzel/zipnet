@@ -110,7 +110,7 @@ def train():
 
 if __name__ == "__main__":
     # my_picture = "dog.jpg"
-    my_picture = "chess-very-small.png"
+    # my_picture = "chess.png"
     # latent_loc = 'results/latents-my_model-input=dog.jpg.npz'
     # latent_loc = 'results/latents-mbt2018-num_filters=192-lmbda=0.001-input=dog.jpg.npz'
     # encode_latents(latent_loc,
@@ -118,5 +118,5 @@ if __name__ == "__main__":
     #                args['checkpoint_dir'],
     #                args['model_file'],
     #                seperate=True)
-    main(my_picture)
-    # train()
+    # main(my_picture)
+    train()
