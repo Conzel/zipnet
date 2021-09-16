@@ -141,6 +141,9 @@ def _compress(
     write_tfci_for_eval = True
 
     X = load_input(input_file)
+    print(X.shape)
+    X = X[:, :161, :163, :]
+    print(X.shape)
 
     num_images = int(X.shape[0])
     num_pixels = int(np.prod(X.shape[1:-1]))

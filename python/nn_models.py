@@ -249,11 +249,11 @@ class MBT2018HyperSynthesisTransform(tf.keras.layers.Layer):
     def build(self, input_shape):
         names = ['hyperdecoder_layer_0', 'hyperdecoder_layer_1', 'hyperdecoder_layer_2', 'hyperdecoder_layer_3']
         self._layers = [
-            tf.layers.Conv2DTranspose(76, (3, 3), name=names[0], strides=2,
+            tf.layers.Conv2DTranspose(76, (5, 5), name=names[0], strides=2,
                              padding="same", use_bias=False, activation=tf.nn.relu),
             tf.layers.Conv2DTranspose(107, (5, 5), name=names[1], strides=2,
                              padding="same", use_bias=False, activation=tf.nn.relu),
-            tf.layers.Conv2DTranspose(320, (5, 5), name=names[2], strides=1,
+            tf.layers.Conv2DTranspose(320, (3, 3), name=names[2], strides=1,
                              padding="same", use_bias=False, activation=None),
 
             # tfc.SignalConv2D(
