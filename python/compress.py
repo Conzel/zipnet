@@ -142,8 +142,6 @@ def _compress(
 
     X = load_input(input_file)
     print(X.shape)
-    X = X[:, :161, :163, :]
-    print(X.shape)
 
     num_images = int(X.shape[0])
     num_pixels = int(np.prod(X.shape[1:-1]))
@@ -190,7 +188,7 @@ def _compress(
         tf.squared_difference(x, x_tilde), axis=axes_except_batch
     )  # shape (N,)
     psnr = tf.image.psnr(x_tilde, x, 255)  # shape (N,)
-    msssim = tf.image.ssim_multiscale(x_tilde, x, 255)  # shape (N,)
+    msssim = tf.image.ssim_multiscale(x_tilde, x, 255, filter_size=4)  # shape (N,)
     msssim_db = -10 * tf.log(1 - msssim) / np.log(10)  # shape (N,)
     x_shape = graph["x_shape"]
     y_shape = graph["y_shape"]
