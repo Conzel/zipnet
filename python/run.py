@@ -9,11 +9,12 @@ args = {
     "results_dir": "results",
     "input_file": "dog.jpg",
     "lmbda": 0.01,
-    "num_filters": 192,
+    "num_filters": 160,
 }
-args["model_file"] = "{}-num_filters={}-lmbda={}".format(
-    args["model"], args["num_filters"], args["lmbda"]
-)
+# args["model_file"] = "{}-num_filters={}-lmbda={}".format(
+#     args["model"], args["num_filters"], args["lmbda"]
+# )
+args["model_file"] = "my_model"
 
 train_args = {
     "patch_size": 256,
@@ -69,8 +70,6 @@ def compress(input_file, verbose=False):
         runname, input_file, output_file, checkpoint_dir, results_dir, num_filters
     )
 
-
-
     compressed_file = input_file + ".tfci"
     results_file = "rd-{model_file}-file={input_file}.npz".format(
         model_file=args["model_file"], input_file=input_file
@@ -87,7 +86,7 @@ def main(input_file):
     intermediate_time = time.time()
     compress_time = intermediate_time - start_time
     print(f">>> compressing {input_file} done in {compress_time} seconds")
-    compressed_file = "dog.jpg.tfci"
+    compressed_file = "{}.tfci".format(input_file)
     print(f"<<< decompressing {compressed_file} ...")
     decompress(compressed_file, verbose=True)
     stop_time = time.time()
@@ -110,11 +109,15 @@ def train():
 
 
 if __name__ == "__main__":
-    my_picture = "dog.jpg"
-    # encode_latents('results/latents-mbt2018-num_filters=192-lmbda=0.001-input=dog.jpg.npz',
+    # my_picture = "dog.jpg"
+    my_picture = "chess_piece.png"
+    # my_picture = "chess-very-small.png"
+    # latent_loc = 'results/latents-my_model-input=chess.png.npz'
+    # latent_loc = 'results/latents-mbt2018-num_filters=192-lmbda=0.001-input=dog.jpg.npz'
+    # encode_latents(latent_loc,
     #                args['num_filters'],
     #                args['checkpoint_dir'],
     #                args['model_file'],
     #                seperate=True)
-    # main(my_picture)
-    train()
+    main(my_picture)
+    # train()
