@@ -8,10 +8,13 @@ use coders::{
 use image::RgbImage;
 use image::{io::Reader as ImageReader, DynamicImage};
 use ndarray::{Array, Array3};
+use ndarray_npy::{read_npy, NpzReader};
 use nshare::ToNdarray3;
 use quicli::prelude::*;
 use std::{
-    array, fs,
+    array,
+    ffi::OsStr,
+    fs,
     io::{Read, Write},
 };
 use std::{fs::File, path::PathBuf};
@@ -155,7 +158,8 @@ impl ZipnetOpts for CompressOpts {
     // Performs Compression
     fn run(&self) {
         // preprocessing and getting the image
-        let img_data = get_image(&self.image).map(|x| *x as f32 / 255.0);
+        let img_data = get_image(&self.image);
+        println!("{}", img_data);
         let mut encoder: Box<dyn Encoder<_>> = if self.debug {
             Box::new(DummyCoder::new())
         } else {
@@ -181,15 +185,29 @@ impl ZipnetOpts for CompressOpts {
     }
 }
 
-fn get_image(im_path: &PathBuf) -> Array3<u8> {
-    let img = ImageReader::open(im_path).unwrap().decode().unwrap();
-    img.to_rgb8().into_ndarray3()
+/// Returns preprocessed image
+fn get_image(im_path: &PathBuf) -> Array3<f32> {
+    match im_path.extension().and_then(OsStr::to_str).unwrap() {
+        "npy" => read_npy(im_path).unwrap(),
+        "png" | "jpg" => get_image_raw(im_path).map(|x| *x as f32 / 255.0),
+        _ => panic!("Image had unrecognized type. Only .jpg, .png and .npy are supported."),
+    }
+}
+
+/// Returns image without preprocessing. Only useable for actual images, not npy arrays.
+fn get_image_raw(im_path: &PathBuf) -> Array3<u8> {
+    ImageReader::open(im_path)
+        .unwrap()
+        .decode()
+        .unwrap()
+        .to_rgb8()
+        .into_ndarray3()
 }
 
 impl ZipnetOpts for StatsOpts {
     // Prints out statistics to StdOut
     fn run(&self) {
-        let img_data = get_image(&self.image);
+        let img_data = get_image_raw(&self.image);
         let stats = Statistics::new(&img_data);
         println!("{}", stats);
     }
