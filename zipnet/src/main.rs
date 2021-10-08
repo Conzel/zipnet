@@ -134,7 +134,7 @@ fn to_pixel(x: &f32, debug: bool) -> u8 {
 // From: https://stackoverflow.com/questions/56762026/how-to-save-ndarray-in-rust-as-image
 fn array_to_image(arr: Array3<u8>) -> RgbImage {
     // we get the image in PT layout, which is (C,H,W), but need (H,W,C)
-    let permuted_view = arr.view().permuted_axes([1,2,0]);
+    let permuted_view = arr.view().permuted_axes([1, 2, 0]);
     // again hack to fix the memory layout
     let permuted_array: Array3<u8> = Array::from_shape_vec(
         permuted_view.dim(),
@@ -154,7 +154,8 @@ fn array_to_image(arr: Array3<u8>) -> RgbImage {
 impl ZipnetOpts for CompressOpts {
     // Performs Compression
     fn run(&self) {
-        let img_data = get_image(&self.image).map(|x| *x as f32);
+        // preprocessing and getting the image
+        let img_data = get_image(&self.image).map(|x| *x as f32 / 255.0);
         let mut encoder: Box<dyn Encoder<_>> = if self.debug {
             Box::new(DummyCoder::new())
         } else {
