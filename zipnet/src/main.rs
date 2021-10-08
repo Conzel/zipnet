@@ -159,7 +159,6 @@ impl ZipnetOpts for CompressOpts {
     fn run(&self) {
         // preprocessing and getting the image
         let img_data = get_image(&self.image);
-        println!("{}", img_data);
         let mut encoder: Box<dyn Encoder<_>> = if self.debug {
             Box::new(DummyCoder::new())
         } else {
