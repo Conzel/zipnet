@@ -110,7 +110,8 @@ def train():
 
 if __name__ == "__main__":
     # my_picture = "dog.jpg"
-    my_picture = "chess_piece.png"
+    print(os.listdir())
+    my_picture = "diamond.jpg"
     # my_picture = "chess-very-small.png"
     # latent_loc = 'results/latents-my_model-input=chess.png.npz'
     # latent_loc = 'results/latents-mbt2018-num_filters=192-lmbda=0.001-input=dog.jpg.npz'

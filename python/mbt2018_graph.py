@@ -71,19 +71,24 @@ def _build_graph(x, num_filters, training=True):
     entropy_bottleneck = tfc.EntropyBottleneck()
 
     # Build autoencoder and hyperprior.
-    y = analysis_transform(x)  # y = g_a(x)
-    z = hyper_analysis_transform(y)  # z = h_a(y)
+    y, analysis_layers_output = analysis_transform(x)  # y = g_a(x)
+    assert y == analysis_layers_output[-1]
+    # y = analysis_transform(x)  # y = g_a(x)
+    z, hyp_analysis_layers_output = hyper_analysis_transform(y)  # z = h_a(y)
+    assert z == hyp_analysis_layers_output[-1]
+    # z = hyper_analysis_transform(y)  # z = h_a(y)
 
     # sample z_tilde from q(z_tilde|x) = q(z_tilde|h_a(g_a(x))), and compute the pdf of z_tilde under the flexible prior
     # p(z_tilde) ("z_likelihoods")
     z_tilde, z_likelihoods = entropy_bottleneck(z, training=training)
-    mu, sigma = tf.split(
-        hyper_synthesis_transform(z_tilde), num_or_size_splits=2, axis=-1
-    )
+    # temp, hyp_synth_layers_output = hyper_synthesis_transform(z_tilde)
+    temp, hyp_synth_layers_output = hyper_synthesis_transform(z_tilde)
+    assert temp == hyp_synth_layers_output[-1]
+    mu, sigma = tf.split(temp, num_or_size_splits=2, axis=-1)
     sigma = tf.exp(sigma)  # make positive
 
     if (
-            not training
+        not training
     ):  # need to handle images with non-standard sizes during compression; mu/sigma must have the same
         # shape as y
         y_shape = tf.shape(y)
@@ -98,15 +103,18 @@ def _build_graph(x, num_filters, training=True):
     # sample y_tilde from q(y_tilde|x) = U(y-0.5, y+0.5) = U(g_a(x)-0.5, g_a(x)+0.5), and then compute the pdf of
     # y_tilde under the conditional prior/entropy model p(y_tilde|z_tilde) = N(y_tilde|mu, sigma^2) conv U(-0.5,  0.5)
     y_tilde, y_likelihoods = conditional_bottleneck(y, training=training)
-    x_tilde = synthesis_transform(y_tilde)
+    x_tilde, synth_layers_output = synthesis_transform(y_tilde)
+    assert x_tilde == synth_layers_output[-1]
+    # x_tilde = synthesis_transform(y_tilde)
+
 
     if not training:
         side_string = entropy_bottleneck.compress(z)
         string = conditional_bottleneck.compress(y)
         x_shape = tf.shape(x)
         x_tilde = x_tilde[
-                  :, : x_shape[1], : x_shape[2], :
-                  ]  # crop reconstruction to have the same shape as input
+            :, : x_shape[1], : x_shape[2], :
+        ]  # crop reconstruction to have the same shape as input
 
         my_x_shape = x.shape
         my_y_shape = y.shape
@@ -146,7 +154,7 @@ def _build_train_graph(x, num_filters, batch_size, patch_size, lmbda):
     # Multiply by 255^2 to correct for rescaling.
     float_train_mse = train_mse
     psnr = -10 * (
-            tf.log(float_train_mse) / np.log(10)
+        tf.log(float_train_mse) / np.log(10)
     )  # float MSE computed on float images
     train_mse *= 255 ** 2
 
