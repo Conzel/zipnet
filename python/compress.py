@@ -143,6 +143,8 @@ def _compress(
     X = load_input(input_file)
     print(X.shape)
 
+    np.save("input_image", X)
+
     num_images = int(X.shape[0])
     num_pixels = int(np.prod(X.shape[1:-1]))
 
@@ -154,6 +156,7 @@ def _compress(
     # x. Therefore if multiple ops need to be evaluated on the same batch of data, they have to be grouped like
     # sess.run([op1, op2, ...]).
     x_next = dataset.make_one_shot_iterator().get_next()
+
 
     x_ph = x = tf.placeholder(
         "float32", (None, *X.shape[1:])
@@ -246,9 +249,16 @@ def _compress(
                 # test_string = sess.run(graph['string'], feed_dict=x_feed_dict)
                 # test_side_string = sess.run(graph['side_string'], feed_dict=x_feed_dict)
                 y = sess.run(graph['y'], feed_dict=x_feed_dict)
+                np.save("encoder_output", y)
                 z = sess.run(graph['z'], feed_dict=x_feed_dict)
                 mu = sess.run(graph['mu'], feed_dict=x_feed_dict)
                 sigma = sess.run(graph['sigma'], feed_dict=x_feed_dict)
+
+                # save intermediate outputs
+                for name in ['analysis', 'hyp_analysis']:
+                    layers_output = sess.run(graph["{}_layers_output".format(name)], feed_dict=x_feed_dict)
+                    for i, l in enumerate(layers_output):
+                        np.save("layers/{}_layer_{}_output".format(name, i), l)
 
                 packed.pack(compression_tensors, compression_arrs)
                 if write_tfci_for_eval:
@@ -326,8 +336,10 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
     z_shape = tf.concat([z_shape, [num_filters]], axis=0)
     z_hat = entropy_bottleneck.decompress(side_string, z_shape, channels=num_filters)
 
+    temp, hyp_synth_layers_output = hyper_synthesis_transform(z_hat)
+    assert temp == hyp_synth_layers_output[-1]
     mu, sigma = tf.split(
-        hyper_synthesis_transform(z_hat), num_or_size_splits=2, axis=-1
+        temp, num_or_size_splits=2, axis=-1
     )
     sigma = tf.exp(sigma)  # make positive
     training = False
@@ -343,7 +355,8 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
         sigma, scale_table, mean=mu, dtype=tf.float32
     )
     y_hat = conditional_bottleneck.decompress(string)
-    x_hat = synthesis_transform(y_hat)
+    x_hat, synth_layers_output = synthesis_transform(y_hat)
+    assert x_hat == synth_layers_output[-1]
 
     # Remove batch dimension, and crop away any extraneous padding on the bottom
     # or right boundaries.
@@ -358,3 +371,9 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
         latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
         tf.train.Saver().restore(sess, save_path=latest)
         sess.run(op, feed_dict=dict(zip(tensors, arrays)))
+
+        # save intermediate outputs
+        for layers, name in [(synth_layers_output, 'synth'), (hyp_synth_layers_output, 'hyp_synth')]:
+            layers_output = sess.run(layers, feed_dict=dict(zip(tensors, arrays)))
+            for i, l in enumerate(layers_output):
+                np.save("layers/{}_layer_{}_output".format(name, i), l)

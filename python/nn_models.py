@@ -2,6 +2,8 @@ import tensorflow.compat.v1 as tf
 import tensorflow_compression as tfc
 import tensorflow as tf
 
+import numpy as np
+
 class AnalysisTransform(tf.keras.layers.Layer):
     """The analysis transform."""
 
@@ -40,9 +42,11 @@ class AnalysisTransform(tf.keras.layers.Layer):
         super(AnalysisTransform, self).build(input_shape)
 
     def call(self, tensor):
+        layers_output = []
         for layer in self._layers:
             tensor = layer(tensor)
-        return tensor
+            layers_output.append(tensor)
+        return tensor, layers_output
 
 
 # class SynthesisTransform(tf.keras.layers.Layer):
@@ -119,9 +123,11 @@ class SynthesisTransform(tf.keras.layers.Layer):
         super(SynthesisTransform, self).build(input_shape)
 
     def call(self, tensor):
+        layers_output = []
         for layer in self._layers:
             tensor = layer(tensor)
-        return tensor
+            layers_output.append(tensor)
+        return tensor, layers_output
 
 
 class HyperAnalysisTransform(tf.keras.layers.Layer):
@@ -160,9 +166,11 @@ class HyperAnalysisTransform(tf.keras.layers.Layer):
         super(HyperAnalysisTransform, self).build(input_shape)
 
     def call(self, tensor):
+        layers_output = []
         for layer in self._layers:
             tensor = layer(tensor)
-        return tensor
+            layers_output.append(tensor)
+        return tensor, layers_output
 
 
 # class HyperSynthesisTransform(tf.keras.layers.Layer):
@@ -272,6 +280,8 @@ class MBT2018HyperSynthesisTransform(tf.keras.layers.Layer):
         super().build(input_shape)
 
     def call(self, tensor):
+        layers_output = []
         for layer in self._layers:
             tensor = layer(tensor)
-        return tensor
+            layers_output.append(tensor)
+        return tensor, layers_output
