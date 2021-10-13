@@ -1,7 +1,5 @@
 pub mod activation_functions;
-pub mod convolutions;
 pub mod models;
-pub mod transposed_convolutions;
 pub mod weight_loader;
 
 pub type WeightPrecision = f32;

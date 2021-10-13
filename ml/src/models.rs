@@ -3,14 +3,15 @@
 // Please do not change this file by hand.
 use crate::{
     activation_functions::{GdnLayer, IgdnLayer, ReluLayer},
-    convolutions::{ConvolutionLayer, Padding},
-    transposed_convolutions::TransposedConvolutionLayer,
     weight_loader::WeightLoader,
-    ImagePrecision,
+    WeightPrecision,
+};
+use convolutions_rs::{
+    convolutions::ConvolutionLayer, transposed_convolutions::TransposedConvolutionLayer, Padding,
 };
 use ndarray::*;
 
-pub type InternalDataRepresentation = Array3<ImagePrecision>;
+pub type InternalDataRepresentation = Array3<WeightPrecision>;
 
 // A note on the weights:
 // Naming convention:
@@ -21,13 +22,13 @@ pub trait CodingModel {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation;
 }
 
-impl CodingModel for ConvolutionLayer {
+impl CodingModel for ConvolutionLayer<WeightPrecision> {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         self.convolve(input)
     }
 }
 
-impl CodingModel for TransposedConvolutionLayer {
+impl CodingModel for TransposedConvolutionLayer<WeightPrecision> {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         self.transposed_convolve(input)
     }
@@ -52,19 +53,19 @@ impl CodingModel for ReluLayer {
 }
 
 pub struct MinnenEncoder {
-    layer_0: ConvolutionLayer,
+    layer_0: ConvolutionLayer<WeightPrecision>,
 
     activation_0: GdnLayer,
 
-    layer_1: ConvolutionLayer,
+    layer_1: ConvolutionLayer<WeightPrecision>,
 
     activation_1: GdnLayer,
 
-    layer_2: ConvolutionLayer,
+    layer_2: ConvolutionLayer<WeightPrecision>,
 
     activation_2: GdnLayer,
 
-    layer_3: ConvolutionLayer,
+    layer_3: ConvolutionLayer<WeightPrecision>,
 }
 
 impl CodingModel for MinnenEncoder {
@@ -178,19 +179,19 @@ impl MinnenEncoder {
 }
 
 pub struct JohnstonDecoder {
-    layer_0: TransposedConvolutionLayer,
+    layer_0: TransposedConvolutionLayer<WeightPrecision>,
 
     activation_0: IgdnLayer,
 
-    layer_1: TransposedConvolutionLayer,
+    layer_1: TransposedConvolutionLayer<WeightPrecision>,
 
     activation_1: IgdnLayer,
 
-    layer_2: TransposedConvolutionLayer,
+    layer_2: TransposedConvolutionLayer<WeightPrecision>,
 
     activation_2: IgdnLayer,
 
-    layer_3: TransposedConvolutionLayer,
+    layer_3: TransposedConvolutionLayer<WeightPrecision>,
 
     activation_3: IgdnLayer,
 }
@@ -326,15 +327,15 @@ impl JohnstonDecoder {
 }
 
 pub struct MinnenHyperEncoder {
-    layer_0: ConvolutionLayer,
+    layer_0: ConvolutionLayer<WeightPrecision>,
 
     activation_0: ReluLayer,
 
-    layer_1: ConvolutionLayer,
+    layer_1: ConvolutionLayer<WeightPrecision>,
 
     activation_1: ReluLayer,
 
-    layer_2: ConvolutionLayer,
+    layer_2: ConvolutionLayer<WeightPrecision>,
 }
 
 impl CodingModel for MinnenHyperEncoder {
@@ -391,15 +392,15 @@ impl MinnenHyperEncoder {
 }
 
 pub struct JohnstonHyperDecoder {
-    layer_0: TransposedConvolutionLayer,
+    layer_0: TransposedConvolutionLayer<WeightPrecision>,
 
     activation_0: ReluLayer,
 
-    layer_1: TransposedConvolutionLayer,
+    layer_1: TransposedConvolutionLayer<WeightPrecision>,
 
     activation_1: ReluLayer,
 
-    layer_2: TransposedConvolutionLayer,
+    layer_2: TransposedConvolutionLayer<WeightPrecision>,
 }
 
 impl CodingModel for JohnstonHyperDecoder {
