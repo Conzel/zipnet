@@ -139,6 +139,8 @@ mod tests {
         let beta = array![1., 1.];
         let gamma = array![[1., 1.], [0., 1.]];
 
+        // Result is taken from tensorflow_compression implementation
+        // https://github.com/tensorflow/compression/blob/master/docs/api_docs/python/tfc/GDN.md
         let res = array![[[0., 0.5], [0., 0.33333333]], [[0., 0.], [0., 0.5]]];
         assert_eq!(gdn(&input, &beta, &gamma), res);
     }
