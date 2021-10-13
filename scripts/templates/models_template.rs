@@ -7,14 +7,15 @@
 // Please do not change this file by hand.
 use crate::{
     activation_functions::{GdnLayer, IgdnLayer, ReluLayer},
-    convolutions::{ConvolutionLayer, Padding},
     weight_loader::WeightLoader,
-    transposed_convolutions::TransposedConvolutionLayer,
-    ImagePrecision,
+    WeightPrecision,
+};
+use convolutions_rs::{
+    convolutions::ConvolutionLayer, transposed_convolutions::TransposedConvolutionLayer, Padding,
 };
 use ndarray::*;
 
-pub type InternalDataRepresentation = Array3<ImagePrecision>;
+pub type InternalDataRepresentation = Array3<WeightPrecision>;
 
 // A note on the weights:
 // Naming convention:
@@ -25,13 +26,13 @@ pub trait CodingModel {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation;
 }
 
-impl CodingModel for ConvolutionLayer {
+impl CodingModel for ConvolutionLayer<WeightPrecision> {
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         self.convolve(input)
     }
 }
 
-impl CodingModel for TransposedConvolutionLayer {
+impl CodingModel for TransposedConvolutionLayer<WeightPrecision> {
         fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
             self.transposed_convolve(input)
         }
@@ -59,7 +60,7 @@ impl CodingModel for ReluLayer {
 {% for m in models %} 
     pub struct {{m.name}} {
         {% for l in m.layers %}
-            layer_{{loop.index0}}: {{l.name}},
+            layer_{{loop.index0}}: {{l.name}}<WeightPrecision>,
             {% if l.activation is not none %}
             activation_{{loop.index0}}: {{l.activation.layer_name}},
             {% endif %}
