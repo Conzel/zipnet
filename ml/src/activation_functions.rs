@@ -1,11 +1,13 @@
 //! This module provides the necessary activation functions for our neural networks,
 //! namely Relu, Generalized Divisive Normalization (GDN) and it's inverse.
+//!
+//! All activation functions are exposed as a layer as well as a free function
 use ndarray::*;
 
 use crate::{models::InternalDataRepresentation, ImagePrecision, WeightPrecision};
 
-// Implementation base for GDN, leveraging that we can use almost the same implementation for GDN and iGDN.
-// The other functions (gdn, igdn) are publicly exported to serve a nicer interface.
+/// Implementation base for GDN, leveraging that we can use almost the same implementation for GDN and iGDN.
+/// The explicit functions (gdn, igdn) are publicly exported to serve a nicer interface.
 fn gdn_base(
     x: &InternalDataRepresentation,
     beta: &Array1<WeightPrecision>,
@@ -83,14 +85,18 @@ pub fn igdn(
     gdn_base(x, beta, gamma, true)
 }
 
+/// Leaky relu implementation
 pub fn leaky_relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecision, D> {
     data.mapv(|x| if x > 0. { x } else { 0.01 * x })
 }
 
+/// Relu implementation
 pub fn relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecision, D> {
     data.mapv(|x| if x > 0. { x } else { 0. })
 }
 
+/// Implementation of GDN as a layer. Refer to the documentation of the free GDN function
+/// for more info.
 pub struct GdnLayer {
     beta: Array1<WeightPrecision>,
     gamma: Array2<WeightPrecision>,
@@ -101,11 +107,14 @@ impl GdnLayer {
         Self { beta, gamma }
     }
 
+    /// Performs GDN on the input with the layer parameters.
     pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
         gdn(x, &self.beta, &self.gamma)
     }
 }
 
+/// Implementation of iGDN as a layer. Refer to the documentation of the free iGDN function
+/// for more info.
 pub struct IgdnLayer {
     beta: Array1<WeightPrecision>,
     gamma: Array2<WeightPrecision>,
@@ -116,6 +125,7 @@ impl IgdnLayer {
         Self { beta, gamma }
     }
 
+    /// Performs iGDN on the input with the layer parameters.
     pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
         igdn(x, &self.beta, &self.gamma)
     }
