@@ -1,3 +1,11 @@
+//! This module provides the hierarchical coders implementing the Encoder and Decoder
+//! traits. We also provide functions to directly initialize a Hierarchical Encoder/Decoder
+//! pair, using the trained weights from a python implementation.
+//!
+//! For the encoder, we have stuck to the paper by Minnen et al.
+//! <https://arxiv.org/pdf/1809.02736.pdf>,
+//! We made some adaption for the decoder as described by Johnston et al.
+//! <https://arxiv.org/abs/1912.08771>.
 use constriction::stream::model::DefaultContiguousCategoricalEntropyModel;
 use constriction::stream::stack::AnsCoder;
 use constriction::stream::Decode;
@@ -18,7 +26,7 @@ use crate::{table_hyperpriors, CodingResult, Decoder, EncodedData, Encoder};
 const GAUSSIAN_SUPPORT_LOWER: i32 = -100;
 const GAUSSIAN_SUPPORT_UPPER: i32 = 100;
 
-/// A hierarchical encoder/decoder, as described in https://arxiv.org/pdf/1809.02736.pdf
+/// A hierarchical encoder/decoder, as described in <https://arxiv.org/pdf/1809.02736.pdf>
 /// (without the autoregressive part, see Fig. 19). The network architecture can be freely chosen
 /// by picking appropriate coding models.
 pub struct MeanScaleHierarchicalEncoder {
@@ -40,22 +48,23 @@ pub struct MeanScaleHierarchicalDecoder {
 
 /// A probability distribution that just consists of a lookup-table.
 /// Values outside of the support are pruned.
-pub struct TablePrior {
+struct TablePrior {
     support: (i32, i32),
-    lookup_table: &'static [f32], // entropy_model: DefaultContiguousCategoricalEntropyModel,
+    lookup_table: &'static [f32],
 }
 
 impl TablePrior {
     /// Creates a new table prior. The support is the lowest and highest number the
     /// table has entries for. The table can be relative probabilities
-    pub fn new(support: (i32, i32), lookup_table: &'static [f32]) -> TablePrior {
+    fn new(support: (i32, i32), lookup_table: &'static [f32]) -> TablePrior {
         TablePrior {
             support,
             lookup_table,
         }
     }
 
-    pub fn get_entropy_model(&self, channel: usize) -> DefaultContiguousCategoricalEntropyModel {
+    /// Directly returns the underlying entropy model
+    fn get_entropy_model(&self, channel: usize) -> DefaultContiguousCategoricalEntropyModel {
         DefaultContiguousCategoricalEntropyModel::from_floating_point_probabilities(
             &self.lookup_table[channel * MINNEN_JOHNSTON_SUPPORT_RANGE
                 ..(channel + 1) * MINNEN_JOHNSTON_SUPPORT_RANGE],
@@ -65,7 +74,7 @@ impl TablePrior {
 
     /// Takes a vector of integers and makes them conform to the entropy model of the table
     /// (symbols must normally start at 0 and may not be out of the support)
-    pub fn to_symbols(&self, v: Vec<i32>) -> Vec<usize> {
+    fn to_symbols(&self, v: Vec<i32>) -> Vec<usize> {
         v.iter()
             .map(|x| {
                 (if x < &self.support.0 {
@@ -80,14 +89,17 @@ impl TablePrior {
     }
 
     /// Reverse to the "to_symbols" function
-    pub fn from_symbols(&self, symbols: Vec<usize>) -> Vec<i32> {
+    fn from_symbols(&self, symbols: Vec<usize>) -> Vec<i32> {
         symbols
             .iter()
             .map(|a| (*a as i32 + self.support.0))
             .collect()
     }
 
-    pub fn create_minnen_johnston_hyperlatent_prior() -> TablePrior {
+    /// Returns the hyperlatent prior that was trained on a Minnen Encoder / Johnston Decoder
+    /// combo. We have pre-extracted the values from the trained python model
+    /// and provide them under table_hyperprior.rs
+    fn create_minnen_johnston_hyperlatent_prior() -> TablePrior {
         TablePrior::new(
             table_hyperpriors::MINNEN_JOHNSTON_SUPPORT,
             &table_hyperpriors::MINNEN_JOHNSTON_HYPERPRIOR,
@@ -141,9 +153,9 @@ fn make_even(i: usize) -> usize {
 }
 
 impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
-    /// The encoded Data contains the actual data in the first tuple entry.
-    /// The second entry consists of
-    /// [hyperlatent_length, ]
+    /// Encodes the given data, usually we assume an image.
+    /// We return the encoded data, where main info consists of the actual data,
+    /// the second info consists of hyperlatent_length, and latent length.
     fn encode(&mut self, data: &Array3<ImagePrecision>) -> EncodedData {
         let latents = self.latent_encoder.forward_pass(data);
         let hyperlatents = self.hyperlatent_encoder.forward_pass(&latents);
@@ -228,6 +240,7 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
 }
 
 impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
+    /// The reverse of the encoding process.
     fn decode(&mut self, encoded_data: EncodedData) -> CodingResult<Array3<ImagePrecision>> {
         let side_info = encoded_data.side_info;
         let hyperlatents_shape = (
@@ -303,6 +316,7 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
 }
 
 impl MeanScaleHierarchicalEncoder {
+    /// Returns an encoder as described in the Minnen paper.
     #[allow(non_snake_case)]
     pub fn MinnenJohnstonEncoder() -> MeanScaleHierarchicalEncoder {
         let mut loader = NpzWeightLoader::full_loader();
@@ -321,6 +335,7 @@ impl MeanScaleHierarchicalEncoder {
 
 impl MeanScaleHierarchicalDecoder {
     #[allow(non_snake_case)]
+    /// Returns decoder as described in the Johnston paper, architecture no. 5
     pub fn MinnenJohnstonDecoder() -> MeanScaleHierarchicalDecoder {
         let mut loader = NpzWeightLoader::full_loader();
         let latent_decoder = Box::new(JohnstonDecoder::new(&mut loader));

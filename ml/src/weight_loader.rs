@@ -1,3 +1,6 @@
+//! This module provides a way to load weights from NPZ files and compile
+//! them directly into Rust modules. This provides an easy way to build and use models,
+//! as the dependency on the correct weights is resolved at compile time.
 use crate::WeightPrecision;
 use ndarray::{Array, Array1, ArrayBase, Dimension, ShapeError, StrideShape};
 use ndarray_npy::{NpzReader, ReadNpzError};
@@ -8,6 +11,7 @@ use thiserror::Error;
 
 type WeightResult<T> = Result<T, WeightError>;
 
+/// Error type for the weight loader.
 #[derive(Error, Debug)]
 pub enum WeightError {
     #[error("No weights with name {0} found")]
@@ -24,6 +28,7 @@ pub enum WeightError {
 
 pub trait WeightLoader {
     /// Gets the weights out from the weight loader.
+    ///
     /// We assume that the shapes in the weight loader have
     /// the given shape.
     fn get_weight<D, Sh>(
@@ -36,6 +41,10 @@ pub trait WeightLoader {
         Sh: Into<StrideShape<D>>;
 }
 
+/// Object to load weights that are in JSON format.
+/// As an aside, the npz loader is a lot faster and more elegant,
+/// as the weights can be loaded in the correct shape already, so they should be used
+/// where possible.
 pub struct JsonWeightLoader {
     content: Map<String, Value>,
 }
@@ -88,6 +97,9 @@ impl WeightLoader for JsonWeightLoader {
     }
 }
 
+/// Object to load weights that are in NPZ format.
+/// It can read from any readable, seekable object that contains npz data,
+/// this might be files, temp files, byte arrays, ...
 pub struct NpzWeightLoader<R>
 where
     R: Seek + Read,
@@ -96,6 +108,7 @@ where
 }
 
 impl NpzWeightLoader<std::fs::File> {
+    /// Returns a weight loader from a given path
     pub fn from_path<P: AsRef<Path>>(path: P) -> WeightResult<NpzWeightLoader<std::fs::File>> {
         let handle = std::fs::File::open(path)?;
         Ok(NpzWeightLoader { handle })
@@ -103,14 +116,17 @@ impl NpzWeightLoader<std::fs::File> {
 }
 
 impl NpzWeightLoader<Cursor<&[u8]>> {
+    /// Returns a weight loader from a byte array
     pub fn from_buffer(bytes_array: &[u8]) -> WeightResult<NpzWeightLoader<Cursor<&[u8]>>> {
         Ok(NpzWeightLoader {
             handle: Cursor::new(bytes_array),
         })
     }
 
-    /// Returns a weight loader that has full access to all weight.
+    /// Returns a weight loader that has full access to all weights.
     /// The weights are compiled into the struct, so no file access is needed.
+    /// This requires valid weights to be saved under <project_root>/model_weights/weights.npz
+    /// at compile time.
     pub fn full_loader() -> NpzWeightLoader<Cursor<&'static [u8]>> {
         let bytes = include_bytes!("../../model_weights/weights.npz");
         NpzWeightLoader::from_buffer(bytes).unwrap()
@@ -121,6 +137,11 @@ impl<R> WeightLoader for NpzWeightLoader<R>
 where
     R: Seek + Read,
 {
+    /// Returns weights from the npz loader.
+    ///
+    /// First tries to load array with the shape given.
+    /// If this is not possible, we assume that weights were saved flat
+    /// and try to retrieve them flat and reshape.
     fn get_weight<D, Sh>(
         &mut self,
         param_name: &str,
@@ -136,9 +157,7 @@ where
         // We hope that this doesn't hurt perforrmance, we'll have to see.
         let mut reader = NpzReader::new(&mut self.handle)?;
 
-        // First tries to load array with the shape given.
-        // If this is not possible, we assume that weights were saved flat
-        // and now try to retrieve them flat and reshape
+        // checking for flat weights and reshaping
         let arr: Result<ArrayBase<_, D>, _> = reader.by_name(param_name);
         Ok(match arr {
             Ok(a) => {

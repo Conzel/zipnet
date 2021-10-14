@@ -1,3 +1,6 @@
+//! This crate ties in all the parts of the projects and provides a clean command line interface
+//! to make encoding/decoding images feasible.
+
 use bincode::serialize;
 use coders::{
     dummy_coders::DummyCoder,
@@ -125,7 +128,7 @@ impl ZipnetOpts for DecompressOpts {
     }
 }
 
-// Turns output from neural net into a pixel value
+/// Turns output from neural net into a pixel value, performs postprocessing
 fn to_pixel(x: &f32, debug: bool) -> u8 {
     if debug {
         x.round().clamp(0.0, 255.0) as u8
@@ -134,7 +137,9 @@ fn to_pixel(x: &f32, debug: bool) -> u8 {
     }
 }
 
-// From: https://stackoverflow.com/questions/56762026/how-to-save-ndarray-in-rust-as-image
+/// Turns ndarray to rgb image
+///
+/// Taken from <https://stackoverflow.com/questions/56762026/how-to-save-ndarray-in-rust-as-image>
 fn array_to_image(arr: Array3<u8>) -> RgbImage {
     // we get the image in PT layout, which is (C,H,W), but need (H,W,C)
     let permuted_view = arr.view().permuted_axes([1, 2, 0]);
@@ -184,7 +189,7 @@ impl ZipnetOpts for CompressOpts {
     }
 }
 
-/// Returns preprocessed image
+/// Returns preprocessed image from path buffer
 fn get_image(im_path: &PathBuf) -> Array3<f32> {
     match im_path.extension().and_then(OsStr::to_str).unwrap() {
         "npy" => read_npy(im_path).unwrap(),

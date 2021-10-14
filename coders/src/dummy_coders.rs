@@ -1,3 +1,6 @@
+//! This module provides a naive implementation of the en-/decoders
+//! intended for debugging.
+
 use ml::ImagePrecision;
 use ndarray::{Array, Array3};
 
