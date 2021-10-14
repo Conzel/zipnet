@@ -1,3 +1,5 @@
+//! This module provides the necessary activation functions for our neural networks,
+//! namely Relu, Generalized Divisive Normalization (GDN) and it's inverse.
 use ndarray::*;
 
 use crate::{models::InternalDataRepresentation, ImagePrecision, WeightPrecision};
@@ -50,8 +52,9 @@ fn gdn_base(
 /// as elaborated in https://arxiv.org/abs/1912.08771.
 /// i and j here indicate channel parameters (so the different channels in the image influence each other
 /// in the activation)
-
+///
 /// We expect the data x to be passed in Pytorch layout (channels, height, width).
+/// Gamma shall have the form (input channels, output channels)
 pub fn gdn(
     x: &InternalDataRepresentation,
     beta: &Array1<WeightPrecision>,
@@ -64,13 +67,14 @@ pub fn gdn(
 /// Ballé et al., 2016, arXiv:1511.06281v4, https://www.cns.nyu.edu/pub/lcv/balle16a-reprint.pdf
 /// We only compute one step of the fixed point iteration (should be sufficient for our use cases,
 /// and is in line with the architecture described in Minnen et al, 2018 https://arxiv.org/pdf/1809.02736.pdf)
-
+///
 /// Implementation should conform to the tfc implementation for interoperability with trained python layers.
 /// Source code: https://github.com/tensorflow/compression/blob/master/tensorflow_compression/python/layers/gdn.py#L31-L461
 /// We essentially just replace the division operation with a multiplication operation in the normalization calculation,
-/// leveraging the fact, that we only perform one step of iteration.
-
+/// leveraging the fact that we only perform one step of iteration.
+///
 /// We expect the data x to be passed in Pytorch layout (channels, height, width).
+/// Gamma shall have the form (input channels, output channels)
 pub fn igdn(
     x: &InternalDataRepresentation,
     beta: &Array1<WeightPrecision>,
@@ -117,6 +121,7 @@ impl IgdnLayer {
     }
 }
 
+/// Relu implementation
 pub struct ReluLayer {}
 
 impl ReluLayer {
@@ -125,7 +130,7 @@ impl ReluLayer {
     }
 
     pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
-        x.clone()
+        x.map(|a| a.max(0.0))
     }
 }
 
@@ -154,5 +159,13 @@ mod tests {
         let res_i = array![[[0., 2.], [0., 3.]], [[0., 0.], [0., 2.]]];
 
         assert_eq!(igdn(&input, &beta, &gamma), res_i);
+    }
+
+    #[test]
+    fn test_relu() {
+        let x = Array::from_shape_vec((1, 2, 2), vec![1., -2., 3., -4.]).unwrap();
+        let out = Array::from_shape_vec((1, 2, 2), vec![1., 0., 3., 0.]).unwrap();
+        let relu_layer = ReluLayer::new();
+        assert_eq!(relu_layer.activate(&x), out);
     }
 }
