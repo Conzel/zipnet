@@ -203,6 +203,19 @@ def _compress(
         save_dir = os.path.join(checkpoint_dir, runname)
         latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
         tf.train.Saver().restore(sess, save_path=latest)
+
+        # print weights
+        layer_0 = [v for v in tf.trainable_variables() if v.name == "encoder_layer_0/kernel:0"][0]
+        layer_0 = sess.run(layer_0)
+        print(layer_0[:, :, 0, 0])
+
+        beta = [v for v in tf.trainable_variables() if v.name == "analysis_transform/encoder_layer_0/gnd_0/reparam_beta:0"]
+        beta = sess.run(beta)
+        print("beta: ", beta)
+        gamma = [v for v in tf.trainable_variables() if v.name == "analysis_transform/encoder_layer_0/gnd_0/reparam_gamma:0"]
+        gamma = sess.run(gamma)
+        print("gamma: ", gamma)
+
         eval_fields = [
             "mse",
             "psnr",
