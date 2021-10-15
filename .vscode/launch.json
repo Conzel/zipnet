@@ -52,7 +52,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'zipnet'",
+            "name": "Debug zipnet compression with sample img",
             "cargo": {
                 "args": [
                     "build",
@@ -64,7 +64,95 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": [
+                "compress",
+                "${workspaceFolder}/debug-assets/chess.png"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug zipnet compression with small sample img",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=zipnet",
+                    "--package=zipnet"
+                ],
+                "filter": {
+                    "name": "zipnet",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "compress",
+                "${workspaceFolder}/debug-assets/chess-small.png"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug zipnet compression with very small sample img",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=zipnet",
+                    "--package=zipnet"
+                ],
+                "filter": {
+                    "name": "zipnet",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "compress",
+                "${workspaceFolder}/debug-assets/diamond.jpg"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug zipnet compression with diamond npy",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=zipnet",
+                    "--package=zipnet"
+                ],
+                "filter": {
+                    "name": "zipnet",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "compress",
+                "${workspaceFolder}/debug-assets/diamond.npy"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug zipnet decompression with small sample img",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=zipnet",
+                    "--package=zipnet"
+                ],
+                "filter": {
+                    "name": "zipnet",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "decompress",
+                "${workspaceFolder}/debug-assets/chess-small.bin",
+                "${workspaceFolder}/debug-assets/chess-small-recovered.png"
+            ],
             "cwd": "${workspaceFolder}"
         },
         {

@@ -9,6 +9,8 @@ edition = "2018"
 thiserror = "1.0.25"
 ndarray = "0.15.3"
 image = "0.23.14"
-constriction = { path="../library-reimplementations/constriction" }
-probability = { path="../library-reimplementations/probability" }
+constriction = { path = "../library-reimplementations/constriction" }
+probability = { path = "../library-reimplementations/probability" }
 ml = { path = "../ml" }
+serde_derive = "1.0.117"
+serde = "^1.0"

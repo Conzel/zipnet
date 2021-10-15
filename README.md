@@ -3,11 +3,31 @@ ZipNet is a Work-In-Progress for the course project of [Data Compression With De
 
 We want to provide a fully functional Neural Image-Encoder and Decoder on the Web. The goal is to achieve a superior compression rate over classical codes (JPEG, …) while retaining acceptable performance for a Web Application (compression in a few seconds). This results in a maximally portable application that could help Neural Compression Codecs achieve a higher adoption rate. For the implementation, we plan to leverage the new, performant WebASM standard along with a model architecture that allows for various performance optimizations such as quantization and parallelization.
 
+If you are interested in what all of the crates and modules do, 
+the folders either have READMEs or you can refer to the compiled cargo doc. 
+You can compile the documentation for all crates you are interested in by 
+switching to the corresponding folder (e.g. `cd coders`) and running `cargo doc --open`.
+
 ## Using the CLI
 - Install the Rust toolchain (https://www.rust-lang.org/tools/install)
 - Run the CLI via `cargo run -p zipnet -- <all the other commands you want to add>`. You can get an overview over the
 possibilites by running `cargo run -p zipnet -- --help`. For subcommands, just call the subcommand, and then `--help`
-to get information on them.
+to get information on them. Alternatively, you can build the program via `cargo build --release` 
+(debug is likely too slow) and access the binary under `target/release/zipnet`.
+
+In the following, we present some example usages.
+
+### Compression
+`./zipnet compress /path/to/image`
+For compression, we accept .jpg, .png and .npy as inputs 
+(.npy inputs are not preprocessed and are mainly intended for debugging). The compressed file is written out 
+to /path/to/image.bin, overwriting the output file if it is already present.
+
+
+### Decompression
+`./zipnet decompress /path/to/image.bin /path/to/output_image.png`
+Decompression takes a previous output from the compression step and outputs a recovered version of the
+image under the given path. The output is always a .png.
 
 ## Building WASM locally
 ### Setup (Ubuntu)

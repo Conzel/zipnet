@@ -5,6 +5,7 @@ import itertools
 import tensorflow as tf
 import os
 import torch
+from torch._C import Value
 
 
 class RandomArrayTest:
@@ -165,7 +166,7 @@ def transform(orig, dest, x, is_kernel):
     return x
 
 
-def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, use_torch=False, transpose=False, seed=260896, padding="VALID", compare_impls=True):
+def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, use_torch=False, transpose=False, seed=260896, padding="VALID", stride=1, compare_impls=True):
     """Returns a Test case that can be rendered with the 
     test_py_impl_random_arrays_template.rs into a Rust test
     that tests the conv2d Rust implementation against tf.nn.conv2d.
@@ -200,6 +201,9 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
     if transpose and padding == "VALID" and (compare_impls or not use_torch):
         raise ValueError(
             "Valid padding not useable with tensorflow transposed convolution.")
+    if stride != 1 and (compare_impls or use_torch) and padding.lower()=="same":
+        raise ValueError("Pytorch cannot handle stride != 1 with same padding")
+    
 
     objects = []
     for im_shape, ker_shape in list(itertools.product(img_shapes, kernel_shapes)):
@@ -220,10 +224,10 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
                     if padding == "SAME": 
                         raise ValueError("Same padding not useable with torch transposed convolution.")
                     out_pt = torch.nn.functional.conv_transpose2d(
-                        im_pt, ker_pt, padding=0)
+                        im_pt, ker_pt, padding=0, stride=stride);
                 else:
                     out_pt = torch.nn.functional.conv2d(
-                        im_pt, ker_pt, padding=padding.lower())
+                        im_pt, ker_pt, padding=padding.lower(), stride=stride)
 
                 out_pt_numpy = transform_img("pt", "rust", out_pt.numpy())
 
@@ -235,14 +239,14 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
                     "rust", "tf", ker), dtype=tf.float32)
 
                 if transpose:
-                    output_shape = (1, im_shape[1], im_shape[2], ker_shape[1])
+                    output_shape = (1, stride*im_shape[1], stride*im_shape[2], ker_shape[1])
                     # conv2d transpose expected filters as [height, width, out, in]
                     # https://www.tensorflow.org/api_docs/python/tf/nn/conv2d_transpose
                     out_tf = tf.nn.conv2d_transpose(
-                        im_tf, ker_tf, output_shape=output_shape, strides=[1, 1, 1, 1], padding=padding)
+                        im_tf, ker_tf, output_shape=output_shape, strides=[1, stride, stride, 1], padding=padding)
                 else:
                     out_tf = tf.nn.conv2d(im_tf, ker_tf, strides=[
-                        1, 1, 1, 1], padding=padding)
+                        1, stride, stride, 1], padding=padding)
                 out_tf_numpy = transform_img("tf", "rust", out_tf.numpy())
 
             # Comparing implementations
@@ -257,7 +261,7 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
                 out = out_tf_numpy
 
             # Writing the test objects
-            test_obj = RandomArrayTestObject(im, ker, out, padding)
+            test_obj = RandomArrayTestObject(im, ker, out, padding, stride=stride)
             objects.append(test_obj)
 
     if transpose:
@@ -271,7 +275,12 @@ def conv2d_random_array_test(img_shapes, kernel_shapes, num_arrays_per_case=3, u
         test_name = "conv2d_torch"
     else:
         test_name = "conv2d"
-    return RandomArrayTest(f"{test_name}{transpose_string}", layer_name, objects)
+
+    if stride != 1:
+        stride_string = f"_stride{stride}"
+    else:
+        stride_string = ""
+    return RandomArrayTest(f"{test_name}{transpose_string}{stride_string}", layer_name, objects)
 
 
 def write_test_to_file(ml_test_folder, test_content, test_name):
@@ -329,6 +338,29 @@ def main():
     write_test_to_file(
         ml_test_folder, conv2d_torch_test_content, "conv2d_torch")
 
+    # writing out the conv2d_stride2 test cases with stride 2
+    conv2d_stride2_test_case = conv2d_random_array_test(
+        img_shapes, kernel_shapes, stride=2, padding="SAME", compare_impls=False)
+    conv2d_stride2_test_content = template.render(
+        random_tests=[conv2d_stride2_test_case], file=__file__)
+    write_test_to_file(ml_test_folder, conv2d_stride2_test_content, "conv2d_stride2")
+
+    # writing out the conv2d test cases with torch and stride 2
+    conv2d_stride2_torch_test_case = conv2d_random_array_test(
+        img_shapes, kernel_shapes, use_torch=True, stride=2, padding="VALID")
+    conv2d_stride2_torch_test_content = template.render(
+        random_tests=[conv2d_stride2_torch_test_case], file=__file__)
+    write_test_to_file(
+        ml_test_folder, conv2d_stride2_torch_test_content, "conv2d_stride2_torch")
+
+    # writing out the conv2d_tranposed test cases
+    conv2d_transpose_test_case = conv2d_random_array_test(
+        img_shapes_trans, kernel_shapes_trans, transpose=True, padding="VALID", compare_impls=False, use_torch=True, stride=2)
+    conv2d_transpose_test_content = template.render(
+        random_tests=[conv2d_transpose_test_case], file=__file__)
+    write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
+                       "conv2d_transpose_torch_stride2")
+
     # writing out the conv2d_tranposed test cases
     conv2d_transpose_test_case = conv2d_random_array_test(
         img_shapes_trans, kernel_shapes_trans, transpose=True, padding="SAME", compare_impls=False)
@@ -344,6 +376,14 @@ def main():
         random_tests=[conv2d_transpose_test_case], file=__file__)
     write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
                        "conv2d_transpose_torch")
+
+    # writing out the conv2d_tranposed test cases
+    conv2d_transpose_test_case = conv2d_random_array_test(
+        img_shapes_trans, kernel_shapes_trans, transpose=True, padding="SAME", compare_impls=False, stride=2)
+    conv2d_transpose_test_content = template.render(
+        random_tests=[conv2d_transpose_test_case], file=__file__)
+    write_test_to_file(ml_test_folder, conv2d_transpose_test_content,
+                       "conv2d_transpose_stride2")
 
 
 if __name__ == "__main__":
