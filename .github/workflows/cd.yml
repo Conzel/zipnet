@@ -50,9 +50,6 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ steps.versions.outputs.node }}
-    
-    - name: npm install
-      run: cd wasm/www && npm install
 
     - name: Audit npm dependencies (with --audit-level=high)
       run: cd wasm/www && npm audit --audit-level=high
