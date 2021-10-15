@@ -1,3 +1,5 @@
+debug-assets/*.bin
+debug-assets/*recovered*.bin
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,python,jupyternotebooks,rust
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,python,jupyternotebooks,rust

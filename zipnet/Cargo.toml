@@ -12,4 +12,6 @@ structopt = "0.2"
 image = "0.23.14"
 nshare = { version = "0.7.0", features = ["ndarray", "image"] }
 ndarray = "0.15.3"
+ndarray-npy = "0.8.0"
 coders = { path = "../coders" }
+bincode = "1.2.1"
