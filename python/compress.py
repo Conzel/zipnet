@@ -67,11 +67,11 @@ def encode_latents(input_file, num_filters, checkpoint_dir, runname, seperate):
 
     # Load the latents
     latents_file = np.load(input_file)
-    y = latents_file['y_tilde_cur']
+    y = latents_file["y_tilde_cur"]
     # z_mean = Z_DENSITY * latents_file['z_mean_cur']
     # z_std = Z_DENSITY * np.exp(0.5 * latents_file['z_logvar_cur'])
     batch_size = y.shape[0]
-    width, height = latents_file['img_dimensions']
+    width, height = latents_file["img_dimensions"]
 
     # # Generate random side information and decode into z using q(z|y)
     # rng = np.random.RandomState(1234)
@@ -97,10 +97,12 @@ def encode_latents(input_file, num_filters, checkpoint_dir, runname, seperate):
 
     # Rasterize the hyperprior
     z_grid_range = 30
-    z_grid = tf.tile(tf.reshape(tf.range(-z_grid_range, z_grid_range + 1), (-1, 1, 1, 1)),
-                     (1, 1, 1, num_filters))
+    z_grid = tf.tile(
+        tf.reshape(tf.range(-z_grid_range, z_grid_range + 1), (-1, 1, 1, 1)),
+        (1, 1, 1, num_filters),
+    )
     z_grid = (1.0 / Z_DENSITY) * tf.cast(z_grid, tf.float32)
-    entropy_bottleneck = graph['entropy_bottleneck']
+    entropy_bottleneck = graph["entropy_bottleneck"]
     # z_grid_likelihood = tf.reshape(model.hyper_prior.pdf(z_grid), (2 * z_grid_range + 1, num_filters))
     z_tilde, z_likelihoods = entropy_bottleneck(z_grid, training=False)
     z_grid_likelihood = tf.reshape(z_likelihoods, (2 * z_grid_range + 1, num_filters))
@@ -114,26 +116,35 @@ def encode_latents(input_file, num_filters, checkpoint_dir, runname, seperate):
         # Replace tensorflow op with its corresponding value
         z_grid_likelihood = sess.run(z_grid_likelihood).astype(np.single)
 
-    prefix = 'pub const MINNEN_HYPERPRIOR: [[f32; {}]; {}] ='.format(z_grid_range*2+1, num_filters)
-    suffix = np.array2string(z_grid_likelihood,
-                             threshold=sys.maxsize,
-                             suppress_small=True,
-                             separator=',')
-    suffix = suffix.replace('\n', '')
-    suffix = suffix.replace(' ', '')
-    result = prefix + suffix + ';'
+    prefix = "pub const MINNEN_HYPERPRIOR: [[f32; {}]; {}] =".format(
+        z_grid_range * 2 + 1, num_filters
+    )
+    suffix = np.array2string(
+        z_grid_likelihood, threshold=sys.maxsize, suppress_small=True, separator=","
+    )
+    suffix = suffix.replace("\n", "")
+    suffix = suffix.replace(" ", "")
+    result = prefix + suffix + ";"
 
-    support = 'pub const MINNEN_SUPPORT: (i32, i32) = (-{}, {});'.format(z_grid_range, z_grid_range+1)
+    support = "pub const MINNEN_SUPPORT: (i32, i32) = (-{}, {});".format(
+        z_grid_range, z_grid_range + 1
+    )
 
-    with open("file.rs", 'w') as file:
+    with open("file.rs", "w") as file:
         with np.printoptions(suppress=True):
-            print(support + '\n' + result, file=file)
+            print(support + "\n" + result, file=file)
 
     print("done")
 
 
 def _compress(
-        runname, input_file, output_file, checkpoint_dir, results_dir, num_filters, save_latents=True
+    runname,
+    input_file,
+    output_file,
+    checkpoint_dir,
+    results_dir,
+    num_filters,
+    save_latents=True,
 ):
     """Compresses an image, or a batch of images of the same shape in npy format."""
     tf.reset_default_graph()
@@ -157,7 +168,6 @@ def _compress(
     # sess.run([op1, op2, ...]).
     x_next = dataset.make_one_shot_iterator().get_next()
 
-
     x_ph = x = tf.placeholder(
         "float32", (None, *X.shape[1:])
     )  # keep a reference around for feed_dict
@@ -175,10 +185,10 @@ def _compress(
     # Total number of bits divided by number of pixels.
     axes_except_batch = list(range(1, len(x.shape)))  # should be [1,2,3]
     y_bpp = tf.reduce_sum(-tf.log(y_likelihoods), axis=axes_except_batch) / (
-            np.log(2) * num_pixels
+        np.log(2) * num_pixels
     )
     z_bpp = tf.reduce_sum(-tf.log(z_likelihoods), axis=axes_except_batch) / (
-            np.log(2) * num_pixels
+        np.log(2) * num_pixels
     )
     eval_bpp = y_bpp + z_bpp  # shape (N,)
 
@@ -204,17 +214,29 @@ def _compress(
         latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
         tf.train.Saver().restore(sess, save_path=latest)
 
-        # print weights
-        layer_0 = [v for v in tf.trainable_variables() if v.name == "encoder_layer_0/kernel:0"][0]
-        layer_0 = sess.run(layer_0)
-        print(layer_0[:, :, 0, 0])
-
-        beta = [v for v in tf.trainable_variables() if v.name == "analysis_transform/encoder_layer_0/gnd_0/reparam_beta:0"]
-        beta = sess.run(beta)
-        print("beta: ", beta)
-        gamma = [v for v in tf.trainable_variables() if v.name == "analysis_transform/encoder_layer_0/gnd_0/reparam_gamma:0"]
-        gamma = sess.run(gamma)
-        print("gamma: ", gamma)
+        ###################
+        #  print weights  #
+        ###################
+        # layer_0 = [
+        #     v for v in tf.trainable_variables() if v.name == "encoder_layer_0/kernel:0"
+        # ][0]
+        # layer_0 = sess.run(layer_0)
+        # print(layer_0[:, :, 0, 0])
+        #
+        # beta = [
+        #     v
+        #     for v in tf.trainable_variables()
+        #     if v.name == "analysis_transform/encoder_layer_0/gnd_0/reparam_beta:0"
+        # ]
+        # beta = sess.run(beta)
+        # print("beta: ", beta)
+        # gamma = [
+        #     v
+        #     for v in tf.trainable_variables()
+        #     if v.name == "analysis_transform/encoder_layer_0/gnd_0/reparam_gamma:0"
+        # ]
+        # gamma = sess.run(gamma)
+        # print("gamma: ", gamma)
 
         eval_fields = [
             "mse",
@@ -225,13 +247,7 @@ def _compress(
             "est_y_bpp",
             "est_z_bpp",
         ]
-        eval_tensors = [mse,
-                        psnr,
-                        msssim,
-                        msssim_db,
-                        eval_bpp,
-                        y_bpp,
-                        z_bpp]
+        eval_tensors = [mse, psnr, msssim, msssim_db, eval_bpp, y_bpp, z_bpp]
         all_results_arrs = {key: [] for key in eval_fields}  # append across all batches
 
         compression_tensors = [
@@ -261,21 +277,23 @@ def _compress(
 
                 # test_string = sess.run(graph['string'], feed_dict=x_feed_dict)
                 # test_side_string = sess.run(graph['side_string'], feed_dict=x_feed_dict)
-                y = sess.run(graph['y'], feed_dict=x_feed_dict)
+                y = sess.run(graph["y"], feed_dict=x_feed_dict)
                 np.save("encoder_output", y)
-                z = sess.run(graph['z'], feed_dict=x_feed_dict)
-                mu = sess.run(graph['mu'], feed_dict=x_feed_dict)
-                sigma = sess.run(graph['sigma'], feed_dict=x_feed_dict)
+                z = sess.run(graph["z"], feed_dict=x_feed_dict)
+                mu = sess.run(graph["mu"], feed_dict=x_feed_dict)
+                sigma = sess.run(graph["sigma"], feed_dict=x_feed_dict)
 
                 # save intermediate outputs
-                for name in ['analysis', 'hyp_analysis']:
-                    layers_output = sess.run(graph["{}_layers_output".format(name)], feed_dict=x_feed_dict)
+                for name in ["analysis", "hyp_analysis"]:
+                    layers_output = sess.run(
+                        graph["{}_layers_output".format(name)], feed_dict=x_feed_dict
+                    )
                     for i, l in enumerate(layers_output):
                         np.save("layers/{}_layer_{}_output".format(name, i), l)
 
                 packed.pack(compression_tensors, compression_arrs)
                 if write_tfci_for_eval:
-                    print('writing tfci to {}'.format(output_file))
+                    print("writing tfci to {}".format(output_file))
                     with open(output_file, "wb") as f:
                         f.write(packed.string)
 
@@ -311,15 +329,15 @@ def _compress(
             print("Avg {}: {:0.4f}".format(field, arr.mean()))
 
         if save_latents:
-            prefix = 'latents'
-            save_file = '{}-{}-input={}.npz'.format(prefix, runname, input_file)
-            print('writing latents to {}'.format(os.path.join(results_dir, save_file)))
+            prefix = "latents"
+            save_file = "{}-{}-input={}.npz".format(prefix, runname, input_file)
+            print("writing latents to {}".format(os.path.join(results_dir, save_file)))
             np.savez(
                 os.path.join(results_dir, save_file),
                 y_tilde_cur=np.round(y).astype(np.int32),
                 z_mean_cur=mu,
                 z_logvar_cur=sigma,
-                img_dimensions=np.array(X.shape[1:-1], dtype=np.int32)
+                img_dimensions=np.array(X.shape[1:-1], dtype=np.int32),
             )
 
 
@@ -351,13 +369,11 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
 
     temp, hyp_synth_layers_output = hyper_synthesis_transform(z_hat)
     assert temp == hyp_synth_layers_output[-1]
-    mu, sigma = tf.split(
-        temp, num_or_size_splits=2, axis=-1
-    )
+    mu, sigma = tf.split(temp, num_or_size_splits=2, axis=-1)
     sigma = tf.exp(sigma)  # make positive
     training = False
     if (
-            not training
+        not training
     ):  # need to handle images with non-standard sizes during compression; mu/sigma must have the same shape as y
         mu = mu[:, : y_shape[0], : y_shape[1], :]
         sigma = sigma[:, : y_shape[0], : y_shape[1], :]
@@ -386,7 +402,10 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
         sess.run(op, feed_dict=dict(zip(tensors, arrays)))
 
         # save intermediate outputs
-        for layers, name in [(synth_layers_output, 'synth'), (hyp_synth_layers_output, 'hyp_synth')]:
+        for layers, name in [
+            (synth_layers_output, "synth"),
+            (hyp_synth_layers_output, "hyp_synth"),
+        ]:
             layers_output = sess.run(layers, feed_dict=dict(zip(tensors, arrays)))
             for i, l in enumerate(layers_output):
                 np.save("layers/{}_layer_{}_output".format(name, i), l)
