@@ -3,6 +3,9 @@ import time
 from compress import _compress, _decompress, encode_latents
 from train import _train
 
+##################
+#  Hyperparems   #
+##################
 args = {
     "model": "mbt2018",
     "checkpoint_dir": "checkpoints",
@@ -10,40 +13,40 @@ args = {
     "input_file": "dog.jpg",
     "lmbda": 0.01,
     "num_filters": 160,
+    "model_file": "my_model",
 }
-# args["model_file"] = "{}-num_filters={}-lmbda={}".format(
-#     args["model"], args["num_filters"], args["lmbda"]
-# )
-args["model_file"] = "my_model"
 
 train_args = {
     "patch_size": 256,
     "batch_size": 8,
+    "n_steps": 10000,
 }
 
 
-def run(mode, input_file, verbose=False):
-    flags = "--num_filters {num_filters} {verbose} --checkpoint_dir {checkpoint_dir}".format(
-        num_filters=args["num_filters"],
-        checkpoint_dir=args["checkpoint_dir"],
-        verbose="--verbose" if verbose else "",
-    )
-    results_flag = (
-        "--results_dir {}".format(args["results_dir"]) if mode == "compress" else ""
-    )
-    command = "python {model}.py {flags} {mode} {model_file} {input_file} {results_flag}".format(
-        model=args["model"],
-        flags=flags,
-        model_file=args["model_file"],
-        mode=mode,
-        input_file=input_file,
-        results_flag=results_flag,
-    )
-    os.system(command)
+# def run(mode, input_file, verbose=False):
+#     flags = "--num_filters {num_filters} {verbose} --checkpoint_dir {checkpoint_dir}".format(
+#         num_filters=args["num_filters"],
+#         checkpoint_dir=args["checkpoint_dir"],
+#         verbose="--verbose" if verbose else "",
+#     )
+#     results_flag = (
+#         "--results_dir {}".format(args["results_dir"]) if mode == "compress" else ""
+#     )
+#     command = "python {model}.py {flags} {mode} {model_file} {input_file} {results_flag}".format(
+#         model=args["model"],
+#         flags=flags,
+#         model_file=args["model_file"],
+#         mode=mode,
+#         input_file=input_file,
+#         results_flag=results_flag,
+#     )
+#     os.system(command)
 
 
-def decompress(input_file, verbose=False):
-    # run("decompress", input_file, verbose)
+def decompress(input_file):
+    """
+    :param input_file: name.tfci file
+    """
     runname = args["model_file"]
     checkpoint_dir = args["checkpoint_dir"]
     num_filters = args["num_filters"]
@@ -51,15 +54,13 @@ def decompress(input_file, verbose=False):
     _decompress(runname, input_file, output_file, checkpoint_dir, num_filters)
 
 
-def compress(input_file, verbose=False):
+def compress(input_file):
     """
 
     :param input_file: singe input image or np array of batch of images with shape (num_imgs, H, W, 3) and type(uint8)
     :param verbose:
     :return:
     """
-    # run("compress", input_file, verbose)
-
     runname = args["model_file"]
     checkpoint_dir = args["checkpoint_dir"]
     results_dir = args["results_dir"]
@@ -79,16 +80,26 @@ def compress(input_file, verbose=False):
     return compressed_file, results_file
 
 
+def train():
+    _train(
+        patch_size=train_args["patch_size"],
+        batch_size=train_args["batch_size"],
+        num_filters=args["num_filters"],
+        lmbda=args["lmbda"],
+        last_step=train_args["n_steps"],
+    )
+
+
 def main(input_file):
     start_time = time.time()
     print(f">>> compressing {input_file} ...")
-    compressed_file, results_file = compress(input_file, verbose=True)
+    compressed_file, results_file = compress(input_file)
     intermediate_time = time.time()
     compress_time = intermediate_time - start_time
     print(f">>> compressing {input_file} done in {compress_time} seconds")
     compressed_file = "{}.tfci".format(input_file)
     print(f"<<< decompressing {compressed_file} ...")
-    decompress(compressed_file, verbose=True)
+    decompress(compressed_file)
     stop_time = time.time()
     decompress_time = stop_time - intermediate_time
     print(f"<<< decompressing {compressed_file} done in {decompress_time} seconds")
@@ -100,24 +111,25 @@ def main(input_file):
     )
 
 
-def train():
-    _train(patch_size=train_args['patch_size'],
-           batch_size=train_args['batch_size'],
-           num_filters=args['num_filters'],
-           lmbda=args['lmbda'],
-           last_step=10000)
-
-
 if __name__ == "__main__":
-    # my_picture = "dog.jpg"
-    my_picture = "chess_piece.png"
-    # my_picture = "chess-very-small.png"
+
+    ##################
+    #  Compresssion  #
+    ##################
+    my_picture = "diamond.jpg"
+    main(my_picture)
+
+    ##################
+    #    Latents     #
+    ##################
     # latent_loc = 'results/latents-my_model-input=chess.png.npz'
-    # latent_loc = 'results/latents-mbt2018-num_filters=192-lmbda=0.001-input=dog.jpg.npz'
     # encode_latents(latent_loc,
     #                args['num_filters'],
     #                args['checkpoint_dir'],
     #                args['model_file'],
     #                seperate=True)
-    main(my_picture)
+
+    ##################
+    #    Training    #
+    ##################
     # train()
