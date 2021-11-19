@@ -41,7 +41,6 @@ def _train(
     else:
         tf.logging.set_verbosity(tf.logging.ERROR)
 
-
     def input_data_pipeline(train_glob):
 
         # Create input data pipeline.
@@ -53,18 +52,22 @@ def _train(
                 )
             train_dataset = tf.data.Dataset.from_tensor_slices(train_files)
             train_dataset = train_dataset.shuffle(buffer_size=len(train_files)).repeat()
-            if "npy" in train_glob:  # reading numpy arrays directly instead of from images
-                train_dataset = train_dataset.map(  # https://stackoverflow.com/a/49459838
-                    lambda item: tuple(
-                        tf.numpy_function(
-                            read_npy_file_helper,
-                            [item],
-                            [
-                                tf.float32,
-                            ],
-                        )
-                    ),
-                    num_parallel_calls=preprocess_threads,
+            if (
+                "npy" in train_glob
+            ):  # reading numpy arrays directly instead of from images
+                train_dataset = (
+                    train_dataset.map(  # https://stackoverflow.com/a/49459838
+                        lambda item: tuple(
+                            tf.numpy_function(
+                                read_npy_file_helper,
+                                [item],
+                                [
+                                    tf.float32,
+                                ],
+                            )
+                        ),
+                        num_parallel_calls=preprocess_threads,
+                    )
                 )
             else:
                 train_dataset = train_dataset.map(
