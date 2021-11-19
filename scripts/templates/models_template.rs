@@ -69,6 +69,8 @@ impl CodingModel for ReluLayer {
     }
 
     impl CodingModel for {{m.name}} {
+        {# Have to allow since the last let might be extraneous due to model generation #}
+        #[allow(clippy::let_and_return)]
         fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
             let x = input.clone();
             {% for l in m.layers %}
@@ -117,7 +119,9 @@ impl CodingModel for ReluLayer {
 {% endfor %}
 
 mod tests {
+    #[allow(unused_imports)]
     use crate::weight_loader::NpzWeightLoader;
+    #[allow(unused_imports)]
     use super::*;
 
     {% for m in models %}

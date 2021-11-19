@@ -74,7 +74,7 @@ impl WeightLoader for JsonWeightLoader {
         let raw_arr = self
             .content
             .get(param_name)
-            .ok_or(WeightError::WeightKeyError(param_name.to_string()))?;
+            .ok_or_else(|| WeightError::WeightKeyError(param_name.to_string()))?;
 
         let raw_value_vector = match raw_arr {
             Value::Array(v) => v,
@@ -167,7 +167,7 @@ where
             Err(_) => {
                 let arr_flat: Array1<_> = reader.by_name(param_name)?;
                 let arr_reshaped =
-                    Array::from_shape_vec(shape, arr_flat.iter().map(|x| *x).collect())?;
+                    Array::from_shape_vec(shape, arr_flat.iter().copied().collect())?;
                 arr_reshaped
             }
         })

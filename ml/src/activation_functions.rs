@@ -86,11 +86,13 @@ pub fn igdn(
 }
 
 /// Leaky relu implementation
+#[allow(dead_code)]
 pub fn leaky_relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecision, D> {
     data.mapv(|x| if x > 0. { x } else { 0.01 * x })
 }
 
 /// Relu implementation
+#[allow(dead_code)]
 pub fn relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecision, D> {
     data.mapv(|x| if x > 0. { x } else { 0. })
 }
