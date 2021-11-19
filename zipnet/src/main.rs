@@ -1,21 +1,19 @@
 //! This crate ties in all the parts of the projects and provides a clean command line interface
 //! to make encoding/decoding images feasible.
 
-use bincode::serialize;
 use coders::{
     dummy_coders::DummyCoder,
     hierarchical_coders::{MeanScaleHierarchicalDecoder, MeanScaleHierarchicalEncoder},
     statistics::Statistics,
     Decoder, Encoder,
 };
+use image::io::Reader as ImageReader;
 use image::RgbImage;
-use image::{io::Reader as ImageReader, DynamicImage};
 use ndarray::{Array, Array3};
-use ndarray_npy::{read_npy, NpzReader};
+use ndarray_npy::read_npy;
 use nshare::ToNdarray3;
 use quicli::prelude::*;
 use std::{
-    array,
     ffi::OsStr,
     fs,
     io::{Read, Write},

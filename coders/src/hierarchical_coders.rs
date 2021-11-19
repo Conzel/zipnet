@@ -161,8 +161,6 @@ impl Encoder<Array3<ImagePrecision>> for MeanScaleHierarchicalEncoder {
         let hyperlatents = self.hyperlatent_encoder.forward_pass(&latents);
         let latent_parameters = self.hyperlatent_decoder.forward_pass(&hyperlatents);
 
-        let latent_length = latents.len();
-
         // If we give in an uneven latent shape, then the latent parameters will
         // have even shape and the naive comparison doesn't work
         debug_assert_eq!(
@@ -256,7 +254,6 @@ impl Decoder<Array3<ImagePrecision>> for MeanScaleHierarchicalDecoder {
             make_even(side_info[4] as usize) as usize,
             make_even(side_info[5] as usize) as usize,
         );
-        let latents_len = latents_shape.0 * latents_shape.1 * latents_shape.2;
         let mut coder = DefaultAnsCoder::from_compressed(encoded_data.main_info).unwrap();
 
         let mut hyperlatents = Array::zeros(hyperlatents_shape);
