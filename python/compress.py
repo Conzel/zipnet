@@ -3,6 +3,7 @@ import sys
 
 import numpy as np
 import tensorflow.compat.v1 as tf
+# tf.compat.v1.disable_eager_execution()
 import tensorflow_compression as tfc
 
 # import constriction
@@ -109,7 +110,8 @@ def encode_latents(input_file, num_filters, checkpoint_dir, runname, seperate):
 
     with tf.Session() as sess:
         # Load latest model checkpoint
-        save_dir = os.path.join(checkpoint_dir, runname)
+        # save_dir = os.path.join(checkpoint_dir, runname)
+        save_dir = "checkpoints"
         latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
         tf.train.Saver().restore(sess, save_path=latest)
 
@@ -211,8 +213,10 @@ def _compress(
         # Load the latest model checkpoint, get the compressed string and the tensor
         # shapes.
         save_dir = os.path.join(checkpoint_dir, runname)
+        print("--"*40)
+        print(save_dir)
         latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
-        tf.train.Saver().restore(sess, save_path=latest)
+        tf.train.Saver(save_relative_paths=True).restore(sess, save_path=latest)
 
         ###################
         #  print weights  #
