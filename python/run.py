@@ -10,7 +10,7 @@ args = {
     "model": "mbt2018",
     "checkpoint_dir": "checkpoints",
     "results_dir": "results",
-    "input_file": "dog.jpg",
+    "input_file": "images/0001.png",
     "lmbda": 0.01,
     "num_filters": 160,
     "model_file": "my_model",
@@ -61,6 +61,7 @@ def compress(input_file):
     :param verbose:
     :return:
     """
+    print("CHECK - COMPRESS")
     runname = args["model_file"]
     checkpoint_dir = args["checkpoint_dir"]
     results_dir = args["results_dir"]
@@ -116,7 +117,7 @@ if __name__ == "__main__":
     ##################
     #  Compresssion  #
     ##################
-    my_picture = "diamond.jpg"
+    my_picture = "images/0001.png"
     main(my_picture)
 
     ##################

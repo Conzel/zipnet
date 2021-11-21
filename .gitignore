@@ -277,7 +277,8 @@ Thumbs.db
 Cargo.lock
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python,jupyternotebooks,rust
-*.png
-**/checkpoints/
-/checkpoints/
-checkpoints/
+python/checkpoints
+python/layers
+python/results
+tf
+model_weights

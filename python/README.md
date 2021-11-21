@@ -6,7 +6,17 @@ This folder has been forked from https://github.com/mandt-lab/improving-inferenc
 
 NOTE: The code is a bit messy because the original code was written such that it would take "args" as input in a lot of functions, but I didn't want to completely break that functionality. 
 
-# Usage
+# Save each layer's output
+
+First activate the virtual environment and make sure that weights are downloaded and are available in `checkpoints` folder
+`mkdir layers`
+`python run.py`
+
+The script for now uses the image in `images` folder (more changes are soon to come), and saves each layer's output in the `layers` folder individually as `.npz` files. 
+
+# Useage 
+
+@Johan: 
 In the main file (run.py) there are 3 different functionalities supported:
 
 - Train the model, and save the checkpoints;
