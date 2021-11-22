@@ -10,7 +10,12 @@ NOTE: The code is a bit messy because the original code was written such that it
 
 First activate the virtual environment and make sure that weights are downloaded and are available in `checkpoints` folder
 `mkdir layers`
-`python run.py`
+
+To run without activation function, run
+`python run.py False`
+
+to run with activation function, run
+`python run.py True`
 
 The script for now uses the image in `images` folder (more changes are soon to come), and saves each layer's output in the `layers` folder individually as `.npz` files. 
 

@@ -2,7 +2,7 @@ import os
 import time
 from compress import _compress, _decompress, encode_latents
 from train import _train
-
+import sys
 ##################
 #  Hyperparems   #
 ##################
@@ -43,7 +43,7 @@ train_args = {
 #     os.system(command)
 
 
-def decompress(input_file):
+def decompress(input_file, activation):
     """
     :param input_file: name.tfci file
     """
@@ -51,10 +51,10 @@ def decompress(input_file):
     checkpoint_dir = args["checkpoint_dir"]
     num_filters = args["num_filters"]
     output_file = input_file + ".png"
-    _decompress(runname, input_file, output_file, checkpoint_dir, num_filters)
+    _decompress(runname, input_file, output_file, checkpoint_dir, num_filters, activation)
 
 
-def compress(input_file):
+def compress(input_file, activation):
     """
 
     :param input_file: singe input image or np array of batch of images with shape (num_imgs, H, W, 3) and type(uint8)
@@ -69,7 +69,7 @@ def compress(input_file):
     output_file = input_file + ".tfci"
 
     _compress(
-        runname, input_file, output_file, checkpoint_dir, results_dir, num_filters
+        runname, input_file, output_file, checkpoint_dir, results_dir, num_filters, activation
     )
 
     compressed_file = input_file + ".tfci"
@@ -91,16 +91,16 @@ def train():
     )
 
 
-def main(input_file):
+def main(input_file, activation):
     start_time = time.time()
     print(f">>> compressing {input_file} ...")
-    compressed_file, results_file = compress(input_file)
+    compressed_file, results_file = compress(input_file, activation)
     intermediate_time = time.time()
     compress_time = intermediate_time - start_time
     print(f">>> compressing {input_file} done in {compress_time} seconds")
     compressed_file = "{}.tfci".format(input_file)
     print(f"<<< decompressing {compressed_file} ...")
-    decompress(compressed_file)
+    decompress(compressed_file, activation)
     stop_time = time.time()
     decompress_time = stop_time - intermediate_time
     print(f"<<< decompressing {compressed_file} done in {decompress_time} seconds")
@@ -113,12 +113,16 @@ def main(input_file):
 
 
 if __name__ == "__main__":
+    if sys.argv[1] == 'True':
+        activation = True
+    else:
+        activation = False
 
     ##################
     #  Compresssion  #
     ##################
     my_picture = "images/0001.png"
-    main(my_picture)
+    main(my_picture, activation)
 
     ##################
     #    Latents     #
