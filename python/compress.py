@@ -11,8 +11,6 @@ import tensorflow_compression as tfc
 from utils import write_png
 
 from mbt2018_graph import _build_graph, SCALES_MIN, SCALES_MAX, SCALES_LEVELS
-from nn_models import SynthesisTransform
-from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
 
 
 def load_input(input_file):
@@ -146,6 +144,7 @@ def _compress(
     checkpoint_dir,
     results_dir,
     num_filters,
+    activation,
     save_latents=True,
 ):
     """Compresses an image, or a batch of images of the same shape in npy format."""
@@ -173,7 +172,7 @@ def _compress(
     x_ph = x = tf.placeholder(
         "float32", (None, *X.shape[1:])
     )  # keep a reference around for feed_dict
-    graph = _build_graph(x, num_filters, training=False)
+    graph = _build_graph(x, num_filters, training=False, activation=activation)
 
     print(graph["my_x_shape"])
 
@@ -345,7 +344,7 @@ def _compress(
             )
 
 
-def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
+def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters, activation):
     """Decompresses an image."""
     # Adapted from https://github.com/tensorflow/compression/blob/master/examples/bmshj2018.py
     # Read the shape information and compressed string from the binary file.
@@ -360,6 +359,19 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters):
     tensors = [string, side_string, x_shape, y_shape, z_shape]
     arrays = packed.unpack(tensors)
 
+    if activation == True:
+        print("--"*50)
+        print("Activation function is in use for decompression")
+        print("--"*50)
+        from nn_models import SynthesisTransform
+        from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
+    else:
+        print("--"*50)
+        print("Activation function is not in use for decompression")
+        print("--"*50)
+        from nn_models_without_activation import SynthesisTransform
+        from nn_models_without_activation import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
+    
     # Instantiate model. TODO: automate this with build_graph
     synthesis_transform = SynthesisTransform(num_filters)
     hyper_synthesis_transform = HyperSynthesisTransform(

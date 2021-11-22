@@ -42,8 +42,8 @@ import tensorflow_compression as tfc
 #     from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
 #     from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
 from utils import quantize_image
-from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
-from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
+# from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
+# from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
 
 SCALES_MIN = 0.11
 SCALES_MAX = 256
@@ -55,13 +55,27 @@ def build_graph(args, x, training=True):
     return _build_graph(x, num_filters, training)
 
 
-def _build_graph(x, num_filters, training=True):
+def _build_graph(x, num_filters, training=True, activation=False):
     """
     Build the computational graph of the model. x should be a float tensor of shape [batch, H, W, 3].
     Given original image x, the model computes a lossy reconstruction x_tilde and various other quantities of interest.
     During training we sample from box-shaped posteriors; during compression this is approximated by rounding.
     """
+
     # Instantiate model.
+    if activation == True:
+        print("--"*50)
+        print("ACTIVATION FUNCTION IS IN USE for compression")
+        from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
+        from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
+        print("--"*50)
+    else:
+        print("--"*50)
+        print("ACTIVATION FUNCTION IS NOT IN USE for compression")
+        from nn_models_without_activation import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
+        from nn_models_without_activation import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
+        print("--"*50)
+        
     analysis_transform = AnalysisTransform(num_filters)
     synthesis_transform = SynthesisTransform(num_filters)
     hyper_analysis_transform = HyperAnalysisTransform(num_filters)
