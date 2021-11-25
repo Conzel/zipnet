@@ -2,6 +2,7 @@ import os
 import time
 from compress import _compress, _decompress, encode_latents
 from train import _train
+from pathlib import Path
 import sys
 ##################
 #  Hyperparems   #
@@ -51,7 +52,8 @@ def decompress(input_file, activation):
     checkpoint_dir = args["checkpoint_dir"]
     num_filters = args["num_filters"]
     output_file = input_file + ".png"
-    _decompress(runname, input_file, output_file, checkpoint_dir, num_filters, activation)
+    _decompress(runname, input_file, output_file,
+                checkpoint_dir, num_filters, activation)
 
 
 def compress(input_file, activation):
@@ -92,6 +94,7 @@ def train():
 
 
 def main(input_file, activation):
+    Path("results").mkdir(parents=True, exist_ok=True)
     start_time = time.time()
     print(f">>> compressing {input_file} ...")
     compressed_file, results_file = compress(input_file, activation)
@@ -103,10 +106,12 @@ def main(input_file, activation):
     decompress(compressed_file, activation)
     stop_time = time.time()
     decompress_time = stop_time - intermediate_time
-    print(f"<<< decompressing {compressed_file} done in {decompress_time} seconds")
+    print(
+        f"<<< decompressing {compressed_file} done in {decompress_time} seconds")
     total_time = stop_time - start_time
     print(f"compressing and decompressing took {total_time} seconds")
-    print(f"compressing took {(compress_time / total_time) * 100}% of the total time")
+    print(
+        f"compressing took {(compress_time / total_time) * 100}% of the total time")
     print(
         f"decompressing took {(decompress_time / total_time) * 100}% of the total time"
     )
