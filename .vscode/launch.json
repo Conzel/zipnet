@@ -52,7 +52,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug zipnet compression with sample img",
+            "name": "Compression (small img)",
             "cargo": {
                 "args": [
                     "build",
@@ -66,77 +66,14 @@
             },
             "args": [
                 "compress",
-                "${workspaceFolder}/debug-assets/chess.png"
+                "${workspaceFolder}/debug-assets/eclipse-small.png"
             ],
             "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug zipnet compression with small sample img",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=zipnet",
-                    "--package=zipnet"
-                ],
-                "filter": {
-                    "name": "zipnet",
-                    "kind": "bin"
-                }
-            },
-            "args": [
-                "compress",
-                "${workspaceFolder}/debug-assets/chess-small.png"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug zipnet compression with very small sample img",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=zipnet",
-                    "--package=zipnet"
-                ],
-                "filter": {
-                    "name": "zipnet",
-                    "kind": "bin"
-                }
-            },
-            "args": [
-                "compress",
-                "${workspaceFolder}/debug-assets/diamond.jpg"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug zipnet compression with diamond npy",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=zipnet",
-                    "--package=zipnet"
-                ],
-                "filter": {
-                    "name": "zipnet",
-                    "kind": "bin"
-                }
-            },
-            "args": [
-                "compress",
-                "${workspaceFolder}/debug-assets/diamond.npy"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug zipnet decompression with small sample img",
+            "name": "Decompression (small img)",
             "cargo": {
                 "args": [
                     "build",
@@ -150,48 +87,10 @@
             },
             "args": [
                 "decompress",
-                "${workspaceFolder}/debug-assets/chess-small.bin",
-                "${workspaceFolder}/debug-assets/chess-small-recovered.png"
+                "${workspaceFolder}/debug-assets/eclipse-small.bin",
+                "${workspaceFolder}/debug-assets/eclipse-small-reconstructed.png"
             ],
             "cwd": "${workspaceFolder}"
         },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'zipnet'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=zipnet",
-                    "--package=zipnet"
-                ],
-                "filter": {
-                    "name": "zipnet",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in library 'ml'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=ml"
-                ],
-                "filter": {
-                    "name": "ml",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        }
     ]
 }
