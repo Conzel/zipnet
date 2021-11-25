@@ -6,8 +6,15 @@ This folder has been forked from https://github.com/mandt-lab/improving-inferenc
 
 NOTE: The code is a bit messy because the original code was written such that it would take "args" as input in a lot of functions, but I didn't want to completely break that functionality. 
 
-# Save each layer's output
+# Setup
+In any case, we recommend using a virtual environment, as the package dependencies here are a bit delicate. You can install the packages either with `conda` (recommended) or with `pip`. Additionally, to run the code, you might have to enter `EXPORT CUDA_VISIBLE_DEVICES="-1"` in the terminal (if TF doesn't recognize your GPU drivers).
+## conda
+Follow the installation instructions for conda. Switch into this folder and run `conda create --file environment.yml`. You can then activate the environment using `conda activate zipnet`.
 
+## pip
+This method works with multiple types of virtual environments (either `venv` oder `conda`). Simply activate your venv and run `pip install -r requirements.txt`.
+
+# Save each layer's output
 First activate the virtual environment and make sure that weights are downloaded and are available in `checkpoints` folder
 `mkdir layers`
 
