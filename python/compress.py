@@ -149,6 +149,7 @@ def _compress(
 ):
     """Compresses an image, or a batch of images of the same shape in npy format."""
     tf.reset_default_graph()
+    tf.disable_eager_execution()
 
     write_tfci_for_eval = True
 
