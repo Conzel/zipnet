@@ -94,7 +94,7 @@ def train():
 
 
 def main(input_file, activation):
-    Path("results").mkdir(parents=True, exist_ok=True)
+    Path("results/layers").mkdir(parents=True, exist_ok=True)
     if not Path("checkpoints").exists():
         raise ValueError(
             "Checkpoint directory does not exist. Please download the trained weights and save them under 'checkpoints'.")
