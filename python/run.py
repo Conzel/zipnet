@@ -95,6 +95,9 @@ def train():
 
 def main(input_file, activation):
     Path("results").mkdir(parents=True, exist_ok=True)
+    if not Path("checkpoints").exists():
+        raise ValueError(
+            "Checkpoint directory does not exist. Please download the trained weights and save them under 'checkpoints'.")
     start_time = time.time()
     print(f">>> compressing {input_file} ...")
     compressed_file, results_file = compress(input_file, activation)
