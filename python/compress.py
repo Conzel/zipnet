@@ -293,7 +293,10 @@ def _compress(
                         graph["{}_layers_output".format(name)], feed_dict=x_feed_dict
                     )
                     for i, l in enumerate(layers_output):
-                        np.save("layers/{}_layer_{}_output".format(name, i), l)
+                        if activation == True:
+                            np.save("results/layers/{}_layer_{}_output".format(name, i), l)
+                        else:
+                            np.save("results/layers/{}_layer_{}_output_no_act".format(name, i), l)
 
                 packed.pack(compression_tensors, compression_arrs)
                 if write_tfci_for_eval:
@@ -425,4 +428,7 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters, a
         ]:
             layers_output = sess.run(layers, feed_dict=dict(zip(tensors, arrays)))
             for i, l in enumerate(layers_output):
-                np.save("layers/{}_layer_{}_output".format(name, i), l)
+                if activation == True:
+                    np.save("results/layers/{}_layer_{}_output".format(name, i), l)
+                else:
+                    np.save("results/layers/{}_layer_{}_output_no_act".format(name, i), l)
