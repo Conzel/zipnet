@@ -11,6 +11,7 @@ serde_json = "1.0"
 thiserror = "1.0.25"
 ndarray-npy = "0.8.0"
 convolutions-rs = "0.2.1"
+log = "0.4.14"
 
 [dev-dependencies]
 # For testing the weight loader

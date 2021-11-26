@@ -10,6 +10,7 @@ use crate::{
 use convolutions_rs::{
     convolutions::ConvolutionLayer, transposed_convolutions::TransposedConvolutionLayer, Padding,
 };
+use log::trace;
 use ndarray::*;
 
 pub type InternalDataRepresentation = Array3<WeightPrecision>;
@@ -73,20 +74,33 @@ impl CodingModel for MinnenEncoder {
     #[allow(clippy::let_and_return)]
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
+        trace!("input: {:?}", x);
 
         let x = self.layer_0.forward_pass(&x);
+        trace!("layer_0: {:?}", x);
 
         let x = self.activation_0.forward_pass(&x);
 
+        trace!("activation_0: {:?}", x);
+
         let x = self.layer_1.forward_pass(&x);
+        trace!("layer_1: {:?}", x);
 
         let x = self.activation_1.forward_pass(&x);
 
+        trace!("activation_1: {:?}", x);
+
         let x = self.layer_2.forward_pass(&x);
+        trace!("layer_2: {:?}", x);
 
         let x = self.activation_2.forward_pass(&x);
 
+        trace!("activation_2: {:?}", x);
+
         let x = self.layer_3.forward_pass(&x);
+        trace!("layer_3: {:?}", x);
+
+        trace!("activation_3: {:?}", x);
 
         x
     }
@@ -202,22 +216,35 @@ impl CodingModel for JohnstonDecoder {
     #[allow(clippy::let_and_return)]
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
+        trace!("input: {:?}", x);
 
         let x = self.layer_0.forward_pass(&x);
+        trace!("layer_0: {:?}", x);
 
         let x = self.activation_0.forward_pass(&x);
 
+        trace!("activation_0: {:?}", x);
+
         let x = self.layer_1.forward_pass(&x);
+        trace!("layer_1: {:?}", x);
 
         let x = self.activation_1.forward_pass(&x);
 
+        trace!("activation_1: {:?}", x);
+
         let x = self.layer_2.forward_pass(&x);
+        trace!("layer_2: {:?}", x);
 
         let x = self.activation_2.forward_pass(&x);
 
+        trace!("activation_2: {:?}", x);
+
         let x = self.layer_3.forward_pass(&x);
+        trace!("layer_3: {:?}", x);
 
         let x = self.activation_3.forward_pass(&x);
+
+        trace!("activation_3: {:?}", x);
 
         x
     }
@@ -345,16 +372,26 @@ impl CodingModel for MinnenHyperEncoder {
     #[allow(clippy::let_and_return)]
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
+        trace!("input: {:?}", x);
 
         let x = self.layer_0.forward_pass(&x);
+        trace!("layer_0: {:?}", x);
 
         let x = self.activation_0.forward_pass(&x);
 
+        trace!("activation_0: {:?}", x);
+
         let x = self.layer_1.forward_pass(&x);
+        trace!("layer_1: {:?}", x);
 
         let x = self.activation_1.forward_pass(&x);
 
+        trace!("activation_1: {:?}", x);
+
         let x = self.layer_2.forward_pass(&x);
+        trace!("layer_2: {:?}", x);
+
+        trace!("activation_2: {:?}", x);
 
         x
     }
@@ -411,16 +448,26 @@ impl CodingModel for JohnstonHyperDecoder {
     #[allow(clippy::let_and_return)]
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
+        trace!("input: {:?}", x);
 
         let x = self.layer_0.forward_pass(&x);
+        trace!("layer_0: {:?}", x);
 
         let x = self.activation_0.forward_pass(&x);
 
+        trace!("activation_0: {:?}", x);
+
         let x = self.layer_1.forward_pass(&x);
+        trace!("layer_1: {:?}", x);
 
         let x = self.activation_1.forward_pass(&x);
 
+        trace!("activation_1: {:?}", x);
+
         let x = self.layer_2.forward_pass(&x);
+        trace!("layer_2: {:?}", x);
+
+        trace!("activation_2: {:?}", x);
 
         x
     }

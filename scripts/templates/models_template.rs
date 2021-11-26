@@ -14,6 +14,7 @@ use crate::{
 use convolutions_rs::{
     convolutions::ConvolutionLayer, transposed_convolutions::TransposedConvolutionLayer, Padding,
 };
+use log::trace;
 use ndarray::*;
 
 pub type InternalDataRepresentation = Array3<WeightPrecision>;
@@ -73,11 +74,14 @@ impl CodingModel for ReluLayer {
         #[allow(clippy::let_and_return)]
         fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
             let x = input.clone();
+            trace!("input: {:?}", x);
             {% for l in m.layers %}
                 let x = self.layer_{{loop.index0}}.forward_pass(&x);
+                trace!("layer_{{loop.index0}}: {:?}", x);
                 {% if l.activation is not none %}
                     let x = self.activation_{{loop.index0}}.forward_pass(&x);
                 {% endif %}
+                trace!("activation_{{loop.index0}}: {:?}", x);
             {% endfor %}
             x
         }
