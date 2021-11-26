@@ -7,6 +7,7 @@ use coders::{
     statistics::Statistics,
     Decoder, Encoder,
 };
+use env_logger::Builder;
 use image::io::Reader as ImageReader;
 use image::RgbImage;
 use ndarray::{Array, Array3};
@@ -97,7 +98,12 @@ trait ZipnetOpts {
     fn get_verbosity(&self) -> &Verbosity;
     /// Sets up logging
     fn setup_env_logger(&self) -> CliResult {
-        self.get_verbosity().setup_env_logger("zipnet")?;
+        let mut builder = Builder::from_default_env();
+
+        builder
+            .filter(None, self.get_verbosity().log_level().to_level_filter())
+            .init();
+
         Ok(())
     }
 }
