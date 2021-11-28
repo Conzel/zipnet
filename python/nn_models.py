@@ -124,7 +124,7 @@ class SynthesisTransform(tf.keras.layers.Layer):
         for layer in self._layers:
             tensor = layer(tensor)
             layers_output.append(tensor)
-        print("check")
+        # print("check")
         return tensor, layers_output
 
 

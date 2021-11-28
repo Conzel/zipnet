@@ -65,13 +65,13 @@ def _build_graph(x, num_filters, training=True, activation=False):
     # Instantiate model.
     if activation == True:
         print("--"*50)
-        print("ACTIVATION FUNCTION IS IN USE for compression")
+        print("Activation function is in use for compression")
         from nn_models import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
         from nn_models import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
         print("--"*50)
     else:
         print("--"*50)
-        print("ACTIVATION FUNCTION IS NOT IN USE for compression")
+        print("Activation function is not in use for compression")
         from nn_models_without_activation import AnalysisTransform, SynthesisTransform, HyperAnalysisTransform
         from nn_models_without_activation import MBT2018HyperSynthesisTransform as HyperSynthesisTransform
         print("--"*50)
