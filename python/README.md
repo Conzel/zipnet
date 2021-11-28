@@ -14,17 +14,23 @@ Follow the installation instructions for conda. Switch into this folder and run 
 ## pip
 This method works with multiple types of virtual environments (either `venv` oder `conda`). Simply activate your venv and run `pip install -r requirements.txt`.
 
-# Save each layer's output
-First activate the virtual environment and make sure that weights are downloaded and are available in `checkpoints` folder
-`mkdir layers`
+# Run
+First activate the virtual environment and make sure that weights are downloaded and are available in `checkpoints` folder. To run:
 
-To run without activation function, run
-`python run.py False`
+`sh run.sh $activation_status $exp-name $<path-to-image>`
 
-to run with activation function, run
-`python run.py True`
+Example:
 
-The script for now uses the image in `images` folder (more changes are soon to come), and saves each layer's output in the `layers` folder individually as `.npz` files. 
+`sh run.sh True exp1 images/0001.png`
+
+Note:
+- all the outputs are saved in `results` folder
+- To find json & npy files check `results/exp-name/layer_outputs`
+- Input image is saved as `.png` and `.npy` in `results/exp-name`
+- Output of the encoder is also saved as `.npy` in `results/exp-name/layer_outputs/encoder`
+- The decompressed image can be found in `results/exp-name/image-name*.png`
+- The name of the results folder contains if activation is in use or not in use
+
 
 # Useage 
 

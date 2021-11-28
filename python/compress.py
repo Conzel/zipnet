@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 
 import numpy as np
 import tensorflow.compat.v1 as tf
@@ -154,9 +155,10 @@ def _compress(
     write_tfci_for_eval = True
 
     X = load_input(input_file)
-    print(X.shape)
+    print(">>> Shape of input:", X.shape)
 
-    np.save("input_image", X)
+    npy_path = os.path.join(results_dir, "input_image.npy")
+    np.save(npy_path, X)
 
     num_images = int(X.shape[0])
     num_pixels = int(np.prod(X.shape[1:-1]))
@@ -213,8 +215,8 @@ def _compress(
         # Load the latest model checkpoint, get the compressed string and the tensor
         # shapes.
         save_dir = os.path.join(checkpoint_dir, runname)
-        print("--"*40)
-        print(save_dir)
+        # print("--"*40)
+        # print(save_dir)
         latest = tf.train.latest_checkpoint(checkpoint_dir=save_dir)
         tf.train.Saver(save_relative_paths=True).restore(sess, save_path=latest)
 
@@ -282,21 +284,31 @@ def _compress(
                 # test_string = sess.run(graph['string'], feed_dict=x_feed_dict)
                 # test_side_string = sess.run(graph['side_string'], feed_dict=x_feed_dict)
                 y = sess.run(graph["y"], feed_dict=x_feed_dict)
-                np.save("encoder_output", y)
+                save_folder = os.path.join(results_dir, "layer_outputs", "encoder")
+                npy_path_out = os.path.join(save_folder, "encoder_output.npy")
+                np.save(npy_path_out, y)
                 z = sess.run(graph["z"], feed_dict=x_feed_dict)
                 mu = sess.run(graph["mu"], feed_dict=x_feed_dict)
                 sigma = sess.run(graph["sigma"], feed_dict=x_feed_dict)
 
+                save_path_npy = os.path.join(save_folder, "npy_files")
+                save_path_json = os.path.join(save_folder, "json_files")
                 # save intermediate outputs
                 for name in ["analysis", "hyp_analysis"]:
                     layers_output = sess.run(
                         graph["{}_layers_output".format(name)], feed_dict=x_feed_dict
                     )
                     for i, l in enumerate(layers_output):
-                        if activation == True:
-                            np.save("results/layers/{}_layer_{}_output".format(name, i), l)
-                        else:
-                            np.save("results/layers/{}_layer_{}_output_no_act".format(name, i), l)
+                        # save json
+                        layer_dict = {"output":l.tolist()}
+                        json_file_path = os.path.join(save_path_json, "{}_layer_{}_output.json".format(name, i))
+                        json_data = json.dumps(layer_dict)
+                        jsonFile = open(json_file_path, "w")
+                        jsonFile.write(json_data)
+                        jsonFile.close()
+
+                        # save npy
+                        np.save(os.path.join(save_path_npy, "{}_layer_{}_output".format(name, i)), l)
 
                 packed.pack(compression_tensors, compression_arrs)
                 if write_tfci_for_eval:
@@ -348,7 +360,7 @@ def _compress(
             )
 
 
-def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters, activation):
+def _decompress(runname, input_file, output_file, log_folder, checkpoint_dir, num_filters, activation):
     """Decompresses an image."""
     # Adapted from https://github.com/tensorflow/compression/blob/master/examples/bmshj2018.py
     # Read the shape information and compressed string from the binary file.
@@ -427,8 +439,16 @@ def _decompress(runname, input_file, output_file, checkpoint_dir, num_filters, a
             (hyp_synth_layers_output, "hyp_synth"),
         ]:
             layers_output = sess.run(layers, feed_dict=dict(zip(tensors, arrays)))
+            save_folder = os.path.join(log_folder, "layer_outputs", "decoder", "npy_files")
+            save_path_json = os.path.join(log_folder, "layer_outputs", "decoder", "json_files")
             for i, l in enumerate(layers_output):
-                if activation == True:
-                    np.save("results/layers/{}_layer_{}_output".format(name, i), l)
-                else:
-                    np.save("results/layers/{}_layer_{}_output_no_act".format(name, i), l)
+                # save json
+                layer_dict = {"output":l.tolist()}
+                json_file_path = os.path.join(save_path_json, "{}_layer_{}_output.json".format(name, i))
+                json_data = json.dumps(layer_dict)
+                jsonFile = open(json_file_path, "w")
+                jsonFile.write(json_data)
+                jsonFile.close()
+
+                # save npy
+                np.save(os.path.join(save_folder, "{}_layer_{}_output".format(name, i)), l)

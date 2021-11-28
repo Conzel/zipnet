@@ -4,6 +4,7 @@ from compress import _compress, _decompress, encode_latents
 from train import _train
 from pathlib import Path
 import sys
+import shutil
 ##################
 #  Hyperparems   #
 ##################
@@ -44,7 +45,7 @@ train_args = {
 #     os.system(command)
 
 
-def decompress(input_file, activation):
+def decompress(input_file, activation, log_folder):
     """
     :param input_file: name.tfci file
     """
@@ -52,33 +53,32 @@ def decompress(input_file, activation):
     checkpoint_dir = args["checkpoint_dir"]
     num_filters = args["num_filters"]
     output_file = input_file + ".png"
-    _decompress(runname, input_file, output_file,
+    _decompress(runname, input_file, output_file, log_folder,
                 checkpoint_dir, num_filters, activation)
 
 
-def compress(input_file, activation):
+def compress(input_file, activation, results_dir):
     """
 
     :param input_file: singe input image or np array of batch of images with shape (num_imgs, H, W, 3) and type(uint8)
     :param verbose:
     :return:
     """
-    print("CHECK - COMPRESS")
     runname = args["model_file"]
     checkpoint_dir = args["checkpoint_dir"]
-    results_dir = args["results_dir"]
     num_filters = args["num_filters"]
-    output_file = input_file + ".tfci"
+
+    output_file = os.path.join(results_dir, os.path.basename(input_file) + ".tfci")
 
     _compress(
         runname, input_file, output_file, checkpoint_dir, results_dir, num_filters, activation
     )
 
-    compressed_file = input_file + ".tfci"
+    compressed_file = os.path.join(results_dir, os.path.basename(input_file)  + ".tfci")
     results_file = "rd-{model_file}-file={input_file}.npz".format(
         model_file=args["model_file"], input_file=input_file
     )
-    results_file = os.path.join(args["results_dir"], results_file)
+    results_file = os.path.join(results_dir, results_file)
 
     return compressed_file, results_file
 
@@ -93,20 +93,34 @@ def train():
     )
 
 
-def main(input_file, activation):
-    Path("results/layers").mkdir(parents=True, exist_ok=True)
+def main(input_file, activation, log_folder):
+    # create result folders
+    Path(os.path.join(log_folder, "layer_outputs")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(log_folder, "layer_outputs", "encoder")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(log_folder, "layer_outputs", "decoder")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(log_folder, "layer_outputs", "encoder", "npy_files")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(log_folder, "layer_outputs", "decoder", "npy_files")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(log_folder, "layer_outputs", "encoder", "json_files")).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(log_folder, "layer_outputs", "decoder", "json_files")).mkdir(parents=True, exist_ok=True)
+
+    # check for checkpoints
     if not Path("checkpoints").exists():
         raise ValueError(
             "Checkpoint directory does not exist. Please download the trained weights and save them under 'checkpoints'.")
+
+    # save input image copy
+    copy_img = os.path.join(log_folder, os.path.basename(input_file))
+    shutil.copy(input_file, copy_img)
+
+    # S T A R T
     start_time = time.time()
     print(f">>> compressing {input_file} ...")
-    compressed_file, results_file = compress(input_file, activation)
+    compressed_file, results_file = compress(input_file, activation, log_folder)
     intermediate_time = time.time()
     compress_time = intermediate_time - start_time
     print(f">>> compressing {input_file} done in {compress_time} seconds")
-    compressed_file = "{}.tfci".format(input_file)
     print(f"<<< decompressing {compressed_file} ...")
-    decompress(compressed_file, activation)
+    decompress(compressed_file, activation, log_folder)
     stop_time = time.time()
     decompress_time = stop_time - intermediate_time
     print(
@@ -123,14 +137,17 @@ def main(input_file, activation):
 if __name__ == "__main__":
     if sys.argv[1] == 'True':
         activation = True
+        name = "-w-activation"
     else:
         activation = False
-
+        name = "-wo-activation"
     ##################
     #  Compresssion  #
     ##################
-    my_picture = "images/0001.png"
-    main(my_picture, activation)
+    my_picture = sys.argv[3]
+    assert(os.path.exists(my_picture))
+    log_folder = os.path.join("results", sys.argv[2]+name)
+    main(my_picture, activation, log_folder)
 
     ##################
     #    Latents     #
