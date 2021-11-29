@@ -74,14 +74,14 @@ impl CodingModel for ReluLayer {
         #[allow(clippy::let_and_return)]
         fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
             let x = input.clone();
-            trace!("input: {:?}", x);
+            trace!("input: {:?}\n", x);
             {% for l in m.layers %}
                 let x = self.layer_{{loop.index0}}.forward_pass(&x);
-                trace!("layer_{{loop.index0}}: {:?}", x);
+                trace!("{{m.layer_name}}_{{loop.index0}}_output: {:?}\n", x);
                 {% if l.activation is not none %}
                     let x = self.activation_{{loop.index0}}.forward_pass(&x);
                 {% endif %}
-                trace!("activation_{{loop.index0}}: {:?}", x);
+                trace!("{{m.layer_name}}_activation_{{loop.index0}}_output: {:?}\n", x);
             {% endfor %}
             x
         }
@@ -95,6 +95,7 @@ impl CodingModel for ReluLayer {
                     "{{m.layer_name}}_{{loop.index0}}/kernel.npy",
                     ({{l.kernel_height}}, {{l.kernel_width}}, {{l.channels}}, {{l.filters}})
                 ).unwrap();
+                trace!("{{m.layer_name}}_{{loop.index0}}_weight: {:?}\n", layer_{{loop.index0}}_weights);
                 let layer_{{loop.index0}} = {{l.name}}::new_tf(layer_{{loop.index0}}_weights, 
                                                            {{l.stride}}, {{l.padding}});
                 {% if l.activation is not none %}
@@ -102,6 +103,7 @@ impl CodingModel for ReluLayer {
                         let activation_{{outer_loop.index0}}_weight_{{loop.index0}} 
                             = loader.get_weight("{{m.weight_name}}/{{m.layer_name}}_{{outer_loop.index0}}/{{l.activation.name}}_{{outer_loop.index0}}/{{w.name}}.npy",
                                                 {{w.shape}}).unwrap();
+                        trace!("{{m.weight_name}}_{{m.layer_name}}_{{l.activation.name}}_{{w.name}}_{{outer_loop.index0}}_weight: {:?}\n", activation_{{outer_loop.index0}}_weight_{{loop.index0}});
                     {% endfor %}
                     let activation_{{outer_loop.index0}} = {{l.activation.layer_name}}::new(
                         {% for w in l.activation.weights %}
