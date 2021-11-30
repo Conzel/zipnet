@@ -149,7 +149,7 @@ impl GdnLayer {
     /// Performs GDN on the input with the layer parameters.
     /// We fix the parameter choice to alpha=2, epsilon=0.5.
     pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
-        gdn(x, &self.beta, &self.gamma, GdnParameters::New)
+        gdn(x, &self.beta, &self.gamma, GdnParameters::Old)
     }
 }
 
