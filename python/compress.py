@@ -287,6 +287,16 @@ def _compress(
                 save_folder = os.path.join(results_dir, "layer_outputs", "encoder")
                 npy_path_out = os.path.join(save_folder, "encoder_output.npy")
                 np.save(npy_path_out, y)
+                # save encoder output y as json
+                
+                y_reshape = np.moveaxis(np.squeeze(y, axis=0),2,0)
+                y_dict = {"output":y_reshape.tolist()}
+                json_y_path = os.path.join(save_folder, "encoder_output.json")
+                json_data_y = json.dumps(y_dict)
+                jsonFile_y = open(json_y_path, "w")
+                jsonFile_y.write(json_data_y)
+                jsonFile_y.close()
+
                 z = sess.run(graph["z"], feed_dict=x_feed_dict)
                 mu = sess.run(graph["mu"], feed_dict=x_feed_dict)
                 sigma = sess.run(graph["sigma"], feed_dict=x_feed_dict)
@@ -298,7 +308,11 @@ def _compress(
                     layers_output = sess.run(
                         graph["{}_layers_output".format(name)], feed_dict=x_feed_dict
                     )
-                    for i, l in enumerate(layers_output):
+                    for i, layer in enumerate(layers_output):
+                        # reshape to rust
+                        l = np.moveaxis(np.squeeze(layer, axis=0),2,0)
+                        # print(l.shape)
+
                         # save json
                         layer_dict = {"output":l.tolist()}
                         json_file_path = os.path.join(save_path_json, "{}_layer_{}_output.json".format(name, i))
@@ -441,7 +455,11 @@ def _decompress(runname, input_file, output_file, log_folder, checkpoint_dir, nu
             layers_output = sess.run(layers, feed_dict=dict(zip(tensors, arrays)))
             save_folder = os.path.join(log_folder, "layer_outputs", "decoder", "npy_files")
             save_path_json = os.path.join(log_folder, "layer_outputs", "decoder", "json_files")
-            for i, l in enumerate(layers_output):
+            for i, layer in enumerate(layers_output):
+                # reshape to rust
+                l = np.moveaxis(np.squeeze(layer),2,0)
+                # print(l.shape)
+
                 # save json
                 layer_dict = {"output":l.tolist()}
                 json_file_path = os.path.join(save_path_json, "{}_layer_{}_output.json".format(name, i))
