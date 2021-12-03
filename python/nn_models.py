@@ -25,8 +25,9 @@ class AnalysisTransform(tf.keras.layers.Layer):
                 strides=2,
                 padding="same",
                 use_bias=False,
-                activation=tfc.GDN(name="gnd_0"),
+                activation=None,
             ),
+            tfc.GDN(name="gnd_0"),
             tf.layers.Conv2D(
                 self.num_filters,
                 (5, 5),
@@ -34,8 +35,9 @@ class AnalysisTransform(tf.keras.layers.Layer):
                 strides=2,
                 padding="same",
                 use_bias=False,
-                activation=tfc.GDN(name="gnd_1"),
+                activation=None,
             ),
+            tfc.GDN(name="gnd_1"),
             tf.layers.Conv2D(
                 self.num_filters,
                 (5, 5),
@@ -43,8 +45,9 @@ class AnalysisTransform(tf.keras.layers.Layer):
                 strides=2,
                 padding="same",
                 use_bias=False,
-                activation=tfc.GDN(name="gnd_2"),
+                activation=None,
             ),
+            tfc.GDN(name="gnd_2"),
             tf.layers.Conv2D(
                 self.num_filters,
                 (5, 5),
@@ -87,8 +90,9 @@ class SynthesisTransform(tf.keras.layers.Layer):
                 strides=2,
                 padding="same",
                 use_bias=False,
-                activation=tfc.GDN(name="igdn_0", inverse=True),
+                activation=None,
             ),
+            tfc.GDN(name="igdn_0", inverse=True),
             tf.layers.Conv2DTranspose(
                 filters[1],
                 (5, 5),
@@ -96,8 +100,9 @@ class SynthesisTransform(tf.keras.layers.Layer):
                 strides=2,
                 padding="same",
                 use_bias=False,
-                activation=tfc.GDN(name="igdn_1", inverse=True),
+                activation=None,
             ),
+            tfc.GDN(name="igdn_1", inverse=True),
             tf.layers.Conv2DTranspose(
                 filters[2],
                 (5, 5),
@@ -105,8 +110,9 @@ class SynthesisTransform(tf.keras.layers.Layer):
                 strides=2,
                 padding="same",
                 use_bias=False,
-                activation=tfc.GDN(name="igdn_2", inverse=True),
+                activation=None,
             ),
+            tfc.GDN(name="igdn_2", inverse=True),
             tf.layers.Conv2DTranspose(
                 filters[3],
                 (5, 5),
@@ -114,8 +120,9 @@ class SynthesisTransform(tf.keras.layers.Layer):
                 strides=2,
                 padding="same",
                 use_bias=False,
-                activation=tfc.GDN(name="igdn_3", inverse=True),
+                activation=None,
             ),
+            tfc.GDN(name="igdn_3", inverse=True),
         ]
         super(SynthesisTransform, self).build(input_shape)
 

@@ -60,7 +60,11 @@ class AnalysisTransform(tf.keras.layers.Layer):
     def call(self, tensor):
         layers_output = []
         for layer in self._layers:
+            print(layer.name)
             tensor = layer(tensor)
+            # gdn = tfc.GDN()
+            # yx = gdn(tensor)
+            # print(yx.shape)
             layers_output.append(tensor)
         return tensor, layers_output
 
@@ -89,6 +93,7 @@ class SynthesisTransform(tf.keras.layers.Layer):
                 use_bias=False,
                 activation=None,
             ),
+            # tfc.GDN(name="igdn_0", inverse=True),
             tf.layers.Conv2DTranspose(
                 filters[1],
                 (5, 5),
@@ -98,6 +103,7 @@ class SynthesisTransform(tf.keras.layers.Layer):
                 use_bias=False,
                 activation=None,
             ),
+            # tfc.GDN(name="igdn_1", inverse=True),
             tf.layers.Conv2DTranspose(
                 filters[2],
                 (5, 5),
@@ -107,6 +113,7 @@ class SynthesisTransform(tf.keras.layers.Layer):
                 use_bias=False,
                 activation=None,
             ),
+            # tfc.GDN(name="igdn_2", inverse=True),
             tf.layers.Conv2DTranspose(
                 filters[3],
                 (5, 5),
@@ -116,6 +123,7 @@ class SynthesisTransform(tf.keras.layers.Layer):
                 use_bias=False,
                 activation=None,
             ),
+            # tfc.GDN(name="igdn_3", inverse=True),
         ]
         super(SynthesisTransform, self).build(input_shape)
 

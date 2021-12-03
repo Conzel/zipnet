@@ -147,7 +147,7 @@ def build_train_graph(args, x):
 
 
 def _build_train_graph(x, num_filters, batch_size, patch_size, lmbda):
-    graph = _build_graph(x, num_filters, training=True)
+    graph = _build_graph(x, num_filters, training=True, activation=True)
     y_likelihoods, z_likelihoods, x_tilde, = (
         graph["y_likelihoods"],
         graph["z_likelihoods"],
