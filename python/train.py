@@ -146,3 +146,8 @@ def _train(
     ) as sess:
         while not sess.should_stop():
             sess.run(train_op)
+
+
+if __name__ == '__main__':
+    _train(patch_size=256, batch_size=8, num_filters=192, lmbda=0.05, last_step=10000)
+    

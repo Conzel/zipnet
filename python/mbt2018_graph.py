@@ -55,7 +55,7 @@ def build_graph(args, x, training=True):
     return _build_graph(x, num_filters, training)
 
 
-def _build_graph(x, num_filters, training=True, activation=False):
+def _build_graph(x, num_filters, training=True, activation=True):
     """
     Build the computational graph of the model. x should be a float tensor of shape [batch, H, W, 3].
     Given original image x, the model computes a lossy reconstruction x_tilde and various other quantities of interest.
@@ -116,6 +116,7 @@ def _build_graph(x, num_filters, training=True, activation=False):
 
     # sample y_tilde from q(y_tilde|x) = U(y-0.5, y+0.5) = U(g_a(x)-0.5, g_a(x)+0.5), and then compute the pdf of
     # y_tilde under the conditional prior/entropy model p(y_tilde|z_tilde) = N(y_tilde|mu, sigma^2) conv U(-0.5,  0.5)
+    print(y.shape)
     y_tilde, y_likelihoods = conditional_bottleneck(y, training=training)
     x_tilde, synth_layers_output = synthesis_transform(y_tilde)
     assert x_tilde == synth_layers_output[-1]
