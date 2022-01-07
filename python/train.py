@@ -86,6 +86,7 @@ def _train(
 
     # Get training patch from dataset.
     x = train_dataset.make_one_shot_iterator().get_next()
+    print("Shape of training data:", x.shape)
     res = _build_train_graph(x, num_filters, batch_size, patch_size, lmbda)
     train_loss = res["train_loss"]
     train_op = res["train_op"]

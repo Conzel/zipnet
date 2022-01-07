@@ -304,10 +304,12 @@ def _compress(
                 save_path_npy = os.path.join(save_folder, "npy_files")
                 save_path_json = os.path.join(save_folder, "json_files")
                 # save intermediate outputs
+
                 for name in ["analysis", "hyp_analysis"]:
                     layers_output = sess.run(
                         graph["{}_layers_output".format(name)], feed_dict=x_feed_dict
                     )
+                    # import pdb;pdb.set_trace()
                     for i, layer in enumerate(layers_output):
                         # reshape to rust
                         l = np.moveaxis(np.squeeze(layer, axis=0),2,0)
@@ -315,14 +317,14 @@ def _compress(
 
                         # save json
                         layer_dict = {"output":l.tolist()}
-                        json_file_path = os.path.join(save_path_json, "{}_layer_{}_output.json".format(name, i))
+                        json_file_path = os.path.join(save_path_json, "{}.json".format(name))
                         json_data = json.dumps(layer_dict)
                         jsonFile = open(json_file_path, "w")
                         jsonFile.write(json_data)
                         jsonFile.close()
 
                         # save npy
-                        np.save(os.path.join(save_path_npy, "{}_layer_{}_output".format(name, i)), l)
+                        np.save(os.path.join(save_path_npy, "{}".format(name)), l)
 
                 packed.pack(compression_tensors, compression_arrs)
                 if write_tfci_for_eval:

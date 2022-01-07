@@ -86,6 +86,7 @@ def _build_graph(x, num_filters, training=True, activation=True):
 
     # Build autoencoder and hyperprior.
     y, analysis_layers_output = analysis_transform(x)  # y = g_a(x)
+    # import pdb;pdb.set_trace()
     assert y == analysis_layers_output[-1]
     # y = analysis_transform(x)  # y = g_a(x)
     z, hyp_analysis_layers_output = hyper_analysis_transform(y)  # z = h_a(y)
@@ -148,7 +149,7 @@ def build_train_graph(args, x):
 
 
 def _build_train_graph(x, num_filters, batch_size, patch_size, lmbda):
-    graph = _build_graph(x, num_filters, training=True, activation=True)
+    graph = _build_graph(x, num_filters, training=True, activation=False)
     y_likelihoods, z_likelihoods, x_tilde, = (
         graph["y_likelihoods"],
         graph["z_likelihoods"],

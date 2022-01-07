@@ -62,8 +62,11 @@ class AnalysisTransform(tf.keras.layers.Layer):
 
     def call(self, tensor):
         layers_output = []
+        names = []
         for layer in self._layers:
             tensor = layer(tensor)
+            # import pdb;pdb.set_trace()
+            # print(layer.name)
             layers_output.append(tensor)
         return tensor, layers_output
 

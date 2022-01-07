@@ -119,19 +119,19 @@ def main(input_file, activation, log_folder):
     intermediate_time = time.time()
     compress_time = intermediate_time - start_time
     print(f">>> compressing {input_file} done in {compress_time} seconds")
-    # print(f"<<< decompressing {compressed_file} ...")
-    # decompress(compressed_file, activation, log_folder)
-    # stop_time = time.time()
-    # decompress_time = stop_time - intermediate_time
-    # print(
-    #     f"<<< decompressing {compressed_file} done in {decompress_time} seconds")
-    # total_time = stop_time - start_time
-    # print(f"compressing and decompressing took {total_time} seconds")
-    # print(
-    #     f"compressing took {(compress_time / total_time) * 100}% of the total time")
-    # print(
-    #     f"decompressing took {(decompress_time / total_time) * 100}% of the total time"
-    # )
+    print(f"<<< decompressing {compressed_file} ...")
+    decompress(compressed_file, activation, log_folder)
+    stop_time = time.time()
+    decompress_time = stop_time - intermediate_time
+    print(
+        f"<<< decompressing {compressed_file} done in {decompress_time} seconds")
+    total_time = stop_time - start_time
+    print(f"compressing and decompressing took {total_time} seconds")
+    print(
+        f"compressing took {(compress_time / total_time) * 100}% of the total time")
+    print(
+        f"decompressing took {(decompress_time / total_time) * 100}% of the total time"
+    )
 
 
 if __name__ == "__main__":
