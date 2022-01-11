@@ -10,6 +10,10 @@ use coders::{
 use env_logger::Builder;
 use image::io::Reader as ImageReader;
 use image::RgbImage;
+use ml::{
+    models::{CodingModel, JohnstonDecoder, MinnenEncoder},
+    weight_loader::NpzWeightLoader,
+};
 use ndarray::{Array, Array3};
 use ndarray_npy::read_npy;
 use nshare::ToNdarray3;
@@ -60,6 +64,16 @@ struct DecompressOpts {
 
 /// Prints statistics about compression and decompression process
 #[derive(Debug, StructOpt)]
+struct AutoEncoderOpts {
+    /// Path to the input image. Output image is saved under "<input_image>_recovered.png"
+    #[structopt(parse(from_os_str))]
+    image: PathBuf,
+    #[structopt(flatten)]
+    verbosity: Verbosity,
+}
+
+/// Does a combined compression and decompression process with no
+#[derive(Debug, StructOpt)]
 struct StatsOpts {
     /// Path to the input image
     #[structopt(parse(from_os_str))]
@@ -82,6 +96,11 @@ enum Zipnet {
         about = "Decompress an image previously compressed by ZipNet."
     )]
     Decompress(DecompressOpts),
+    #[structopt(
+        name = "autoencoder",
+        about = "Does a pure autoencoder run, no compression involved."
+    )]
+    AutoEncoder(AutoEncoderOpts),
     #[structopt(
         name = "statistics",
         about = "Prints out statistics about the decompression and compression process to StdOut. \
@@ -137,7 +156,7 @@ fn to_pixel(x: &f32, debug: bool) -> u8 {
     if debug {
         x.round().clamp(0.0, 255.0) as u8
     } else {
-        (x * 255.0).round().clamp(0.0, 255.0) as u8
+        (x.clamp(0.0, 1.0) * 255.0).round() as u8
     }
 }
 
@@ -224,12 +243,38 @@ impl ZipnetOpts for StatsOpts {
     }
 }
 
+impl ZipnetOpts for AutoEncoderOpts {
+    fn run(&self) {
+        // preprocessing and getting the image
+        let img_data = get_image(&self.image);
+        let mut loader = NpzWeightLoader::full_loader();
+        let analyzer = MinnenEncoder::new(&mut loader);
+        let synthesizer = JohnstonDecoder::new(&mut loader);
+
+        let latent = analyzer.forward_pass(&img_data);
+        let reconstructed = synthesizer.forward_pass(&latent);
+
+        let reconstructed_image = array_to_image(reconstructed.map(|x| to_pixel(x, false)));
+
+        // getting new output path
+        let stem = self.image.file_stem().unwrap();
+        let new_filename = stem.to_str().unwrap().to_owned() + "-reconstructed-ae.png";
+        let output_path = &self.image.parent().unwrap().join(new_filename);
+
+        reconstructed_image.save(&output_path).unwrap();
+    }
+    fn get_verbosity(&self) -> &Verbosity {
+        &self.verbosity
+    }
+}
+
 impl ZipnetOpts for Zipnet {
     fn run(&self) {
         match self {
             Zipnet::Compress(c) => c.run(),
             Zipnet::Decompress(c) => c.run(),
             Zipnet::Statistics(c) => c.run(),
+            Zipnet::AutoEncoder(c) => c.run(),
         }
     }
 
@@ -238,6 +283,7 @@ impl ZipnetOpts for Zipnet {
             Zipnet::Compress(c) => c.get_verbosity(),
             Zipnet::Decompress(c) => c.get_verbosity(),
             Zipnet::Statistics(c) => c.get_verbosity(),
+            Zipnet::AutoEncoder(c) => c.get_verbosity(),
         }
     }
 }

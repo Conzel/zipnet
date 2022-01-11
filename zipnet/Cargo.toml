@@ -14,6 +14,7 @@ nshare = { version = "0.7.0", features = ["ndarray", "image"] }
 ndarray = "0.15.3"
 ndarray-npy = "0.8.0"
 coders = { path = "../coders" }
+ml = { path = "../ml" }
 bincode = "1.2.1"
 log = "0.4.14"
 env_logger = "0.9.0"
