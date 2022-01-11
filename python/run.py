@@ -21,7 +21,7 @@ args = {
 train_args = {
     "patch_size": 256,
     "batch_size": 8,
-    "n_steps": 10000,
+    "n_steps": 8000,
 }
 
 

@@ -317,14 +317,14 @@ def _compress(
 
                         # save json
                         layer_dict = {"output":l.tolist()}
-                        json_file_path = os.path.join(save_path_json, "{}.json".format(name))
+                        json_file_path = os.path.join(save_path_json, "{}_layer_{}_output.json".format(name, i))
                         json_data = json.dumps(layer_dict)
                         jsonFile = open(json_file_path, "w")
                         jsonFile.write(json_data)
                         jsonFile.close()
 
                         # save npy
-                        np.save(os.path.join(save_path_npy, "{}".format(name)), l)
+                        np.save(os.path.join(save_path_npy, "{}_layer_{}_output.json".format(name, i)), l)
 
                 packed.pack(compression_tensors, compression_arrs)
                 if write_tfci_for_eval:
