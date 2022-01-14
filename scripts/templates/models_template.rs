@@ -101,7 +101,7 @@ impl CodingModel for ReluLayer {
                 {% if l.activation is not none %}
                     {% for w in l.activation.weights %}
                         let activation_{{outer_loop.index0}}_weight_{{loop.index0}} 
-                            = loader.get_weight("{{m.weight_name}}/{{m.layer_name}}_{{outer_loop.index0}}/{{l.activation.name}}_{{outer_loop.index0}}/{{w.name}}.npy",
+                            = loader.get_weight("{{m.weight_name}}/{{l.activation.name}}_{{outer_loop.index0}}/{{w.name}}.npy",
                                                 {{w.shape}}).unwrap();
                         trace!("{{m.weight_name}}_{{m.layer_name}}_{{l.activation.name}}_{{w.name}}_{{outer_loop.index0}}_weight: {:?}\n", activation_{{outer_loop.index0}}_weight_{{loop.index0}});
                     {% endfor %}

@@ -115,10 +115,7 @@ impl MinnenEncoder {
         let layer_0 = ConvolutionLayer::new_tf(layer_0_weights, 2, Padding::Same);
 
         let activation_0_weight_0 = loader
-            .get_weight(
-                "analysis_transform/encoder_layer_0/gnd_0/reparam_beta.npy",
-                160,
-            )
+            .get_weight("analysis_transform/gnd_0/reparam_beta.npy", 160)
             .unwrap();
         trace!(
             "analysis_transform_encoder_layer_gnd_reparam_beta_0_weight: {:?}\n",
@@ -126,10 +123,7 @@ impl MinnenEncoder {
         );
 
         let activation_0_weight_1 = loader
-            .get_weight(
-                "analysis_transform/encoder_layer_0/gnd_0/reparam_gamma.npy",
-                (160, 160),
-            )
+            .get_weight("analysis_transform/gnd_0/reparam_gamma.npy", (160, 160))
             .unwrap();
         trace!(
             "analysis_transform_encoder_layer_gnd_reparam_gamma_0_weight: {:?}\n",
@@ -145,10 +139,7 @@ impl MinnenEncoder {
         let layer_1 = ConvolutionLayer::new_tf(layer_1_weights, 2, Padding::Same);
 
         let activation_1_weight_0 = loader
-            .get_weight(
-                "analysis_transform/encoder_layer_1/gnd_1/reparam_beta.npy",
-                160,
-            )
+            .get_weight("analysis_transform/gnd_1/reparam_beta.npy", 160)
             .unwrap();
         trace!(
             "analysis_transform_encoder_layer_gnd_reparam_beta_1_weight: {:?}\n",
@@ -156,10 +147,7 @@ impl MinnenEncoder {
         );
 
         let activation_1_weight_1 = loader
-            .get_weight(
-                "analysis_transform/encoder_layer_1/gnd_1/reparam_gamma.npy",
-                (160, 160),
-            )
+            .get_weight("analysis_transform/gnd_1/reparam_gamma.npy", (160, 160))
             .unwrap();
         trace!(
             "analysis_transform_encoder_layer_gnd_reparam_gamma_1_weight: {:?}\n",
@@ -175,10 +163,7 @@ impl MinnenEncoder {
         let layer_2 = ConvolutionLayer::new_tf(layer_2_weights, 2, Padding::Same);
 
         let activation_2_weight_0 = loader
-            .get_weight(
-                "analysis_transform/encoder_layer_2/gnd_2/reparam_beta.npy",
-                160,
-            )
+            .get_weight("analysis_transform/gnd_2/reparam_beta.npy", 160)
             .unwrap();
         trace!(
             "analysis_transform_encoder_layer_gnd_reparam_beta_2_weight: {:?}\n",
@@ -186,10 +171,7 @@ impl MinnenEncoder {
         );
 
         let activation_2_weight_1 = loader
-            .get_weight(
-                "analysis_transform/encoder_layer_2/gnd_2/reparam_gamma.npy",
-                (160, 160),
-            )
+            .get_weight("analysis_transform/gnd_2/reparam_gamma.npy", (160, 160))
             .unwrap();
         trace!(
             "analysis_transform_encoder_layer_gnd_reparam_gamma_2_weight: {:?}\n",
@@ -287,10 +269,7 @@ impl JohnstonDecoder {
         let layer_0 = TransposedConvolutionLayer::new_tf(layer_0_weights, 2, Padding::Same);
 
         let activation_0_weight_0 = loader
-            .get_weight(
-                "synthesis_transform/decoder_layer_0/igdn_0/reparam_beta.npy",
-                79,
-            )
+            .get_weight("synthesis_transform/igdn_0/reparam_beta.npy", 79)
             .unwrap();
         trace!(
             "synthesis_transform_decoder_layer_igdn_reparam_beta_0_weight: {:?}\n",
@@ -298,10 +277,7 @@ impl JohnstonDecoder {
         );
 
         let activation_0_weight_1 = loader
-            .get_weight(
-                "synthesis_transform/decoder_layer_0/igdn_0/reparam_gamma.npy",
-                (79, 79),
-            )
+            .get_weight("synthesis_transform/igdn_0/reparam_gamma.npy", (79, 79))
             .unwrap();
         trace!(
             "synthesis_transform_decoder_layer_igdn_reparam_gamma_0_weight: {:?}\n",
@@ -317,10 +293,7 @@ impl JohnstonDecoder {
         let layer_1 = TransposedConvolutionLayer::new_tf(layer_1_weights, 2, Padding::Same);
 
         let activation_1_weight_0 = loader
-            .get_weight(
-                "synthesis_transform/decoder_layer_1/igdn_1/reparam_beta.npy",
-                22,
-            )
+            .get_weight("synthesis_transform/igdn_1/reparam_beta.npy", 22)
             .unwrap();
         trace!(
             "synthesis_transform_decoder_layer_igdn_reparam_beta_1_weight: {:?}\n",
@@ -328,10 +301,7 @@ impl JohnstonDecoder {
         );
 
         let activation_1_weight_1 = loader
-            .get_weight(
-                "synthesis_transform/decoder_layer_1/igdn_1/reparam_gamma.npy",
-                (22, 22),
-            )
+            .get_weight("synthesis_transform/igdn_1/reparam_gamma.npy", (22, 22))
             .unwrap();
         trace!(
             "synthesis_transform_decoder_layer_igdn_reparam_gamma_1_weight: {:?}\n",
@@ -347,10 +317,7 @@ impl JohnstonDecoder {
         let layer_2 = TransposedConvolutionLayer::new_tf(layer_2_weights, 2, Padding::Same);
 
         let activation_2_weight_0 = loader
-            .get_weight(
-                "synthesis_transform/decoder_layer_2/igdn_2/reparam_beta.npy",
-                43,
-            )
+            .get_weight("synthesis_transform/igdn_2/reparam_beta.npy", 43)
             .unwrap();
         trace!(
             "synthesis_transform_decoder_layer_igdn_reparam_beta_2_weight: {:?}\n",
@@ -358,10 +325,7 @@ impl JohnstonDecoder {
         );
 
         let activation_2_weight_1 = loader
-            .get_weight(
-                "synthesis_transform/decoder_layer_2/igdn_2/reparam_gamma.npy",
-                (43, 43),
-            )
+            .get_weight("synthesis_transform/igdn_2/reparam_gamma.npy", (43, 43))
             .unwrap();
         trace!(
             "synthesis_transform_decoder_layer_igdn_reparam_gamma_2_weight: {:?}\n",
@@ -377,10 +341,7 @@ impl JohnstonDecoder {
         let layer_3 = TransposedConvolutionLayer::new_tf(layer_3_weights, 2, Padding::Same);
 
         let activation_3_weight_0 = loader
-            .get_weight(
-                "synthesis_transform/decoder_layer_3/igdn_3/reparam_beta.npy",
-                3,
-            )
+            .get_weight("synthesis_transform/igdn_3/reparam_beta.npy", 3)
             .unwrap();
         trace!(
             "synthesis_transform_decoder_layer_igdn_reparam_beta_3_weight: {:?}\n",
@@ -388,10 +349,7 @@ impl JohnstonDecoder {
         );
 
         let activation_3_weight_1 = loader
-            .get_weight(
-                "synthesis_transform/decoder_layer_3/igdn_3/reparam_gamma.npy",
-                (3, 3),
-            )
+            .get_weight("synthesis_transform/igdn_3/reparam_gamma.npy", (3, 3))
             .unwrap();
         trace!(
             "synthesis_transform_decoder_layer_igdn_reparam_gamma_3_weight: {:?}\n",
