@@ -10,7 +10,7 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "gdn",
+                "activation": "relu",
                 "channels": 3,
                 "kernel_shape": "(5,5)"
             },
@@ -20,7 +20,7 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "gdn",
+                "activation": "relu",
                 "kernel_shape": "(5,5)"
             },
             {
@@ -29,7 +29,7 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "gdn",
+                "activation": "relu",
                 "kernel_shape": "(5,5)"
             },
             {
@@ -54,7 +54,7 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "igdn",
+                "activation": "relu",
                 "channels": 160,
                 "kernel_shape": "(5,5)"
             },
@@ -64,7 +64,7 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "igdn",
+                "activation": "relu",
                 "kernel_shape": "(5,5)"
             },
             {
@@ -73,7 +73,7 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "igdn",
+                "activation": "relu",
                 "kernel_shape": "(5,5)"
             },
             {
@@ -82,7 +82,7 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "igdn",
+                "activation": "relu",
                 "kernel_shape": "(5,5)"
             }
         ]
