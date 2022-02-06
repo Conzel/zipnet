@@ -70,6 +70,8 @@ struct AutoEncoderOpts {
     image: PathBuf,
     #[structopt(flatten)]
     verbosity: Verbosity,
+    #[structopt(long)]
+    from_latents: bool,
 }
 
 /// Does a combined compression and decompression process with no
@@ -245,13 +247,17 @@ impl ZipnetOpts for StatsOpts {
 
 impl ZipnetOpts for AutoEncoderOpts {
     fn run(&self) {
-        // preprocessing and getting the image
-        let img_data = get_image(&self.image);
         let mut loader = NpzWeightLoader::full_loader();
         let analyzer = MinnenEncoder::new(&mut loader);
         let synthesizer = JohnstonDecoder::new(&mut loader);
 
-        let latent = analyzer.forward_pass(&img_data);
+        let latent = if self.from_latents {
+            read_npy(&self.image).unwrap()
+        } else {
+            // preprocessing and getting the image
+            let img_data = get_image(&self.image);
+            analyzer.forward_pass(&img_data)
+        };
         let reconstructed = synthesizer.forward_pass(&latent);
 
         let reconstructed_image = array_to_image(reconstructed.map(|x| to_pixel(x, false)));
