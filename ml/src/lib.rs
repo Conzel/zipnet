@@ -1,6 +1,7 @@
 //! This crate provides the basic Machine Learning functionality to build convolutional neural
 //! networks, along with the hierarchical models used for encoding/decoding purposes.
 mod activation_functions;
+pub mod entropy_models;
 pub mod models;
 pub mod weight_loader;
 
