@@ -6,10 +6,7 @@
 
 mod coding_errors;
 pub mod dummy_coders;
-pub mod hierarchical_coders;
 pub mod statistics;
-mod table_hyperpriors;
-
 use serde_derive::{Deserialize, Serialize};
 
 /// Struct for the encoded data.
