@@ -1,8 +1,25 @@
-use ndarray::{s, Array1, Array2, Array3};
+//! Module that contains the entropy models. Entropy models are there
+//! to do the job of compression and decompression. They are used in a similar
+//! way than they are in CompressAI / TensorFlow Compression.
+//! For more information (and how the functions here work in detail),
+//! refer to the python implementation in zipnet-torch.
+//! The code here is a straight port of the python implementation.
+use constriction::{
+    stream::{
+        model::DefaultContiguousCategoricalEntropyModel,
+        queue::{DefaultRangeDecoder, DefaultRangeEncoder},
+        Decode, Encode,
+    },
+    symbol,
+};
+use ndarray::{
+    s, Array1, Array2, Array3, ArrayView, AsArray, Axis, Dimension, Ix2, Ix3, ShapeBuilder,
+    StrideShape,
+};
 
 use crate::models::InternalDataRepresentation;
 
-/// Gaussian conditional layer  as introduced by J. Ballé, D. Minnen, S. Singh,
+/// Entropy Bottleneck layer  as introduced by J. Ballé, D. Minnen, S. Singh,
 /// S. J. Hwang, N. Johnston, in "Variational image compression with a scale
 /// hyperprior" <https://arxiv.org/abs/1802.01436>.
 ///      
@@ -14,7 +31,6 @@ use crate::models::InternalDataRepresentation;
 pub type QuantizationPrecision = u16;
 
 trait EntropyModel {
-    fn quantize(&self, x: &Array3<f32>) -> Array3<QuantizationPrecision>;
     fn compress(&self, x: &Array3<u32>) -> Array3<u32>;
     fn decompress(&self, x: &Array3<u32>) -> Array3<f32>;
 }
@@ -40,27 +56,14 @@ struct EntropyBottleneck {
     cdf_lengths: Array1<QuantizationPrecision>,
     /// Offset of the quantization. To get y from a symbol (^= index into CDF) back,
     /// add this to the symbol.
-    offset: i32,
+    offsets: Array1<QuantizationPrecision>,
+    /// The latent variable y has a certain mean. As we want to quantize uniformly around
+    /// 0, we have to subtract the mean from the variable y beforehand.
+    /// The mean is given for every channel separately
+    means: Array1<f32>,
 }
 
 impl EntropyModel for EntropyBottleneck {
-    fn quantize(&self, x: &Array3<f32>) -> Array3<QuantizationPrecision> {
-        let mut quantized = Array3::zeros(x.dim());
-        let num_channels = x.shape()[0];
-        for i in 0..num_channels {
-            let min: i32 = self.offset;
-            let max: i32 = self.cdf_lengths[i] as i32 + self.offset - 1;
-            let mut quantized_slice_i = x
-                .slice(s![i, .., ..])
-                .map(|a| ((a.round() as i32).clamp(min, max) - self.offset) as u16);
-            let mut channel_i = quantized.slice_mut(s![i, .., ..]);
-            channel_i += &quantized_slice_i.view_mut();
-            // ensures that every quantized element is a valid index into the CDF
-            debug_assert!(channel_i.iter().all(|x| *x < self.cdf_lengths[i]));
-        }
-        quantized
-    }
-
     fn compress(&self, x: &Array3<u32>) -> Array3<u32> {
         todo!();
     }
@@ -74,36 +77,122 @@ impl EntropyBottleneck {
     fn new(
         quantized_cdf: Array2<QuantizationPrecision>,
         cdf_lengths: Array1<QuantizationPrecision>,
-        offset: i32,
+        offsets: Array1<QuantizationPrecision>,
+        means: Array1<f32>,
     ) -> EntropyBottleneck {
+        debug_assert!(quantized_cdf.shape()[0] == cdf_lengths.shape()[0]);
+        debug_assert!(quantized_cdf.shape()[0] == offsets.shape()[0]);
+        debug_assert!(quantized_cdf.shape()[0] == means.shape()[0]);
         EntropyBottleneck {
             quantized_cdf,
             cdf_lengths,
-            offset,
+            offsets,
+            means,
         }
     }
+
+    /// Quantizes an array of y values to integers in the given quantization range
+    fn quantize<'a, V>(
+        &self,
+        y: V,
+        quant_range: (QuantizationPrecision, QuantizationPrecision),
+    ) -> Array2<i32>
+    where
+        V: AsArray<'a, f32, Ix2>,
+    {
+        let (q_min, q_max) = quant_range;
+        let y_view: ArrayView<'a, f32, Ix2> = y.into();
+        y_view.mapv(|a| a.round().clamp(q_min as f32, q_max as f32) as i32)
+    }
+
+    fn make_symbols(&self, y: &Array3<f32>) -> Array3<QuantizationPrecision> {
+        let mut symbols = Array3::zeros(y.raw_dim());
+        for c in 0..self.num_channels() {
+            let quant_range = (self.offsets[c], self.cdf_lengths[c] + self.offsets[c]);
+            let y_channel_shifted = y.slice(s![c, .., ..]).map(|a| a - self.means[c]);
+            let y_channel_quantized = self.quantize(&y_channel_shifted, quant_range);
+            let symbols_channel =
+                y_channel_quantized.map(|a| (a - self.offsets[c] as i32) as QuantizationPrecision);
+            let mut symbols_array_slice = symbols.slice_mut(s![c, .., ..]);
+            symbols_array_slice += &symbols_channel;
+        }
+        return symbols;
+    }
+
+    fn unmake_symbols(&self, y: Array3<QuantizationPrecision>) -> Array3<f32> {
+        let y_hat = Array3::zeros(y.raw_dim());
+        y_hat.mapv(|a: QuantizationPrecision| a as f32)
+            + self
+                .offsets
+                .mapv(|a| a as f32)
+                .insert_axis(Axis(1))
+                .insert_axis(Axis(2))
+            + self.means.clone().insert_axis(Axis(1)).insert_axis(Axis(2))
+    }
+
+    fn compress_symbols(&self, symbols: &Array3<QuantizationPrecision>) -> Vec<u32> {
+        let mut coder = DefaultRangeEncoder::new();
+        for c in 0..self.num_channels() {
+            let symbols_channel = symbols.slice(s![c, .., ..]);
+            let model = self.get_model_for_channel(c);
+            coder
+                .encode_iid_symbols(symbols_channel.iter().map(|a| *a as usize), &model)
+                .unwrap();
+        }
+        coder.into_compressed().unwrap()
+    }
+
+    fn get_model_for_channel(&self, channel: usize) -> DefaultContiguousCategoricalEntropyModel {
+        let cdf_channel = self.quantized_cdf.slice(s![channel, ..]);
+        let pmf = cdf_to_pmf(cdf_channel.iter().cloned(), 16);
+        DefaultContiguousCategoricalEntropyModel::from_floating_point_probabilities(&pmf).unwrap()
+    }
+
+    fn decompress<Sh>(&self, content: Vec<u32>, target_shape: Sh) -> Array3<QuantizationPrecision>
+    where
+        Sh: ShapeBuilder<Dim = Ix3>,
+    {
+        let mut y_hat: Array3<QuantizationPrecision> = Array3::zeros(target_shape);
+        let mut decoder = DefaultRangeDecoder::from_compressed(content).unwrap();
+        let y_width = y_hat.shape()[1];
+        let y_height = y_hat.shape()[2];
+        let symbols_per_channel = y_width * y_height;
+        for c in 0..self.num_channels() {
+            let model = self.get_model_for_channel(c);
+            let decoded_symbols_flat = decoder
+                .decode_iid_symbols(symbols_per_channel, &model)
+                .map(|r| r.ok().unwrap() as QuantizationPrecision)
+                .collect();
+            let decoded_symbols_shaped: Array2<QuantizationPrecision> =
+                Array2::from_shape_vec((y_width, y_height), decoded_symbols_flat).unwrap();
+            y_hat
+                .slice_mut(s![c, .., ..])
+                .assign(&decoded_symbols_shaped);
+        }
+        y_hat
+    }
+
+    fn num_channels(&self) -> usize {
+        self.quantized_cdf.shape()[0]
+    }
+}
+
+fn cdf_to_pmf<V>(quantized_cdf: V, precision: u16) -> Vec<f32>
+where
+    V: IntoIterator<Item = QuantizationPrecision>,
+{
+    quantized_cdf
+        .into_iter()
+        .scan(0i32, |state, x| {
+            let ret = (x as i32 - *state) as f32 / (2u32.pow(precision as u32) as f32);
+            *state = x as i32;
+            Some(ret)
+        })
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use ndarray::array;
-
-    #[test]
-    fn test_quantization() {
-        let cdf = Array2::zeros((2, 5));
-        let cdf_lengths = array![3, 5];
-        let offset = -1;
-        let bottleneck = EntropyBottleneck::new(cdf, cdf_lengths, offset);
-        let x = array![
-            [[1.2, 3.4, 3.4], [0.7, -1.1, -0.2], [0.7, -1.1, -0.2]],
-            [[1.3, 3.7, 1.7], [4.2, -7.3, 0.0], [4.2, -7.3, 0.0]]
-        ];
-        let x_hat = bottleneck.quantize(&x);
-        let res = array![
-            [[2, 2, 2], [2, 0, 1], [2, 0, 1]],
-            [[2, 4, 3], [4, 0, 1], [4, 0, 1]]
-        ];
-        assert_eq!(x_hat, res);
-    }
 }

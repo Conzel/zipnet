@@ -12,6 +12,7 @@ thiserror = "1.0.25"
 ndarray-npy = "0.8.0"
 convolutions-rs = "0.2.2"
 log = "0.4.14"
+constriction = { path = "../library-reimplementations/constriction" }
 
 
 [dev-dependencies]
