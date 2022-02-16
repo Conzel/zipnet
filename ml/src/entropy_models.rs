@@ -31,8 +31,24 @@ use crate::models::InternalDataRepresentation;
 pub type QuantizationPrecision = u16;
 
 trait EntropyModel {
-    fn compress(&self, x: &Array3<u32>) -> Array3<u32>;
-    fn decompress(&self, x: &Array3<u32>) -> Array3<f32>;
+    fn compress(&self, y: &Array3<f32>) -> Vec<u32>;
+    fn decompress<Sh>(&self, y: &Vec<u32>, shape: Sh) -> Array3<f32>
+    where
+        Sh: ShapeBuilder<Dim = Ix3>;
+}
+
+impl EntropyModel for EntropyBottleneck {
+    fn compress(&self, y: &Array3<f32>) -> Vec<u32> {
+        let symbols = self.make_symbols(y);
+        self.compress_symbols(&symbols)
+    }
+    fn decompress<Sh>(&self, y: &Vec<u32>, shape: Sh) -> Array3<f32>
+    where
+        Sh: ShapeBuilder<Dim = Ix3>,
+    {
+        let symbols = self.decompress_symbols(y, shape);
+        self.unmake_symbols(&symbols)
+    }
 }
 
 struct EntropyBottleneck {
@@ -56,28 +72,18 @@ struct EntropyBottleneck {
     cdf_lengths: Array1<QuantizationPrecision>,
     /// Offset of the quantization. To get y from a symbol (^= index into CDF) back,
     /// add this to the symbol.
-    offsets: Array1<QuantizationPrecision>,
+    offsets: Array1<i16>,
     /// The latent variable y has a certain mean. As we want to quantize uniformly around
     /// 0, we have to subtract the mean from the variable y beforehand.
     /// The mean is given for every channel separately
     means: Array1<f32>,
 }
 
-impl EntropyModel for EntropyBottleneck {
-    fn compress(&self, x: &Array3<u32>) -> Array3<u32> {
-        todo!();
-    }
-
-    fn decompress(&self, x: &Array3<u32>) -> Array3<f32> {
-        todo!();
-    }
-}
-
 impl EntropyBottleneck {
     fn new(
         quantized_cdf: Array2<QuantizationPrecision>,
         cdf_lengths: Array1<QuantizationPrecision>,
-        offsets: Array1<QuantizationPrecision>,
+        offsets: Array1<i16>,
         means: Array1<f32>,
     ) -> EntropyBottleneck {
         debug_assert!(quantized_cdf.shape()[0] == cdf_lengths.shape()[0]);
@@ -92,11 +98,7 @@ impl EntropyBottleneck {
     }
 
     /// Quantizes an array of y values to integers in the given quantization range
-    fn quantize<'a, V>(
-        &self,
-        y: V,
-        quant_range: (QuantizationPrecision, QuantizationPrecision),
-    ) -> Array2<i32>
+    fn quantize<'a, V>(&self, y: V, quant_range: (i16, i16)) -> Array2<i32>
     where
         V: AsArray<'a, f32, Ix2>,
     {
@@ -108,7 +110,10 @@ impl EntropyBottleneck {
     fn make_symbols(&self, y: &Array3<f32>) -> Array3<QuantizationPrecision> {
         let mut symbols = Array3::zeros(y.raw_dim());
         for c in 0..self.num_channels() {
-            let quant_range = (self.offsets[c], self.cdf_lengths[c] + self.offsets[c]);
+            let quant_range = (
+                self.offsets[c] as i16,
+                self.cdf_lengths[c] as i16 + self.offsets[c],
+            );
             let y_channel_shifted = y.slice(s![c, .., ..]).map(|a| a - self.means[c]);
             let y_channel_quantized = self.quantize(&y_channel_shifted, quant_range);
             let symbols_channel =
@@ -119,9 +124,8 @@ impl EntropyBottleneck {
         return symbols;
     }
 
-    fn unmake_symbols(&self, y: Array3<QuantizationPrecision>) -> Array3<f32> {
-        let y_hat = Array3::zeros(y.raw_dim());
-        y_hat.mapv(|a: QuantizationPrecision| a as f32)
+    fn unmake_symbols(&self, symbols: &Array3<QuantizationPrecision>) -> Array3<f32> {
+        symbols.mapv(|a: QuantizationPrecision| a as f32)
             + self
                 .offsets
                 .mapv(|a| a as f32)
@@ -143,12 +147,18 @@ impl EntropyBottleneck {
     }
 
     fn get_model_for_channel(&self, channel: usize) -> DefaultContiguousCategoricalEntropyModel {
-        let cdf_channel = self.quantized_cdf.slice(s![channel, ..]);
+        let cdf_channel = self
+            .quantized_cdf
+            .slice(s![channel, 0..(self.cdf_lengths[channel] as usize)]);
         let pmf = cdf_to_pmf(cdf_channel.iter().cloned(), 16);
         DefaultContiguousCategoricalEntropyModel::from_floating_point_probabilities(&pmf).unwrap()
     }
 
-    fn decompress<Sh>(&self, content: Vec<u32>, target_shape: Sh) -> Array3<QuantizationPrecision>
+    fn decompress_symbols<Sh>(
+        &self,
+        content: &Vec<u32>,
+        target_shape: Sh,
+    ) -> Array3<QuantizationPrecision>
     where
         Sh: ShapeBuilder<Dim = Ix3>,
     {
@@ -181,18 +191,90 @@ fn cdf_to_pmf<V>(quantized_cdf: V, precision: u16) -> Vec<f32>
 where
     V: IntoIterator<Item = QuantizationPrecision>,
 {
-    quantized_cdf
+    let mut pmf: Vec<f32> = quantized_cdf
         .into_iter()
         .scan(0i32, |state, x| {
             let ret = (x as i32 - *state) as f32 / (2u32.pow(precision as u32) as f32);
             *state = x as i32;
             Some(ret)
         })
-        .collect()
+        .collect();
+    pmf.drain(0..1); // the first element is 0
+    pmf
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::array;
+    use ndarray::{array, Array};
+
+    fn get_example_bottleneck() -> EntropyBottleneck {
+        let offsets = array![-6, -7, -7];
+        let cdf_lenghts = array![13, 14, 15];
+        let means = array![0.2, -0.5, 0.1];
+        let quantized_cdf = array![
+            [
+                0, 12, 1232, 4273, 8000, 9000, 12000, 14000, 15000, 18292, 25020, 42034, 65535, 0,
+                0
+            ],
+            [
+                0, 12, 1232, 4273, 8000, 9000, 12000, 14000, 15000, 18292, 30238, 42034, 42038,
+                65535, 0
+            ],
+            [
+                0, 12, 1232, 4273, 8000, 8476, 12000, 13234, 15000, 18292, 25020, 42034, 52098,
+                62000, 65535
+            ],
+        ];
+        EntropyBottleneck::new(quantized_cdf, cdf_lenghts, offsets, means)
+    }
+
+    #[test]
+    fn test_cdf_to_pdf() {
+        let cdf = array![0, 8192, 16384, 24576, 32768, 40960, 49152, 57344, 65535];
+        let pmf = cdf_to_pmf(cdf, 16);
+        let unif = vec![0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.12498474];
+        assert_eq!(pmf, unif);
+    }
+
+    #[test]
+    fn test_make_unmake_symbols_close() {
+        let entropy_bottleneck = get_example_bottleneck();
+        let y = Array::from_shape_vec(
+            (3, 2, 2),
+            vec![
+                -0.3, 0.8, 1.2, 2.7, 3.5, -1.0, -2.0, 4.8, 5.2, -1.1, 0.2, 0.3,
+            ],
+        )
+        .unwrap();
+        let y_symbols = entropy_bottleneck.make_symbols(&y);
+        let y_unsymboled = entropy_bottleneck.unmake_symbols(&y_symbols);
+
+        assert!(y
+            .iter()
+            .zip(y_unsymboled.iter())
+            .all(|(a, b)| (*a - b).abs() <= 0.5));
+        assert!(y
+            .iter()
+            .zip(y_unsymboled.iter())
+            .any(|(a, b)| (*a - b).abs() >= 0.1));
+    }
+
+    #[test]
+    fn test_compress_decompress() {
+        let entropy_bottleneck = get_example_bottleneck();
+        let y = Array::from_shape_vec(
+            (3, 2, 2),
+            vec![
+                -0.3, 0.8, 1.2, 2.7, 3.5, -1.0, -2.0, 4.8, 5.2, -1.1, 0.2, 0.3,
+            ],
+        )
+        .unwrap();
+        let symbols = entropy_bottleneck.make_symbols(&y);
+        let compressed_symbols = entropy_bottleneck.compress_symbols(&symbols);
+        let decompressed_symbols =
+            entropy_bottleneck.decompress_symbols(&compressed_symbols, symbols.raw_dim());
+
+        assert_eq!(symbols, decompressed_symbols);
+    }
 }
