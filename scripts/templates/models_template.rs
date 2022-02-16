@@ -60,63 +60,52 @@ impl CodingModel for ReluLayer {
 }
 
 {% for m in models %} 
-    pub struct {{m.name}} {
+    pub struct {{m.rust_name}} {
         {% for l in m.layers %}
-            layer_{{loop.index0}}: {{l.name}}<WeightPrecision>,
+            {{l.python_name}}{{loop.index0}}: {{l.rust_name}}<WeightPrecision>,
             {% if l.activation is not none %}
-            activation_{{loop.index0}}: {{l.activation.layer_name}},
+            {{l.activation.python_name}}{{loop.index0}}: {{l.activation.rust_name}},
             {% endif %}
         {% endfor %}
     }
 
-    impl CodingModel for {{m.name}} {
+    impl CodingModel for {{m.rust_name}} {
         {# Have to allow since the last let might be extraneous due to model generation #}
         #[allow(clippy::let_and_return)]
         fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
             let x = input.clone();
             trace!("input: {:?}\n", x);
             {% for l in m.layers %}
-                let x = self.layer_{{loop.index0}}.forward_pass(&x);
-                trace!("{{m.layer_name}}_{{loop.index0}}_output: {:?}\n", x);
+                let x = self.{{l.python_name}}{{loop.index0}}.forward_pass(&x);
+                trace!("{{l.python_name}}{{loop.index0}}_output: {:?}\n", x);
                 {% if l.activation is not none %}
-                    let x = self.activation_{{loop.index0}}.forward_pass(&x);
+                    let x = self.{{l.activation.python_name}}{{loop.index0}}.forward_pass(&x);
                 {% endif %}
-                trace!("{{m.layer_name}}_activation_{{loop.index0}}_output: {:?}\n", x);
+                trace!("{{l.activation.python_name}}{{loop.index0}}_output: {:?}\n", x);
             {% endfor %}
             x
         }
     }
 
-    impl {{m.name}} {
+    impl {{m.rust_name}} {
         pub fn new(loader: &mut impl WeightLoader) -> Self {
             {% for l in m.layers %}
-                {% set outer_loop = loop %}
-                let layer_{{loop.index0}}_weights = loader.get_weight(
-                    "{{m.layer_name}}_{{loop.index0}}/kernel.npy",
-                    ({{l.kernel_height}}, {{l.kernel_width}}, {{l.channels}}, {{l.filters}})
+                {% set weight_variable = l.python_name + loop.index0|string + "_weights" %}
+                {% set weight_key = m.python_name + "." + l.python_name + loop.index0|string + ".weight.npy" %}
+                let {{ weight_variable }} = loader.get_weight("{{weight_key}}",
+                    ({{l.filters}}, {{l.channels}}, {{l.kernel_width}}, {{l.kernel_height}})
                 ).unwrap();
-                trace!("{{m.layer_name}}_{{loop.index0}}_weight: {:?}\n", layer_{{loop.index0}}_weights);
-                let layer_{{loop.index0}} = {{l.name}}::new_tf(layer_{{loop.index0}}_weights, 
-                                                           {{l.stride}}, {{l.padding}});
+                trace!("{{weight_key}}: {:?}\n", {{weight_variable}});
+                let {{l.python_name}}{{loop.index0}} = {{l.rust_name}}::new({{weight_variable}}, {{l.stride}}, {{l.padding}});
                 {% if l.activation is not none %}
-                    {% for w in l.activation.weights %}
-                        let activation_{{outer_loop.index0}}_weight_{{loop.index0}} 
-                            = loader.get_weight("{{m.weight_name}}/{{l.activation.name}}_{{outer_loop.index0}}/{{w.name}}.npy",
-                                                {{w.shape}}).unwrap();
-                        trace!("{{m.weight_name}}_{{m.layer_name}}_{{l.activation.name}}_{{w.name}}_{{outer_loop.index0}}_weight: {:?}\n", activation_{{outer_loop.index0}}_weight_{{loop.index0}});
-                    {% endfor %}
-                    let activation_{{outer_loop.index0}} = {{l.activation.layer_name}}::new(
-                        {% for w in l.activation.weights %}
-                            activation_{{outer_loop.index0}}_weight_{{loop.index0}},
-                        {% endfor %}
-                    );
+                    let {{l.activation.python_name}}{{loop.index0}} = {{l.activation.rust_name}}::new();
                 {% endif %}
             {% endfor %}
             Self {
                 {% for l in m.layers %}
-                    layer_{{loop.index0}},
+                    {{l.python_name}}{{loop.index0}},
                     {% if l.activation is not none %}
-                    activation_{{loop.index0}},
+                    {{l.activation.python_name}}{{loop.index0}},
                     {% endif %}
                 {% endfor %}
             }
@@ -132,9 +121,9 @@ mod tests {
 
     {% for m in models %}
     #[test]
-    fn smoke_test_{{m.name.lower()}}() {
+    fn smoke_test_{{m.rust_name.lower()}}() {
         let mut loader = NpzWeightLoader::full_loader();
-        let _encoder = {{m.name}}::new(&mut loader);
+        let _encoder = {{m.rust_name}}::new(&mut loader);
     }
     {% endfor %}
 }
