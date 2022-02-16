@@ -1,12 +1,7 @@
 //! This crate ties in all the parts of the projects and provides a clean command line interface
 //! to make encoding/decoding images feasible.
 
-use coders::{
-    dummy_coders::DummyCoder,
-    hierarchical_coders::{MeanScaleHierarchicalDecoder, MeanScaleHierarchicalEncoder},
-    statistics::Statistics,
-    Decoder, Encoder,
-};
+use coders::{dummy_coders::DummyCoder, statistics::Statistics, Decoder, Encoder};
 use env_logger::Builder;
 use image::io::Reader as ImageReader;
 use image::RgbImage;
@@ -136,7 +131,7 @@ impl ZipnetOpts for DecompressOpts {
         let mut decoder: Box<dyn Decoder<_>> = if self.debug {
             Box::new(DummyCoder::new())
         } else {
-            Box::new(MeanScaleHierarchicalDecoder::MinnenJohnstonDecoder())
+            todo!()
         };
         let metadata = fs::metadata(&self.compressed).unwrap();
         let mut encoded_bin = vec![0; metadata.len() as usize];
@@ -192,7 +187,7 @@ impl ZipnetOpts for CompressOpts {
         let mut encoder: Box<dyn Encoder<_>> = if self.debug {
             Box::new(DummyCoder::new())
         } else {
-            Box::new(MeanScaleHierarchicalEncoder::MinnenJohnstonEncoder())
+            todo!()
         };
 
         let encoded = encoder.encode(&img_data);

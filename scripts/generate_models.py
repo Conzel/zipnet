@@ -14,39 +14,18 @@ class Activation:
     def __init__(self, name, corresponding_layer):
         assert name in ["gdn", "igdn", "relu"]
         if name == "gdn":
-            self.preinit_weights_gdn_type(corresponding_layer)
-            self.gdn_init()
+            raise ValueError("GDN currently not supported.")
         elif name == "igdn":
-            self.preinit_weights_gdn_type(corresponding_layer)
-            self.igdn_init()
+            raise ValueError("GDN currently not supported.")
         elif name == "relu":
             self.relu_init()
         else:
             raise ValueError(
                 "Unknown activation passed {name}, only gdn, igdn, relu accepted")
 
-    class Weight:
-        def __init__(self, name, shape):
-            self.name = name
-            self.shape = shape
-
     def relu_init(self):
-        self.layer_name = "ReluLayer"
-        self.name = "relu"
-
-    def preinit_weights_gdn_type(self, corresponding_layer):
-        filters = corresponding_layer["filters"]
-        self.weights = [self.Weight("reparam_beta", f"{filters}"), self.Weight(
-            "reparam_gamma", f"({filters},{filters})")]
-
-    def gdn_init(self):
-        self.layer_name = "GdnLayer"
-        # Johan made a typo in the weights.
-        self.name = "gnd"
-
-    def igdn_init(self):
-        self.layer_name = "IgdnLayer"
-        self.name = "igdn"
+        self.rust_name = "ReluLayer"
+        self.python_name = "relu"
 
 
 def add_channels(layer_spec_list):
@@ -74,12 +53,14 @@ class Layer:
         self.kernel_width = kernel_shape[1]
 
         layer_type = specification["type"]
-        if layer_type == "convolution":
-            self.name = "ConvolutionLayer"
+        if layer_type == "conv":
+            self.rust_name = "ConvolutionLayer"
+            self.python_name = "conv"
             self.filters = specification["filters"]
             self.channels = specification["channels"]
-        elif layer_type == "convolution_transpose":
-            self.name = "TransposedConvolutionLayer"
+        elif layer_type == "conv_transpose":
+            self.rust_name = "TransposedConvolutionLayer"
+            self.python_name = "conv_transpose"
             # we have to swap the displayed way for transposed convolution layers
             self.channels = specification["filters"]
             self.filters = specification["channels"]
@@ -113,9 +94,8 @@ class Model:
         """
         specification: dict, containing all the model keys
         """
-        self.name = specification["name"]
-        self.weight_name = specification["weight_name"]
-        self.layer_name = specification["layer_name"]
+        self.rust_name = specification["rust_module_name"]
+        self.python_name = specification["python_module_name"]
         layers = list(map(Layer, add_channels(specification["layers"])))
         self.layers = layers
 

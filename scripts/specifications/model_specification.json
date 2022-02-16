@@ -1,12 +1,11 @@
 [
     {
-        "name": "MinnenEncoder",
-        "weight_name": "analysis_transform",
-        "layer_name": "encoder_layer",
+        "rust_module_name": "MinnenEncoder",
+        "python_module_name": "analysis_transform",
         "layers": [
             {
-                "type": "convolution",
-                "filters": "160",
+                "type": "conv",
+                "filters": "128",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
@@ -15,8 +14,8 @@
                 "kernel_shape": "(5,5)"
             },
             {
-                "type": "convolution",
-                "filters": "160",
+                "type": "conv",
+                "filters": "128",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
@@ -24,8 +23,8 @@
                 "kernel_shape": "(5,5)"
             },
             {
-                "type": "convolution",
-                "filters": "160",
+                "type": "conv",
+                "filters": "128",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
@@ -33,8 +32,8 @@
                 "kernel_shape": "(5,5)"
             },
             {
-                "type": "convolution",
-                "filters": "160",
+                "type": "conv",
+                "filters": "192",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
@@ -44,32 +43,22 @@
         ]
     },
     {
-        "name": "JohnstonDecoder",
-        "weight_name": "synthesis_transform",
-        "layer_name": "decoder_layer",
+        "rust_module_name": "JohnstonDecoder",
+        "python_module_name": "synthesis_transform",
         "layers": [
             {
-                "type": "convolution_transpose",
-                "filters": "79",
+                "type": "conv_transpose",
+                "filters": "128",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
                 "activation": "relu",
-                "channels": 160,
+                "channels": 192,
                 "kernel_shape": "(5,5)"
             },
             {
-                "type": "convolution_transpose",
-                "filters": "22",
-                "stride": 2,
-                "padding": "same",
-                "bias": false,
-                "activation": "relu",
-                "kernel_shape": "(5,5)"
-            },
-            {
-                "type": "convolution_transpose",
-                "filters": "43",
+                "type": "conv_transpose",
+                "filters": "128",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
@@ -77,83 +66,22 @@
                 "kernel_shape": "(5,5)"
             },
             {
-                "type": "convolution_transpose",
+                "type": "conv_transpose",
+                "filters": "128",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "activation": "relu",
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "conv_transpose",
                 "filters": "3",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
                 "activation": "relu",
                 "kernel_shape": "(5,5)"
-            }
-        ]
-    },
-    {
-        "name": "MinnenHyperEncoder",
-        "weight_name": "",
-        "layer_name": "hyperencoder_layer",
-        "layers": [
-            {
-                "type": "convolution",
-                "filters": "160",
-                "stride": 1,
-                "padding": "same",
-                "bias": false,
-                "activation": "relu",
-                "channels": 160,
-                "kernel_shape": "(3,3)"
-            },
-            {
-                "type": "convolution",
-                "filters": "160",
-                "stride": 2,
-                "padding": "same",
-                "bias": false,
-                "activation": "relu",
-                "kernel_shape": "(5,5)"
-            },
-            {
-                "type": "convolution",
-                "filters": "160",
-                "stride": 2,
-                "padding": "same",
-                "bias": false,
-                "activation": "none",
-                "kernel_shape": "(5,5)"
-            }
-        ]
-    },
-    {
-        "name": "JohnstonHyperDecoder",
-        "weight_name": "",
-        "layer_name": "hyperdecoder_layer",
-        "layers": [
-            {
-                "type": "convolution_transpose",
-                "filters": "76",
-                "stride": 2,
-                "padding": "same",
-                "bias": false,
-                "activation": "relu",
-                "channels": "160",
-                "kernel_shape": "(5,5)"
-            },
-            {
-                "type": "convolution_transpose",
-                "filters": "107",
-                "stride": 2,
-                "padding": "same",
-                "bias": false,
-                "activation": "relu",
-                "kernel_shape": "(5,5)"
-            },
-            {
-                "type": "convolution_transpose",
-                "filters": "320",
-                "stride": 1,
-                "padding": "same",
-                "bias": false,
-                "activation": "none",
-                "kernel_shape": "(3,3)"
             }
         ]
     }
