@@ -17,7 +17,7 @@ use ndarray::{
     StrideShape,
 };
 
-use crate::models::InternalDataRepresentation;
+use crate::{models::InternalDataRepresentation, weight_loader::WeightLoader};
 
 /// Entropy Bottleneck layer  as introduced by J. Ballé, D. Minnen, S. Singh,
 /// S. J. Hwang, N. Johnston, in "Variational image compression with a scale
@@ -28,9 +28,9 @@ use crate::models::InternalDataRepresentation;
 /// or (source on github)
 /// <https://github.com/InterDigitalInc/CompressAI/blob/be98bdeb65bbed05002617e51da4aa77edf44ddb/compressai/entropy_models/entropy_models.py#L328>
 
-pub type QuantizationPrecision = u16;
+pub type QuantizationPrecision = u32;
 
-trait EntropyModel {
+pub trait EntropyModel {
     fn compress(&self, y: &Array3<f32>) -> Vec<u32>;
     fn decompress<Sh>(&self, y: &Vec<u32>, shape: Sh) -> Array3<f32>
     where
@@ -51,7 +51,7 @@ impl EntropyModel for EntropyBottleneck {
     }
 }
 
-struct EntropyBottleneck {
+pub struct EntropyBottleneck {
     /// The quantized cdf as in CompressAI.
     ///
     /// The Quantized CDF is a 2D-tensor, in which the rows are the channels
@@ -72,7 +72,7 @@ struct EntropyBottleneck {
     cdf_lengths: Array1<QuantizationPrecision>,
     /// Offset of the quantization. To get y from a symbol (^= index into CDF) back,
     /// add this to the symbol.
-    offsets: Array1<i16>,
+    offsets: Array1<i32>,
     /// The latent variable y has a certain mean. As we want to quantize uniformly around
     /// 0, we have to subtract the mean from the variable y beforehand.
     /// The mean is given for every channel separately
@@ -83,7 +83,7 @@ impl EntropyBottleneck {
     fn new(
         quantized_cdf: Array2<QuantizationPrecision>,
         cdf_lengths: Array1<QuantizationPrecision>,
-        offsets: Array1<i16>,
+        offsets: Array1<i32>,
         means: Array1<f32>,
     ) -> EntropyBottleneck {
         debug_assert!(quantized_cdf.shape()[0] == cdf_lengths.shape()[0]);
@@ -97,8 +97,28 @@ impl EntropyBottleneck {
         }
     }
 
+    pub fn from_state_dict(loader: &mut impl WeightLoader) -> EntropyBottleneck {
+        // How to automatically determine correct shape?
+        let quantized_cdf = loader
+            .get_weight::<_, _, i32>("entropy_bottleneck._quantized_cdf.npy", (192, 67))
+            .unwrap()
+            .map(|a| *a as u32);
+        let offsets = loader
+            .get_weight::<_, _, i32>("entropy_bottleneck._offset.npy", 192)
+            .unwrap();
+        let means = loader
+            .get_weight::<_, _, f32>("entropy_bottleneck._medians.npy", 192)
+            .unwrap();
+        let cdf_lengths = loader
+            .get_weight::<_, _, i32>("entropy_bottleneck._cdf_length.npy", 192)
+            .unwrap()
+            .map(|a| *a as u32);
+
+        EntropyBottleneck::new(quantized_cdf, cdf_lengths, offsets, means)
+    }
+
     /// Quantizes an array of y values to integers in the given quantization range
-    fn quantize<'a, V>(&self, y: V, quant_range: (i16, i16)) -> Array2<i32>
+    fn quantize<'a, V>(&self, y: V, quant_range: (i32, i32)) -> Array2<i32>
     where
         V: AsArray<'a, f32, Ix2>,
     {
@@ -111,8 +131,8 @@ impl EntropyBottleneck {
         let mut symbols = Array3::zeros(y.raw_dim());
         for c in 0..self.num_channels() {
             let quant_range = (
-                self.offsets[c] as i16,
-                self.cdf_lengths[c] as i16 + self.offsets[c],
+                self.offsets[c] as i32,
+                self.cdf_lengths[c] as i32 + self.offsets[c],
             );
             let y_channel_shifted = y.slice(s![c, .., ..]).map(|a| a - self.means[c]);
             let y_channel_quantized = self.quantize(&y_channel_shifted, quant_range);
@@ -205,6 +225,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::weight_loader::NpzWeightLoader;
+
     use super::*;
     use ndarray::{array, Array};
 
@@ -231,9 +253,9 @@ mod tests {
 
     #[test]
     fn test_cdf_to_pdf() {
-        let cdf = array![0, 8192, 16384, 24576, 32768, 40960, 49152, 57344, 65535];
+        let cdf = array![0, 8192, 16384, 24576, 32768, 40960, 49152, 57344, 65536];
         let pmf = cdf_to_pmf(cdf, 16);
-        let unif = vec![0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.12498474];
+        let unif = vec![0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125];
         assert_eq!(pmf, unif);
     }
 
@@ -276,5 +298,11 @@ mod tests {
             entropy_bottleneck.decompress_symbols(&compressed_symbols, symbols.raw_dim());
 
         assert_eq!(symbols, decompressed_symbols);
+    }
+
+    #[test]
+    fn smoke_test_entropy_bottleneck() {
+        let mut loader = NpzWeightLoader::full_loader();
+        let _entropy_bottleneck = EntropyBottleneck::from_state_dict(&mut loader);
     }
 }

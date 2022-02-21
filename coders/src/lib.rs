@@ -6,6 +6,7 @@
 
 mod coding_errors;
 pub mod dummy_coders;
+pub mod factorized_prior_coders;
 pub mod statistics;
 use serde_derive::{Deserialize, Serialize};
 

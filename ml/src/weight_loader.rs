@@ -3,7 +3,7 @@
 //! as the dependency on the correct weights is resolved at compile time.
 use crate::WeightPrecision;
 use ndarray::{Array, Array1, ArrayBase, Dimension, ShapeError, StrideShape};
-use ndarray_npy::{NpzReader, ReadNpzError};
+use ndarray_npy::{NpzReader, ReadNpzError, ReadableElement};
 use serde_json::{self, Map, Value};
 use std::io::{Cursor, Read, Seek};
 use std::{fs, path::Path};
@@ -31,11 +31,11 @@ pub trait WeightLoader {
     ///
     /// We assume that the shapes in the weight loader have
     /// the given shape.
-    fn get_weight<D, Sh>(
+    fn get_weight<D, Sh, P: ReadableElement + Copy>(
         &mut self,
         param_name: &str,
         shape: Sh,
-    ) -> WeightResult<Array<WeightPrecision, D>>
+    ) -> WeightResult<Array<P, D>>
     where
         D: Dimension,
         Sh: Into<StrideShape<D>>;
@@ -56,44 +56,6 @@ impl JsonWeightLoader {
             serde_json::from_str(&raw_file).map_err(|_| WeightError::WeightFormatError)?;
         let content = parsed.as_object().unwrap().clone();
         Ok(JsonWeightLoader { content })
-    }
-}
-
-impl WeightLoader for JsonWeightLoader {
-    /// Returns weights with the given name from the weight loader. Weights are returned in a FLATTENED form
-    /// (to facilitate working with JSON, as then all arrays have the same length.)
-    fn get_weight<D, Sh>(
-        &mut self,
-        param_name: &str,
-        shape: Sh,
-    ) -> WeightResult<Array<WeightPrecision, D>>
-    where
-        D: Dimension,
-        Sh: Into<StrideShape<D>>,
-    {
-        let raw_arr = self
-            .content
-            .get(param_name)
-            .ok_or_else(|| WeightError::WeightKeyError(param_name.to_string()))?;
-
-        let raw_value_vector = match raw_arr {
-            Value::Array(v) => v,
-            _ => return Err(WeightError::WeightFormatError),
-        };
-
-        // We might want to disable this check on release?
-        let weight_vector: Result<Vec<_>, _> = raw_value_vector
-            .iter()
-            .map(|j| {
-                j.as_f64()
-                    .map(|v| v as f32)
-                    .ok_or(WeightError::WeightFormatError)
-            })
-            .collect();
-
-        let weights = Array::from_shape_vec(shape, weight_vector?)?;
-
-        Ok(weights)
     }
 }
 
@@ -142,11 +104,11 @@ where
     /// First tries to load array with the shape given.
     /// If this is not possible, we assume that weights were saved flat
     /// and try to retrieve them flat and reshape.
-    fn get_weight<D, Sh>(
+    fn get_weight<D, Sh, P: Copy + ReadableElement>(
         &mut self,
         param_name: &str,
         shape: Sh,
-    ) -> WeightResult<Array<WeightPrecision, D>>
+    ) -> WeightResult<Array<P, D>>
     where
         D: Dimension,
         Sh: Into<StrideShape<D>>,
@@ -165,7 +127,7 @@ where
                 a
             }
             Err(_) => {
-                let arr_flat: Array1<_> = reader.by_name(param_name)?;
+                let arr_flat: Array1<P> = reader.by_name(param_name)?;
                 let arr_reshaped =
                     Array::from_shape_vec(shape, arr_flat.iter().copied().collect())?;
                 arr_reshaped
@@ -184,33 +146,6 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn test_json_weight_loader() {
-        let dir = tempdir().unwrap();
-        let file_path = dir.path().join("temp-weights.txt");
-        let mut file = File::create(&file_path).unwrap();
-        writeln!(
-            file,
-            // Rust escapes curly braces by doubling them
-            "{{ \"arr1\": [0.0, 1e-3, 1.0], \"arr2\": [0.0, 1.0, 2.0, 3.0]}}"
-        )
-        .unwrap();
-
-        let mut loader = JsonWeightLoader::new(file_path).unwrap();
-
-        assert_eq!(
-            loader.get_weight("arr1", 3).unwrap(),
-            array![0.0, 1e-3, 1.0]
-        );
-        assert_eq!(
-            loader.get_weight("arr2", (2, 2)).unwrap(),
-            array![[0.0, 1.0], [2.0, 3.0]]
-        );
-
-        drop(file);
-        dir.close().unwrap();
-    }
-
-    #[test]
     fn test_npz_weight_loader() {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("temp-weights.npz");
@@ -224,8 +159,8 @@ mod tests {
 
         let mut loader = NpzWeightLoader::from_path(file_path).unwrap();
 
-        assert_eq!(loader.get_weight("a", (2, 3)).unwrap(), a);
-        assert_eq!(loader.get_weight("b", 3).unwrap(), b);
+        assert_eq!(loader.get_weight::<_, _, f32>("a", (2, 3)).unwrap(), a);
+        assert_eq!(loader.get_weight::<_, _, f32>("b", 3).unwrap(), b);
 
         dir.close().unwrap();
     }
