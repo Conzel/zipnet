@@ -73,14 +73,20 @@ impl CodingModel for ReluLayer {
         #[allow(clippy::let_and_return)]
         fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
             let x = input.clone();
-            // trace!("input: {:?}\n", x);
+            {% if debug %}
+                trace!("input: {:?}\n", x);
+            {% endif %}
             {% for l in m.layers %}
                 let x = self.{{l.python_name}}{{loop.index0}}.forward_pass(&x);
-                // trace!("{{l.python_name}}{{loop.index0}}_output: {:?}\n", x);
+                {% if debug %}
+                    trace!("{{l.python_name}}{{loop.index0}}_output: {:?}\n", x);
+                {% endif %}
                 {% if l.activation is not none %}
                     let x = self.{{l.activation.python_name}}{{loop.index0}}.forward_pass(&x);
                 {% endif %}
-                // trace!("{{l.activation.python_name}}{{loop.index0}}_output: {:?}\n", x);
+                {% if debug %}
+                    trace!("{{l.activation.python_name}}{{loop.index0}}_output: {:?}\n", x);
+                {% endif %}
             {% endfor %}
             x
         }
@@ -94,7 +100,9 @@ impl CodingModel for ReluLayer {
                 let {{ weight_variable }} = loader.get_weight("{{weight_key}}",
                     ({{l.filters}}, {{l.channels}}, {{l.kernel_width}}, {{l.kernel_height}})
                 ).unwrap();
-                trace!("{{weight_key}}: {:?}\n", {{weight_variable}});
+                {% if debug %}
+                    trace!("{{weight_key}}: {:?}\n", {{weight_variable}});
+                {% endif %}
                 let {{l.python_name}}{{loop.index0}} = {{l.rust_name}}::new({{weight_variable}}, {{l.stride}}, {{l.padding}});
                 {% if l.activation is not none %}
                     let {{l.activation.python_name}}{{loop.index0}} = {{l.activation.rust_name}}::new();

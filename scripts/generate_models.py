@@ -3,6 +3,7 @@ import jinja2
 import os
 import json
 import copy
+import sys
 from ast import literal_eval
 
 
@@ -100,7 +101,7 @@ class Model:
         self.layers = layers
 
 
-def main():
+def main(debug):
     loader = jinja2.FileSystemLoader("./templates")
     env = jinja2.Environment(loader=loader)
     template = env.get_template("models_template.rs")
@@ -111,7 +112,8 @@ def main():
     specification_file = open("specifications/model_specification.json", "r")
     specifications = json.load(specification_file)
     models = list(map(Model, specifications))
-    models_rs_content = template.render(models=models, file=__file__)
+    models_rs_content = template.render(
+        models=models, file=__file__, debug=debug)
 
     # writing out the models.rs file
     models_rs_output_filename = os.path.join(
@@ -125,4 +127,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) == 2 and sys.argv[1] == "--debug":
+        main(debug=True)
+    else:
+        main(debug=False)
