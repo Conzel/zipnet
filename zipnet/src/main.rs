@@ -8,8 +8,8 @@ use coders::{
     Decoder, Encoder,
 };
 use env_logger::Builder;
-use image::io::Reader as ImageReader;
 use image::RgbImage;
+use image::{io::Reader as ImageReader, DynamicImage};
 use ml::{
     models::{CodingModel, JohnstonDecoder, MinnenEncoder},
     weight_loader::NpzWeightLoader,
@@ -25,6 +25,7 @@ use std::{
 };
 use std::{fs::File, path::PathBuf};
 use structopt::StructOpt;
+use zipnet::to_pixel;
 
 /// Compresses an image using a neural network
 #[derive(Debug, StructOpt)]
@@ -153,15 +154,6 @@ impl ZipnetOpts for DecompressOpts {
     }
 }
 
-/// Turns output from neural net into a pixel value, performs postprocessing
-fn to_pixel(x: &f32, debug: bool) -> u8 {
-    if debug {
-        x.round().clamp(0.0, 255.0) as u8
-    } else {
-        (x.clamp(0.0, 1.0) * 255.0).round() as u8
-    }
-}
-
 /// Turns ndarray to rgb image
 ///
 /// Taken from <https://stackoverflow.com/questions/56762026/how-to-save-ndarray-in-rust-as-image>
@@ -218,26 +210,26 @@ impl ZipnetOpts for CompressOpts {
 fn get_image(im_path: &PathBuf) -> Array3<f32> {
     match im_path.extension().and_then(OsStr::to_str).unwrap() {
         "npy" => read_npy(im_path).unwrap(),
-        "png" | "jpg" => get_image_raw(im_path).map(|x| *x as f32 / 255.0),
+        "png" | "jpg" => image_to_ndarray(&get_image_raw(im_path)),
         _ => panic!("Image had unrecognized type. Only .jpg, .png and .npy are supported."),
     }
 }
 
 /// Returns image without preprocessing. Only useable for actual images, not npy arrays.
-fn get_image_raw(im_path: &PathBuf) -> Array3<u8> {
-    ImageReader::open(im_path)
-        .unwrap()
-        .decode()
-        .unwrap()
-        .to_rgb8()
-        .into_ndarray3()
+fn get_image_raw(im_path: &PathBuf) -> DynamicImage {
+    ImageReader::open(im_path).unwrap().decode().unwrap()
+}
+
+/// Returns the image as pre-scaled array, ready to be put into an encoder
+fn image_to_ndarray(img: &DynamicImage) -> Array3<f32> {
+    img.to_rgb8().into_ndarray3().map(|x| *x as f32 / 255.0)
 }
 
 impl ZipnetOpts for StatsOpts {
     // Prints out statistics to StdOut
     fn run(&self) {
         let img_data = get_image_raw(&self.image);
-        let stats = Statistics::new(&img_data);
+        let stats = Statistics::new(&img_data.to_rgb8().into_ndarray3());
         println!("{}", stats);
     }
     fn get_verbosity(&self) -> &Verbosity {

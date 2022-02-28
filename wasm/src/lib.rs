@@ -1,10 +1,15 @@
 extern crate js_sys;
 extern crate web_sys;
-use image::{load_from_memory_with_format, ImageFormat};
+use coders::{
+    factorized_prior_coders::{FactorizedPriorDecoder, FactorizedPriorEncoder},
+    Decoder, Encoder,
+};
+use image::{load_from_memory_with_format, png::PngEncoder, ImageFormat};
 
 mod utils;
 
 use wasm_bindgen::prelude::*;
+use zipnet::{array_to_image, image_to_ndarray, to_pixel};
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -12,31 +17,70 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
-
-// TODO: Change to a real implementation
+/// Takes in the data of a png and returns.
 #[wasm_bindgen]
 pub fn encode_image(buffer: Vec<u8>) -> Vec<u8> {
+    wasm_logger::init(wasm_logger::Config::default());
     console_error_panic_hook::set_once();
 
-    // Example on how to get an image to use, let in as sanity check on the buffer:
-    let _result = load_from_memory_with_format(&buffer, ImageFormat::Png).unwrap();
-    buffer
+    let image = load_from_memory_with_format(&buffer, ImageFormat::Png).unwrap();
+    log::info!("Successfully loaded image. Starting encoding...");
+    let mut encoder: Box<dyn Encoder<_>> = Box::new(FactorizedPriorEncoder::new());
+    log::info!("Finished encoding.");
+
+    let encoded = encoder.encode(&image_to_ndarray(&image));
+    let encoded_bin = bincode::serialize(&encoded).unwrap();
+
+    encoded_bin
 }
 
-// TODO: Change to a real implementation
+/// Takes in the binary data of an encoded image data and returns the binary representation of
+/// a png.
 #[wasm_bindgen]
-pub fn decode_image(buffer: Vec<u8>) -> Vec<u8> {
+pub fn decode_image(encoded_bin: Vec<u8>) -> Vec<u8> {
+    wasm_logger::init(wasm_logger::Config::default());
+    console_error_panic_hook::set_once();
+    let mut decoder: Box<dyn Decoder<_>> = Box::new(FactorizedPriorDecoder::new());
+
+    let encoded = bincode::deserialize(&encoded_bin).unwrap();
+
+    log::info!("Successfully loaded encoded representation. Starting decoding...");
+    let decoded = decoder.decode(encoded).unwrap();
+    log::info!("Finished decoding. Image has size {:?}", decoded.shape());
+    let img = array_to_image(decoded.map(|x| to_pixel(x, false)));
+    let mut buffer = Vec::new();
+    // according to:
+    // https://www.reddit.com/r/learnrust/comments/jv2ker/extracting_vecu8_from_a_png_in_memory/
+    let png_encoder = PngEncoder::new(&mut buffer);
+    png_encoder
+        .encode(
+            &img,
+            decoded.shape()[1] as u32,
+            decoded.shape()[2] as u32,
+            image::ColorType::Rgb8,
+        )
+        .unwrap();
     buffer
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::*;
+    use image::ImageBuffer;
+    use ndarray::Array;
+    use rand::Rng;
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn smoke_test_coding() {
+        //let mut rng = rand::thread_rng();
+        //let mut im_raw = vec![];
+        //for _ in 0..300 {
+        //    im_raw.push(rng.gen());
+        //}
+        //let buffer = vec![];
+        //let arr = Array::from_shape_vec((3, 10, 10), im_raw).unwrap();
+        //let png_img = array_to_image(arr).write_to(buffer, ImageFormat::Png);
+        //let enc = encode_image(array_to_image(arr).to_vec());
+        //let _dec = decode_image(enc);
     }
 }

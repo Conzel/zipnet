@@ -10,7 +10,6 @@ use crate::{
 use convolutions_rs::{
     convolutions::ConvolutionLayer, transposed_convolutions::TransposedConvolutionLayer, Padding,
 };
-use log::trace;
 use ndarray::*;
 
 pub type InternalDataRepresentation = Array3<WeightPrecision>;
@@ -74,33 +73,20 @@ impl CodingModel for MinnenEncoder {
     #[allow(clippy::let_and_return)]
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
-        trace!("input: {:?}\n", x);
 
         let x = self.conv0.forward_pass(&x);
-        trace!("conv0_output: {:?}\n", x);
 
         let x = self.relu0.forward_pass(&x);
 
-        trace!("relu0_output: {:?}\n", x);
-
         let x = self.conv1.forward_pass(&x);
-        trace!("conv1_output: {:?}\n", x);
 
         let x = self.relu1.forward_pass(&x);
 
-        trace!("relu1_output: {:?}\n", x);
-
         let x = self.conv2.forward_pass(&x);
-        trace!("conv2_output: {:?}\n", x);
 
         let x = self.relu2.forward_pass(&x);
 
-        trace!("relu2_output: {:?}\n", x);
-
         let x = self.conv3.forward_pass(&x);
-        trace!("conv3_output: {:?}\n", x);
-
-        trace!("3_output: {:?}\n", x);
 
         x
     }
@@ -111,7 +97,6 @@ impl MinnenEncoder {
         let conv0_weights = loader
             .get_weight("analysis_transform.conv0.weight.npy", (128, 3, 5, 5))
             .unwrap();
-        trace!("analysis_transform.conv0.weight.npy: {:?}\n", conv0_weights);
         let conv0 = ConvolutionLayer::new(conv0_weights, 2, Padding::Same);
 
         let relu0 = ReluLayer::new();
@@ -119,7 +104,6 @@ impl MinnenEncoder {
         let conv1_weights = loader
             .get_weight("analysis_transform.conv1.weight.npy", (128, 128, 5, 5))
             .unwrap();
-        trace!("analysis_transform.conv1.weight.npy: {:?}\n", conv1_weights);
         let conv1 = ConvolutionLayer::new(conv1_weights, 2, Padding::Same);
 
         let relu1 = ReluLayer::new();
@@ -127,7 +111,6 @@ impl MinnenEncoder {
         let conv2_weights = loader
             .get_weight("analysis_transform.conv2.weight.npy", (128, 128, 5, 5))
             .unwrap();
-        trace!("analysis_transform.conv2.weight.npy: {:?}\n", conv2_weights);
         let conv2 = ConvolutionLayer::new(conv2_weights, 2, Padding::Same);
 
         let relu2 = ReluLayer::new();
@@ -135,7 +118,6 @@ impl MinnenEncoder {
         let conv3_weights = loader
             .get_weight("analysis_transform.conv3.weight.npy", (192, 128, 5, 5))
             .unwrap();
-        trace!("analysis_transform.conv3.weight.npy: {:?}\n", conv3_weights);
         let conv3 = ConvolutionLayer::new(conv3_weights, 2, Padding::Same);
 
         Self {
@@ -178,35 +160,21 @@ impl CodingModel for JohnstonDecoder {
     #[allow(clippy::let_and_return)]
     fn forward_pass(&self, input: &InternalDataRepresentation) -> InternalDataRepresentation {
         let x = input.clone();
-        trace!("input: {:?}\n", x);
 
         let x = self.conv_transpose0.forward_pass(&x);
-        trace!("conv_transpose0_output: {:?}\n", x);
 
         let x = self.relu0.forward_pass(&x);
 
-        trace!("relu0_output: {:?}\n", x);
-
         let x = self.conv_transpose1.forward_pass(&x);
-        trace!("conv_transpose1_output: {:?}\n", x);
 
         let x = self.relu1.forward_pass(&x);
 
-        trace!("relu1_output: {:?}\n", x);
-
         let x = self.conv_transpose2.forward_pass(&x);
-        trace!("conv_transpose2_output: {:?}\n", x);
 
         let x = self.relu2.forward_pass(&x);
 
-        trace!("relu2_output: {:?}\n", x);
-
         let x = self.conv_transpose3.forward_pass(&x);
-        trace!("conv_transpose3_output: {:?}\n", x);
-
         let x = self.relu3.forward_pass(&x);
-
-        trace!("relu3_output: {:?}\n", x);
 
         x
     }
@@ -220,10 +188,6 @@ impl JohnstonDecoder {
                 (192, 128, 5, 5),
             )
             .unwrap();
-        trace!(
-            "synthesis_transform.conv_transpose0.weight.npy: {:?}\n",
-            conv_transpose0_weights
-        );
         let conv_transpose0 =
             TransposedConvolutionLayer::new(conv_transpose0_weights, 2, Padding::Same);
 
@@ -235,10 +199,6 @@ impl JohnstonDecoder {
                 (128, 128, 5, 5),
             )
             .unwrap();
-        trace!(
-            "synthesis_transform.conv_transpose1.weight.npy: {:?}\n",
-            conv_transpose1_weights
-        );
         let conv_transpose1 =
             TransposedConvolutionLayer::new(conv_transpose1_weights, 2, Padding::Same);
 
@@ -250,10 +210,6 @@ impl JohnstonDecoder {
                 (128, 128, 5, 5),
             )
             .unwrap();
-        trace!(
-            "synthesis_transform.conv_transpose2.weight.npy: {:?}\n",
-            conv_transpose2_weights
-        );
         let conv_transpose2 =
             TransposedConvolutionLayer::new(conv_transpose2_weights, 2, Padding::Same);
 
@@ -265,10 +221,6 @@ impl JohnstonDecoder {
                 (128, 3, 5, 5),
             )
             .unwrap();
-        trace!(
-            "synthesis_transform.conv_transpose3.weight.npy: {:?}\n",
-            conv_transpose3_weights
-        );
         let conv_transpose3 =
             TransposedConvolutionLayer::new(conv_transpose3_weights, 2, Padding::Same);
 

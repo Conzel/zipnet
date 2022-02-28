@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Conzel <38732545+Conzel@users.noreply.github.com>"]
 edition = "2018"
 
+[profile.release]
+debug = true
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
@@ -16,12 +19,18 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 js-sys = "0.3.35"
 image = "0.23.14"
+bincode = "1.2.1"
 coders = { path = "../coders" }
+zipnet = { path = "../zipnet" }
 # subdependency of mathru, we need to enable the js feature to compile
 getrandom = { version = "0.2.3", features = ["js"] }
+wasm-logger = "0.2.0"
+log = "0.4.6"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.8"
+rand = "0.8.5"
+ndarray = "0.15.3"
 
 [dependencies.web-sys]
 version = "0.3.35"

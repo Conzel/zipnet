@@ -4,3 +4,4 @@ members = ["wasm", "zipnet", "coders", "ml"]
 
 [profile.release]
 opt-level = 3
+debug = true

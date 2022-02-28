@@ -17,7 +17,7 @@ use serde_derive::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct EncodedData {
     main_info: Vec<u32>,
-    side_info: Vec<u32>,
+    pub side_info: Vec<u32>,
 }
 
 impl EncodedData {
