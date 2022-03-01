@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import pathlib
 import jinja2
 import os
 import json
 import copy
 import sys
+import argparse
 from ast import literal_eval
 
 
@@ -101,7 +103,7 @@ class Model:
         self.layers = layers
 
 
-def main(debug):
+def main(args):
     loader = jinja2.FileSystemLoader("./templates")
     env = jinja2.Environment(loader=loader)
     template = env.get_template("models_template.rs")
@@ -109,11 +111,11 @@ def main(debug):
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     ml_src_folder = os.path.join(project_root, "ml", "src")
 
-    specification_file = open("specifications/model_specification.json", "r")
+    specification_file = open(args.specification, "r")
     specifications = json.load(specification_file)
     models = list(map(Model, specifications))
     models_rs_content = template.render(
-        models=models, file=__file__, debug=debug)
+        models=models, file=__file__, debug=args.debug)
 
     # writing out the models.rs file
     models_rs_output_filename = os.path.join(
@@ -127,7 +129,13 @@ def main(debug):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1] == "--debug":
-        main(debug=True)
-    else:
-        main(debug=False)
+    parser = argparse.ArgumentParser(
+        description='Render a model file from a specification.')
+    parser.add_argument('specification', metavar='SPEC', type=pathlib.Path,
+                        help='Specification we should use to create the model file.')
+    parser.add_argument("--debug", action='store_true',
+                        help='Debug mode. Will activate trace outputs in the model output file.')
+
+    args = parser.parse_args()
+
+    main(args)
