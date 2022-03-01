@@ -40,17 +40,44 @@ class Layer:
 def parse_layer_from_spec(d: dict) -> Layer:
     layer_type = d["type"]
     if layer_type == "conv":
-        return make_convolution_layer(d, False)
+        return make_convolution_layer(d, transpose=False)
     elif layer_type == "conv_transpose":
-        return make_convolution_layer(d, True)
+        return make_convolution_layer(d, transpose=True)
     elif layer_type == "relu":
         return make_relu_layer(d)
+    elif layer_type == "gdn":
+        return make_gdn_layer(d, inverse=False)
+    elif layer_type == "igdn":
+        return make_gdn_layer(d, inverse=True)
     else:
         raise ValueError(f"Unknown layer type {layer_type}")
 
 
 def make_relu_layer(spec: dict) -> Layer:
     return Layer(spec, "ReluLayer", "relu", "ReluLayer", [], [])
+
+
+def make_gdn_layer(spec: dict, inverse: bool) -> Layer:
+    gamma = Weight((spec["filters"], spec["filters"]), "gamma")
+    beta = Weight((spec["filters"]), "beta")
+    if inverse:
+        rust_name = "IgdnLayer"
+        python_name = "igdn"
+    else:
+        rust_name = "GdnLayer"
+        python_name = "gdn"
+    gdn_parameter = parse_gdn_parameter_from_string(
+        spec.get("parameter", "simplified"))
+    return Layer(spec, rust_name, python_name, rust_name, [beta, gamma], [gdn_parameter])
+
+
+def parse_gdn_parameter_from_string(parameter: str) -> str:
+    if parameter.lower() == "simplified":
+        return "GdnParameters::Simplified"
+    elif parameter.lower() == "normal":
+        return "GdnParameters::Normal"
+    else:
+        raise ValueError(f"Unknown GDN parameter {parameter}")
 
 
 def make_convolution_layer(spec: dict, transpose: bool) -> Layer:
@@ -88,7 +115,7 @@ def parse_padding_from_string(padding: str) -> str:
 def add_channels(layer_spec_list: list[dict]) -> list[dict]:
     """
     Adds the channels to a list of layer specifications, always using the channels
-    of the previous layers. 
+    of the previous layers.
     """
     ret = copy.deepcopy(layer_spec_list)
     # first filling in layers that have no channels or filters.
@@ -97,17 +124,17 @@ def add_channels(layer_spec_list: list[dict]) -> list[dict]:
     for i in range(1, len(layer_spec_list)):
         if ret[i].get("filters") is None:
             assert ret[i]["type"] != "conv" and ret[i]["type"] != "conv_transpose"
-            ret[i]["filters"] = ret[i-1]["filters"]
+            ret[i]["filters"] = int(ret[i-1]["filters"])
     # augmenting all layers with missing channels: they
     # must have the output shape of the layer before.
     for i in range(1, len(layer_spec_list)):
-        ret[i]["channels"] = ret[i-1]["filters"]
+        ret[i]["channels"] = int(ret[i-1]["filters"])
     return ret
 
 
 def add_numbers(layer_spec_list: list[dict]) -> list[dict]:
     """
-    Adds the counts to the layers. 
+    Adds the counts to the layers.
     The second instance of a conv layer would then f.e. have number 1 (ofc starting
     at 0).
     """
@@ -117,6 +144,9 @@ def add_numbers(layer_spec_list: list[dict]) -> list[dict]:
         name = l.get("python_name", l["type"])
         l["number"] = names.get(name, 0)
         names[name] = names.get(name, 0) + 1
+        # TODO: Remove this hotfix
+        if name == "gdn" and l["number"] > 0:
+            l["number"] = l["number"] + 1
     return ret
 
 

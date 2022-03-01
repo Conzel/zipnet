@@ -30,10 +30,10 @@ fn gdn_base(
             // TODO: Should we run into some performance problems, this is a bit bad,
             // since it copies the array in a loop...
             match params {
-                GdnParameters::New => {
+                GdnParameters::Simplified => {
                     weighted_x_sum = weighted_x_sum + gamma[[j, i]] * x_j.mapv(|a| a.abs())
                 }
-                GdnParameters::Old => {
+                GdnParameters::Normal => {
                     weighted_x_sum = weighted_x_sum + gamma[[j, i]] * x_j.mapv(|a| a.powi(2))
                 }
             }
@@ -43,8 +43,8 @@ fn gdn_base(
         let normalization_pre_epsilon = beta[i] + weighted_x_sum;
 
         let normalization = match params {
-            GdnParameters::New => normalization_pre_epsilon,
-            GdnParameters::Old => normalization_pre_epsilon.mapv(|a| a.sqrt()),
+            GdnParameters::Simplified => normalization_pre_epsilon,
+            GdnParameters::Normal => normalization_pre_epsilon.mapv(|a| a.sqrt()),
         };
 
         let z_i = if inverse {
@@ -64,12 +64,14 @@ fn gdn_base(
 }
 
 /// Sensible parameter setting for GDN/iGDN.
-/// Old: alpha = 2, epsilon = 0.5
-/// New: alpha = 1, epsilon = 1
+/// Normal: alpha = 2, epsilon = 0.5
+/// Simplified: alpha = 1, epsilon = 1
+/// Simplified was reported in
+/// "Computationally efficient Neural Image Compression", Johnston et al., 2019
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum GdnParameters {
-    Old,
-    New,
+    Normal,
+    Simplified,
 }
 
 /// Generalized Divisive Normalization activation function.
@@ -139,17 +141,26 @@ pub fn relu<D: Dimension>(data: &Array<ImagePrecision, D>) -> Array<ImagePrecisi
 pub struct GdnLayer {
     beta: Array1<WeightPrecision>,
     gamma: Array2<WeightPrecision>,
+    parameters: GdnParameters,
 }
 
 impl GdnLayer {
-    pub fn new(beta: Array1<WeightPrecision>, gamma: Array2<WeightPrecision>) -> Self {
-        Self { beta, gamma }
+    pub fn new(
+        beta: Array1<WeightPrecision>,
+        gamma: Array2<WeightPrecision>,
+        parameters: GdnParameters,
+    ) -> Self {
+        Self {
+            beta,
+            gamma,
+            parameters,
+        }
     }
 
     /// Performs GDN on the input with the layer parameters.
     /// We fix the parameter choice to alpha=2, epsilon=0.5.
     pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
-        gdn(x, &self.beta, &self.gamma, GdnParameters::Old)
+        gdn(x, &self.beta, &self.gamma, GdnParameters::Normal)
     }
 }
 
@@ -158,17 +169,26 @@ impl GdnLayer {
 pub struct IgdnLayer {
     beta: Array1<WeightPrecision>,
     gamma: Array2<WeightPrecision>,
+    parameters: GdnParameters,
 }
 
 impl IgdnLayer {
-    pub fn new(beta: Array1<WeightPrecision>, gamma: Array2<WeightPrecision>) -> Self {
-        Self { beta, gamma }
+    pub fn new(
+        beta: Array1<WeightPrecision>,
+        gamma: Array2<WeightPrecision>,
+        parameters: GdnParameters,
+    ) -> Self {
+        Self {
+            beta,
+            gamma,
+            parameters,
+        }
     }
 
     /// Performs iGDN on the input with the layer parameters.
     /// We fix the parameter choice to alpha=2, epsilon=0.5.
     pub fn activate(&self, x: &InternalDataRepresentation) -> InternalDataRepresentation {
-        igdn(x, &self.beta, &self.gamma, GdnParameters::Old)
+        igdn(x, &self.beta, &self.gamma, self.parameters)
     }
 }
 
@@ -216,7 +236,7 @@ mod tests {
         // Result is taken from tensorflow_compression implementation
         // https://github.com/tensorflow/compression/blob/master/docs/api_docs/python/tfc/GDN.md
         let res = array![[[0., 0.5], [0., 0.5]], [[0., 0.], [0., 0.33333333]]];
-        assert_eq!(gdn(&input, &beta, &gamma, GdnParameters::New), res);
+        assert_eq!(gdn(&input, &beta, &gamma, GdnParameters::Simplified), res);
     }
 
     #[test]
@@ -235,7 +255,7 @@ mod tests {
             [[0., 0.], [0., 0.57735026]]
         ];
         assert!(all_almost_equal::<_, f32>(
-            gdn(&input, &beta, &gamma, GdnParameters::Old)
+            gdn(&input, &beta, &gamma, GdnParameters::Normal)
                 .iter()
                 .cloned(),
             res.iter().cloned(),
@@ -283,7 +303,7 @@ mod tests {
         ];
 
         assert!(all_almost_equal::<_, f32>(
-            gdn(&input_rand, &beta_rand, &gamma_rand, GdnParameters::Old)
+            gdn(&input_rand, &beta_rand, &gamma_rand, GdnParameters::Normal)
                 .iter()
                 .cloned(),
             out_rand.iter().cloned(),
@@ -299,7 +319,10 @@ mod tests {
 
         let res_i = array![[[0., 2.], [0., 2.]], [[0., 0.], [0., 3.]]];
 
-        assert_eq!(igdn(&input, &beta, &gamma, GdnParameters::New), res_i);
+        assert_eq!(
+            igdn(&input, &beta, &gamma, GdnParameters::Simplified),
+            res_i
+        );
     }
 
     #[test]
@@ -313,7 +336,7 @@ mod tests {
             [[0., 0.], [0., 1.7320508]]
         ];
 
-        assert_eq!(igdn(&input, &beta, &gamma, GdnParameters::Old), res_i);
+        assert_eq!(igdn(&input, &beta, &gamma, GdnParameters::Normal), res_i);
 
         let input_rand = array![
             [
@@ -360,7 +383,7 @@ mod tests {
 
         assert!(
             all_almost_equal::<_, f32>(
-                gdn(&input_rand, &beta_rand, &gamma_rand, GdnParameters::Old)
+                gdn(&input_rand, &beta_rand, &gamma_rand, GdnParameters::Normal)
                     .iter()
                     .cloned(),
                 out_rand.iter().cloned(),

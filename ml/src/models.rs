@@ -3,7 +3,7 @@
 // script /Users/almico/projects/zipnet/scripts/generate_models.py.
 // Please do not change this file by hand.
 use crate::{
-    activation_functions::{GdnLayer, IgdnLayer, ReluLayer},
+    activation_functions::{GdnLayer, GdnParameters, IgdnLayer, ReluLayer},
     weight_loader::WeightLoader,
     WeightPrecision,
 };
@@ -56,15 +56,15 @@ impl CodingModel for ReluLayer {
 pub struct MinnenEncoder {
     conv0: ConvolutionLayer<WeightPrecision>,
 
-    relu0: ReluLayer,
+    gdn0: GdnLayer,
 
     conv1: ConvolutionLayer<WeightPrecision>,
 
-    relu1: ReluLayer,
+    gdn2: GdnLayer,
 
     conv2: ConvolutionLayer<WeightPrecision>,
 
-    relu2: ReluLayer,
+    gdn3: GdnLayer,
 
     conv3: ConvolutionLayer<WeightPrecision>,
 }
@@ -76,15 +76,15 @@ impl CodingModel for MinnenEncoder {
 
         let x = self.conv0.forward_pass(&x);
 
-        let x = self.relu0.forward_pass(&x);
+        let x = self.gdn0.forward_pass(&x);
 
         let x = self.conv1.forward_pass(&x);
 
-        let x = self.relu1.forward_pass(&x);
+        let x = self.gdn2.forward_pass(&x);
 
         let x = self.conv2.forward_pass(&x);
 
-        let x = self.relu2.forward_pass(&x);
+        let x = self.gdn3.forward_pass(&x);
 
         let x = self.conv3.forward_pass(&x);
 
@@ -94,48 +94,72 @@ impl CodingModel for MinnenEncoder {
 
 impl MinnenEncoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
-        let conv0_weight0 = loader
+        let conv0_weight = loader
             .get_weight("analysis_transform.conv0.weight.npy", (128, 3, 5, 5))
             .unwrap();
 
-        let conv0 = ConvolutionLayer::new(conv0_weight0, 2, Padding::Same);
+        let conv0 = ConvolutionLayer::new(conv0_weight, 2, Padding::Same);
 
-        let relu0 = ReluLayer::new();
+        let gdn0_beta = loader
+            .get_weight("analysis_transform.gdn0.beta.npy", 128)
+            .unwrap();
 
-        let conv1_weight0 = loader
+        let gdn0_gamma = loader
+            .get_weight("analysis_transform.gdn0.gamma.npy", (128, 128))
+            .unwrap();
+
+        let gdn0 = GdnLayer::new(gdn0_beta, gdn0_gamma, GdnParameters::Simplified);
+
+        let conv1_weight = loader
             .get_weight("analysis_transform.conv1.weight.npy", (128, 128, 5, 5))
             .unwrap();
 
-        let conv1 = ConvolutionLayer::new(conv1_weight0, 2, Padding::Same);
+        let conv1 = ConvolutionLayer::new(conv1_weight, 2, Padding::Same);
 
-        let relu1 = ReluLayer::new();
+        let gdn2_beta = loader
+            .get_weight("analysis_transform.gdn2.beta.npy", 128)
+            .unwrap();
 
-        let conv2_weight0 = loader
+        let gdn2_gamma = loader
+            .get_weight("analysis_transform.gdn2.gamma.npy", (128, 128))
+            .unwrap();
+
+        let gdn2 = GdnLayer::new(gdn2_beta, gdn2_gamma, GdnParameters::Simplified);
+
+        let conv2_weight = loader
             .get_weight("analysis_transform.conv2.weight.npy", (128, 128, 5, 5))
             .unwrap();
 
-        let conv2 = ConvolutionLayer::new(conv2_weight0, 2, Padding::Same);
+        let conv2 = ConvolutionLayer::new(conv2_weight, 2, Padding::Same);
 
-        let relu2 = ReluLayer::new();
+        let gdn3_beta = loader
+            .get_weight("analysis_transform.gdn3.beta.npy", 128)
+            .unwrap();
 
-        let conv3_weight0 = loader
+        let gdn3_gamma = loader
+            .get_weight("analysis_transform.gdn3.gamma.npy", (128, 128))
+            .unwrap();
+
+        let gdn3 = GdnLayer::new(gdn3_beta, gdn3_gamma, GdnParameters::Simplified);
+
+        let conv3_weight = loader
             .get_weight("analysis_transform.conv3.weight.npy", (192, 128, 5, 5))
             .unwrap();
 
-        let conv3 = ConvolutionLayer::new(conv3_weight0, 2, Padding::Same);
+        let conv3 = ConvolutionLayer::new(conv3_weight, 2, Padding::Same);
 
         Self {
             conv0,
 
-            relu0,
+            gdn0,
 
             conv1,
 
-            relu1,
+            gdn2,
 
             conv2,
 
-            relu2,
+            gdn3,
 
             conv3,
         }
@@ -145,15 +169,15 @@ impl MinnenEncoder {
 pub struct JohnstonDecoder {
     conv_transpose0: TransposedConvolutionLayer<WeightPrecision>,
 
-    relu0: ReluLayer,
+    igdn0: IgdnLayer,
 
     conv_transpose1: TransposedConvolutionLayer<WeightPrecision>,
 
-    relu1: ReluLayer,
+    igdn1: IgdnLayer,
 
     conv_transpose2: TransposedConvolutionLayer<WeightPrecision>,
 
-    relu2: ReluLayer,
+    igdn2: IgdnLayer,
 
     conv_transpose3: TransposedConvolutionLayer<WeightPrecision>,
 }
@@ -165,15 +189,15 @@ impl CodingModel for JohnstonDecoder {
 
         let x = self.conv_transpose0.forward_pass(&x);
 
-        let x = self.relu0.forward_pass(&x);
+        let x = self.igdn0.forward_pass(&x);
 
         let x = self.conv_transpose1.forward_pass(&x);
 
-        let x = self.relu1.forward_pass(&x);
+        let x = self.igdn1.forward_pass(&x);
 
         let x = self.conv_transpose2.forward_pass(&x);
 
-        let x = self.relu2.forward_pass(&x);
+        let x = self.igdn2.forward_pass(&x);
 
         let x = self.conv_transpose3.forward_pass(&x);
 
@@ -183,7 +207,7 @@ impl CodingModel for JohnstonDecoder {
 
 impl JohnstonDecoder {
     pub fn new(loader: &mut impl WeightLoader) -> Self {
-        let conv_transpose0_weight0 = loader
+        let conv_transpose0_weight = loader
             .get_weight(
                 "synthesis_transform.conv_transpose0.weight.npy",
                 (192, 128, 5, 5),
@@ -191,11 +215,19 @@ impl JohnstonDecoder {
             .unwrap();
 
         let conv_transpose0 =
-            TransposedConvolutionLayer::new(conv_transpose0_weight0, 2, Padding::Same);
+            TransposedConvolutionLayer::new(conv_transpose0_weight, 2, Padding::Same);
 
-        let relu0 = ReluLayer::new();
+        let igdn0_beta = loader
+            .get_weight("synthesis_transform.igdn0.beta.npy", 128)
+            .unwrap();
 
-        let conv_transpose1_weight0 = loader
+        let igdn0_gamma = loader
+            .get_weight("synthesis_transform.igdn0.gamma.npy", (128, 128))
+            .unwrap();
+
+        let igdn0 = IgdnLayer::new(igdn0_beta, igdn0_gamma, GdnParameters::Simplified);
+
+        let conv_transpose1_weight = loader
             .get_weight(
                 "synthesis_transform.conv_transpose1.weight.npy",
                 (128, 128, 5, 5),
@@ -203,11 +235,19 @@ impl JohnstonDecoder {
             .unwrap();
 
         let conv_transpose1 =
-            TransposedConvolutionLayer::new(conv_transpose1_weight0, 2, Padding::Same);
+            TransposedConvolutionLayer::new(conv_transpose1_weight, 2, Padding::Same);
 
-        let relu1 = ReluLayer::new();
+        let igdn1_beta = loader
+            .get_weight("synthesis_transform.igdn1.beta.npy", 128)
+            .unwrap();
 
-        let conv_transpose2_weight0 = loader
+        let igdn1_gamma = loader
+            .get_weight("synthesis_transform.igdn1.gamma.npy", (128, 128))
+            .unwrap();
+
+        let igdn1 = IgdnLayer::new(igdn1_beta, igdn1_gamma, GdnParameters::Simplified);
+
+        let conv_transpose2_weight = loader
             .get_weight(
                 "synthesis_transform.conv_transpose2.weight.npy",
                 (128, 128, 5, 5),
@@ -215,11 +255,19 @@ impl JohnstonDecoder {
             .unwrap();
 
         let conv_transpose2 =
-            TransposedConvolutionLayer::new(conv_transpose2_weight0, 2, Padding::Same);
+            TransposedConvolutionLayer::new(conv_transpose2_weight, 2, Padding::Same);
 
-        let relu2 = ReluLayer::new();
+        let igdn2_beta = loader
+            .get_weight("synthesis_transform.igdn2.beta.npy", 128)
+            .unwrap();
 
-        let conv_transpose3_weight0 = loader
+        let igdn2_gamma = loader
+            .get_weight("synthesis_transform.igdn2.gamma.npy", (128, 128))
+            .unwrap();
+
+        let igdn2 = IgdnLayer::new(igdn2_beta, igdn2_gamma, GdnParameters::Simplified);
+
+        let conv_transpose3_weight = loader
             .get_weight(
                 "synthesis_transform.conv_transpose3.weight.npy",
                 (128, 3, 5, 5),
@@ -227,20 +275,20 @@ impl JohnstonDecoder {
             .unwrap();
 
         let conv_transpose3 =
-            TransposedConvolutionLayer::new(conv_transpose3_weight0, 2, Padding::Same);
+            TransposedConvolutionLayer::new(conv_transpose3_weight, 2, Padding::Same);
 
         Self {
             conv_transpose0,
 
-            relu0,
+            igdn0,
 
             conv_transpose1,
 
-            relu1,
+            igdn1,
 
             conv_transpose2,
 
-            relu2,
+            igdn2,
 
             conv_transpose3,
         }

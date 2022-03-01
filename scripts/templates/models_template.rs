@@ -7,7 +7,7 @@
 // script {{ file }}.
 // Please do not change this file by hand.
 use crate::{
-    activation_functions::{GdnLayer, IgdnLayer, ReluLayer},
+    activation_functions::{GdnLayer, GdnParameters, IgdnLayer, ReluLayer},
     weight_loader::WeightLoader,
     WeightPrecision,
 };
@@ -88,7 +88,7 @@ impl CodingModel for ReluLayer {
             {% for l in m.layers %}
                 {% for w in l.weights %}
                     {% set weight_key = m.python_name + "." + l.python_name + l.number|string + "." + w.name + ".npy" %}
-                    let {{ l.python_name }}{{l.number}}_{{w.name}}{{loop.index0}} = loader.get_weight("{{weight_key}}",
+                    let {{ l.python_name }}{{l.number}}_{{w.name}} = loader.get_weight("{{weight_key}}",
                         {{ w.shape }}
                     ).unwrap();
                     {% if debug %}
@@ -97,7 +97,7 @@ impl CodingModel for ReluLayer {
                 {% endfor %}
                 let {{l.python_name}}{{l.number}} = {{l.rust_name}}::new(
                     {% for w in l.weights %}
-                    {{ l.python_name }}{{l.number}}_{{w.name}}{{loop.index0}},
+                    {{ l.python_name }}{{l.number}}_{{w.name}},
                     {% endfor %}
                     {% for p in l.other_constructor_parameters %}
                     {{p}},
