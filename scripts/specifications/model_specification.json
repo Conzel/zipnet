@@ -9,18 +9,22 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "relu",
                 "channels": 3,
                 "kernel_shape": "(5,5)"
             },
             {
+                "type": "relu"
+            },
+            {
                 "type": "conv",
                 "filters": "128",
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "relu",
                 "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "relu"
             },
             {
                 "type": "conv",
@@ -30,6 +34,9 @@
                 "bias": false,
                 "activation": "relu",
                 "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "relu"
             },
             {
                 "type": "conv",
@@ -52,18 +59,11 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "relu",
                 "channels": 192,
                 "kernel_shape": "(5,5)"
             },
             {
-                "type": "conv_transpose",
-                "filters": "128",
-                "stride": 2,
-                "padding": "same",
-                "bias": false,
-                "activation": "relu",
-                "kernel_shape": "(5,5)"
+                "type": "relu"
             },
             {
                 "type": "conv_transpose",
@@ -73,6 +73,20 @@
                 "bias": false,
                 "activation": "relu",
                 "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "relu"
+            },
+            {
+                "type": "conv_transpose",
+                "filters": "128",
+                "stride": 2,
+                "padding": "same",
+                "bias": false,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "relu"
             },
             {
                 "type": "conv_transpose",
@@ -80,7 +94,6 @@
                 "stride": 2,
                 "padding": "same",
                 "bias": false,
-                "activation": "relu",
                 "kernel_shape": "(5,5)"
             }
         ]

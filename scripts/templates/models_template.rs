@@ -61,10 +61,7 @@ impl CodingModel for ReluLayer {
 {% for m in models %} 
     pub struct {{m.rust_name}} {
         {% for l in m.layers %}
-            {{l.python_name}}{{loop.index0}}: {{l.rust_name}}<WeightPrecision>,
-            {% if l.activation is not none %}
-            {{l.activation.python_name}}{{loop.index0}}: {{l.activation.rust_name}},
-            {% endif %}
+            {{l.python_name}}{{l.number}}: {{l.rust_declaration}},
         {% endfor %}
     }
 
@@ -77,15 +74,9 @@ impl CodingModel for ReluLayer {
                 trace!("input: {:?}\n", x);
             {% endif %}
             {% for l in m.layers %}
-                let x = self.{{l.python_name}}{{loop.index0}}.forward_pass(&x);
+                let x = self.{{l.python_name}}{{l.number}}.forward_pass(&x);
                 {% if debug %}
                     trace!("{{l.python_name}}{{loop.index0}}_output: {:?}\n", x);
-                {% endif %}
-                {% if l.activation is not none %}
-                    let x = self.{{l.activation.python_name}}{{loop.index0}}.forward_pass(&x);
-                {% endif %}
-                {% if debug %}
-                    trace!("{{l.activation.python_name}}{{loop.index0}}_output: {:?}\n", x);
                 {% endif %}
             {% endfor %}
             x
@@ -95,25 +86,27 @@ impl CodingModel for ReluLayer {
     impl {{m.rust_name}} {
         pub fn new(loader: &mut impl WeightLoader) -> Self {
             {% for l in m.layers %}
-                {% set weight_variable = l.python_name + loop.index0|string + "_weights" %}
-                {% set weight_key = m.python_name + "." + l.python_name + loop.index0|string + ".weight.npy" %}
-                let {{ weight_variable }} = loader.get_weight("{{weight_key}}",
-                    ({{l.filters}}, {{l.channels}}, {{l.kernel_width}}, {{l.kernel_height}})
-                ).unwrap();
-                {% if debug %}
-                    trace!("{{weight_key}}: {:?}\n", {{weight_variable}});
-                {% endif %}
-                let {{l.python_name}}{{loop.index0}} = {{l.rust_name}}::new({{weight_variable}}, {{l.stride}}, {{l.padding}});
-                {% if l.activation is not none %}
-                    let {{l.activation.python_name}}{{loop.index0}} = {{l.activation.rust_name}}::new();
-                {% endif %}
+                {% for w in l.weights %}
+                    {% set weight_key = m.python_name + "." + l.python_name + l.number|string + "." + w.name + ".npy" %}
+                    let {{ l.python_name }}{{l.number}}_{{w.name}}{{loop.index0}} = loader.get_weight("{{weight_key}}",
+                        {{ w.shape }}
+                    ).unwrap();
+                    {% if debug %}
+                        trace!("{{weight_key}}: {:?}\n", {{weight_variable}});
+                    {% endif %}
+                {% endfor %}
+                let {{l.python_name}}{{l.number}} = {{l.rust_name}}::new(
+                    {% for w in l.weights %}
+                    {{ l.python_name }}{{l.number}}_{{w.name}}{{loop.index0}},
+                    {% endfor %}
+                    {% for p in l.other_constructor_parameters %}
+                    {{p}},
+                    {% endfor %}
+                );
             {% endfor %}
             Self {
                 {% for l in m.layers %}
-                    {{l.python_name}}{{loop.index0}},
-                    {% if l.activation is not none %}
-                    {{l.activation.python_name}}{{loop.index0}},
-                    {% endif %}
+                    {{l.python_name}}{{l.number}},
                 {% endfor %}
             }
         }

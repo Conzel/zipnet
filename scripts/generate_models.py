@@ -9,37 +9,10 @@ import argparse
 from ast import literal_eval
 
 
-class Activation:
-    """
-    Activation that can be parsed by the models_template.rs Jinja2 template
-    """
-
-    def __init__(self, name, corresponding_layer):
-        assert name in ["gdn", "igdn", "relu"]
-        if name == "gdn":
-            raise ValueError("GDN currently not supported.")
-        elif name == "igdn":
-            raise ValueError("GDN currently not supported.")
-        elif name == "relu":
-            self.relu_init()
-        else:
-            raise ValueError(
-                "Unknown activation passed {name}, only gdn, igdn, relu accepted")
-
-    def relu_init(self):
-        self.rust_name = "ReluLayer"
-        self.python_name = "relu"
-
-
-def add_channels(layer_spec_list):
-    """
-    Adds the channels to a list of layer specifications, always using the channels
-    of the previous layers. 
-    """
-    ret = copy.deepcopy(layer_spec_list)
-    for i in range(1, len(layer_spec_list)):
-        ret[i]["channels"] = layer_spec_list[i-1]["filters"]
-    return ret
+class Weight:
+    def __init__(self, shape: tuple[int, ...], name: str):
+        self.shape = shape
+        self.name = name
 
 
 class Layer:
@@ -47,45 +20,104 @@ class Layer:
     Layer that can be parsed by the models_template.rs Jinja file.
     """
 
-    def __init__(self, specification):
+    def __init__(self, spec, rust_name, python_name, rust_declaration,
+                 weights, other_constructor_parameters):
         """
-        specification: dict, containing all the layer keys
+        Initializes the layer with the given arguments
         """
-        kernel_shape = literal_eval(specification["kernel_shape"])
-        self.kernel_height = kernel_shape[0]
-        self.kernel_width = kernel_shape[1]
-
-        layer_type = specification["type"]
-        if layer_type == "conv":
-            self.rust_name = "ConvolutionLayer"
-            self.python_name = "conv"
-            self.filters = specification["filters"]
-            self.channels = specification["channels"]
-        elif layer_type == "conv_transpose":
-            self.rust_name = "TransposedConvolutionLayer"
-            self.python_name = "conv_transpose"
-            # we have to swap the displayed way for transposed convolution layers
-            self.channels = specification["filters"]
-            self.filters = specification["channels"]
+        self.rust_name = rust_name
+        if spec.get("python_name") is None:
+            self.python_name = python_name
         else:
-            raise ValueError(f"Unknown layer type: {layer_type}")
+            self.python_name = spec["python_name"]
+        self.number = spec["number"]
+        # Full name of the layer (with eventual generic parameters) in Rust
+        self.rust_declaration = rust_declaration
+        self.weights = weights
+        self.other_constructor_parameters = other_constructor_parameters
 
-        activation = specification["activation"]
-        if activation != "none":
-            self.activation = Activation(
-                activation, specification)
-        else:
-            self.activation = None
 
-        padding = specification["padding"]
-        if padding == "same":
-            self.padding = "Padding::Same"
-        elif padding == "valid":
-            self.padding = "Padding::Valid"
-        else:
-            raise ValueError(f"Unknown padding mode: {padding}")
+def parse_layer_from_spec(d: dict) -> Layer:
+    layer_type = d["type"]
+    if layer_type == "conv":
+        return make_convolution_layer(d, False)
+    elif layer_type == "conv_transpose":
+        return make_convolution_layer(d, True)
+    elif layer_type == "relu":
+        return make_relu_layer(d)
+    else:
+        raise ValueError(f"Unknown layer type {layer_type}")
 
-        self.stride = specification["stride"]
+
+def make_relu_layer(spec: dict) -> Layer:
+    return Layer(spec, "ReluLayer", "relu", "ReluLayer", [], [])
+
+
+def make_convolution_layer(spec: dict, transpose: bool) -> Layer:
+    kernel_shape = literal_eval(spec["kernel_shape"])
+    channels = spec["channels"]
+    filters = spec["filters"]
+    if transpose:
+        rust_name = "TransposedConvolutionLayer"
+        python_name = "conv_transpose"
+        kernel = Weight(
+            (int(channels), int(filters), kernel_shape[0], kernel_shape[1]), "weight")
+    else:
+        rust_name = "ConvolutionLayer"
+        python_name = "conv"
+        kernel = Weight(
+            (int(filters), int(channels), kernel_shape[0], kernel_shape[1]), "weight")
+    if spec.get("python_name") is not None:
+        # case we need to override the default name
+        python_name = spec["python_name"]
+    other_constructor_parameters = [spec["stride"],
+                                    parse_padding_from_string(spec["padding"])]
+    return Layer(spec, rust_name, python_name, rust_name + "<WeightPrecision>", [kernel], other_constructor_parameters)
+
+
+def parse_padding_from_string(padding: str) -> str:
+    assert padding is not None
+    if padding.lower() == "same":
+        return "Padding::Same"
+    elif padding.lower() == "valid":
+        return "Padding::Valid"
+    else:
+        raise ValueError(f"Unknown padding {padding}")
+
+
+def add_channels(layer_spec_list: list[dict]) -> list[dict]:
+    """
+    Adds the channels to a list of layer specifications, always using the channels
+    of the previous layers. 
+    """
+    ret = copy.deepcopy(layer_spec_list)
+    # first filling in layers that have no channels or filters.
+    # these must be activation functions, so they don't change the shape.
+    # we can set their filters to the same as the layer before
+    for i in range(1, len(layer_spec_list)):
+        if ret[i].get("filters") is None:
+            assert ret[i]["type"] != "conv" and ret[i]["type"] != "conv_transpose"
+            ret[i]["filters"] = ret[i-1]["filters"]
+    # augmenting all layers with missing channels: they
+    # must have the output shape of the layer before.
+    for i in range(1, len(layer_spec_list)):
+        ret[i]["channels"] = ret[i-1]["filters"]
+    return ret
+
+
+def add_numbers(layer_spec_list: list[dict]) -> list[dict]:
+    """
+    Adds the counts to the layers. 
+    The second instance of a conv layer would then f.e. have number 1 (ofc starting
+    at 0).
+    """
+    names = {}
+    ret = copy.deepcopy(layer_spec_list)
+    for l in ret:
+        name = l.get("python_name", l["type"])
+        l["number"] = names.get(name, 0)
+        names[name] = names.get(name, 0) + 1
+    return ret
 
 
 class Model:
@@ -99,8 +131,9 @@ class Model:
         """
         self.rust_name = specification["rust_module_name"]
         self.python_name = specification["python_module_name"]
-        layers = list(map(Layer, add_channels(specification["layers"])))
-        self.layers = layers
+        augmented_layers = add_numbers(add_channels(specification["layers"]))
+        self.layers = [parse_layer_from_spec(
+            layer_spec) for layer_spec in augmented_layers]
 
 
 def main(args):
