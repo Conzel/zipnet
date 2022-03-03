@@ -79,7 +79,7 @@ impl CodingModel for ReluLayer {
             {% for l in m.layers %}
                 let x = self.{{l.python_name}}{{l.number}}.forward_pass(&x);
                 {% if debug %}
-                    trace!("{{l.python_name}}{{loop.index0}}_output: {:?}\n", x);
+                    trace!("{{m.python_name}}_{{l.python_name}}{{l.number}}_output: {:?}\n", x);
                 {% endif %}
             {% endfor %}
             x
