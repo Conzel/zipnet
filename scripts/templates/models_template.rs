@@ -14,6 +14,9 @@ use crate::{
 use convolutions_rs::{
     convolutions::ConvolutionLayer, transposed_convolutions::TransposedConvolutionLayer, Padding,
 };
+{% if debug %}
+use log::trace;
+{% endif %}
 use ndarray::*;
 
 pub type InternalDataRepresentation = Array3<WeightPrecision>;
@@ -92,7 +95,7 @@ impl CodingModel for ReluLayer {
                         {{ w.shape }}
                     ).unwrap();
                     {% if debug %}
-                        trace!("{{weight_key}}: {:?}\n", {{weight_variable}});
+                        trace!("{{weight_key}}: {:?}\n", {{l.python_name}}{{l.number}}_{{w.name}});
                     {% endif %}
                 {% endfor %}
                 let {{l.python_name}}{{l.number}} = {{l.rust_name}}::new(
