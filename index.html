@@ -54,9 +54,7 @@
                     <h2>Encoding Image</h2>
                     <!-- Input form for the images -->
                     <p>Choose the image you want to encode. <br>Currently, we only support .png images (as they don't
-                        have
-                        the typical
-                        JPG artifacts and are easy to handle).
+                        have the typical JPG artifacts and are easy to handle).
                     </p>
                     <input id="imgInput" type="file" accept=".png" class="input"><br>
                     <img src="" height="200" alt="Image preview..." id="encodedPreview"><br>
@@ -66,8 +64,7 @@
                     <section>
                         <h2>Decoding Image</h2>
                         <!-- Input form for the images -->
-                        <p>Upload a Zipnet encoded image.
-                            The file should be called something like &quot;zipnet-enc-&lt;timestamp&gt;.bin&quot;.
+                        <p>Upload a Zipnet encoded image. The file should be called something like &quot;zipnet-enc-&lt;timestamp&gt;.bin&quot;.
                         </p>
                         <input id="encodedInput" type="file" accept=".bin"><br>
                         <img src="" height="200" alt="Image preview..." id="decodedPreview"><br>
@@ -79,7 +76,7 @@
                 </section>
                 <section>
                     <h2>What is a neural image codec?</h2>
-                    <p>A codec a short word for an algorithm which encodes or decodes data.
+                    <p>A codec is a short word for an algorithm which encodes or decodes data.
                         The vast majority of the internet traffic is carried in the form of
                         images and videos, which are largely compressed using classical, lossy codecs (JPEG, MPEG...).
                         These have been hand-crafted to ensure a good compression performance (the compressed data is
@@ -98,8 +95,7 @@
                         performance and while even producing more natural looking reconstructions (no more JPEG
                         artifacts!).
                         A greater compression performance means reduced data size. This results in reduced network
-                        traffic
-                        and can thus save a lot of costs in hardware, reduce energy usage and increase network
+                        traffic and can thus save a lot of costs in hardware, reduce energy usage and increase network
                         performance.
                     </p>
                     <h2>What does Zipnet add to this?</h2>
@@ -112,22 +108,42 @@
                         This is not feasible for compression algorithms, as a server obviously cannot do the decoding
                         job
                         for an end user. Zipnet aims to bridge this gap between research and application.
-                        We here provide neural codec that can run in any web browser on any reasonably modern hardware
+                        We provide neural codec that can run in any web browser on any reasonably modern hardware
                         in an acceptable time.
                     </p>
                     <h2>I want to know all the details!</h2>
                     <p>
                         The following are some more technical informations about the project.
-                        If you are further interested, also make sure to check out our <a
+                        If you are further interested, make sure to check out our <a
                             href="https://github.com/Conzel/zipnet"> <i class="fab fa-github"></i><span>Github
                                 Repository</span></a>!
                     </p>
                     <h3>Implementation</h3>
-                    TODO
+                    <p>
+                    We built an architecture that closely matches <a href="https://arxiv.org/abs/1611.01704"> "End-to-End optimized image compression", 2017, Ballé et al. </a> published at ICLR. 
+                    This architecture has been described in later papers as the <i>(Fully) Factorized Prior Model</i>, in contrast to the hierarchical models 
+                    that have been built upon this. These achieve a better compression performance, but the Factorized Model still outperforms JPEG and uses significantly less
+                    weights, which makes it faster. The model functions similar to a Variational Auto-Encoder, with a slight twist: parallel to optimizing for 
+                    reconstruction performance, we also learn a probability distribution over the latent state, which can later be used with modern entropy coders to compress 
+                    the latent state to a very small binary file. The full training objective is then a trade-off between the reconstruction performance and the size of the encoded image.
+                    </p>
+                    <p>
+                    We implemented the model architecture in Python as well as in Rust. In Python, we were able to use the 
+                    by <a href="https://github.com/InterDigitalInc/CompressAI">compression library by CompressAI </a>, which we always used to train the models. 
+                    In Rust, no such libraries existed, thus we have rewritten all the compression components from scratch. This had to be done in pure Rust, 
+                    as else we would lose the simple WASM compatibility. We have only written the forward part of the networks in Rust and then imported the weights
+                    we obtained from Python. This had the nice side effect of forcing us to write an implementation that is 100% compliant with Pytorch and CompressAI, 
+                    which has been shown through rigorous testing. During this, we have also publish
+                    <a href=https://github.com/Conzel/convolutions-rs">a crate for convolutions in Rust: convolutions-rs"</a>
+                    </p>
                     <h3>Performance</h3>
-                    TODO
+                    Our performance is competetive to JPEG, at least in the low bitrate regimes. We will soon put up rate-distortion curves.
+                    <!--
+                    <h3>Further work</h3>
+                    -->
+                    <!--
                     <h3>Limitations</h3>
-                    TODO
+                    -->
                 </section>
             </div>
         </div>
