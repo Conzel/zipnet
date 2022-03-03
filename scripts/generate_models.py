@@ -67,7 +67,7 @@ def make_gdn_layer(spec: dict, inverse: bool) -> Layer:
         rust_name = "GdnLayer"
         python_name = "gdn"
     gdn_parameter = parse_gdn_parameter_from_string(
-        spec.get("parameter", "simplified"))
+        spec.get("parameters", "simplified"))
     return Layer(spec, rust_name, python_name, rust_name, [beta, gamma], [gdn_parameter])
 
 
@@ -144,9 +144,6 @@ def add_numbers(layer_spec_list: list[dict]) -> list[dict]:
         name = l.get("python_name", l["type"])
         l["number"] = names.get(name, 0)
         names[name] = names.get(name, 0) + 1
-        # TODO: Remove this hotfix
-        if name == "gdn" and l["number"] > 0:
-            l["number"] = l["number"] + 1
     return ret
 
 

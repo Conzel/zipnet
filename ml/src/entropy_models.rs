@@ -100,7 +100,7 @@ impl EntropyBottleneck {
     pub fn from_state_dict(loader: &mut impl WeightLoader) -> EntropyBottleneck {
         // How to automatically determine correct shape?
         let quantized_cdf = loader
-            .get_weight::<_, _, i32>("entropy_bottleneck._quantized_cdf.npy", (192, 66))
+            .get_weight::<_, _, i32>("entropy_bottleneck._quantized_cdf.npy", (192, 68))
             .unwrap()
             .map(|a| *a as u32);
         let offsets = loader
