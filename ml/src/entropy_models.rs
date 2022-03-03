@@ -132,7 +132,7 @@ impl EntropyBottleneck {
         for c in 0..self.num_channels() {
             let quant_range = (
                 self.offsets[c] as i32,
-                self.cdf_lengths[c] as i32 + self.offsets[c],
+                self.cdf_lengths[c] as i32 + self.offsets[c] - 2,
             );
             let y_channel_shifted = y.slice(s![c, .., ..]).map(|a| a - self.means[c]);
             let y_channel_quantized = self.quantize(&y_channel_shifted, quant_range);
