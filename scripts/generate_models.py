@@ -89,17 +89,25 @@ def make_convolution_layer(spec: dict, transpose: bool) -> Layer:
         python_name = "conv_transpose"
         kernel = Weight(
             (int(channels), int(filters), kernel_shape[0], kernel_shape[1]), "weight")
+        if spec["bias"]:
+            bias = Weight((int(filters),), "bias")
+        else:
+            bias = None
     else:
         rust_name = "ConvolutionLayer"
         python_name = "conv"
         kernel = Weight(
             (int(filters), int(channels), kernel_shape[0], kernel_shape[1]), "weight")
+        if spec["bias"]:
+            bias = Weight((int(filters),), "bias")
+        else:
+            bias = None
     if spec.get("python_name") is not None:
         # case we need to override the default name
         python_name = spec["python_name"]
     other_constructor_parameters = [spec["stride"],
                                     parse_padding_from_string(spec["padding"])]
-    return Layer(spec, rust_name, python_name, rust_name + "<WeightPrecision>", [kernel], other_constructor_parameters)
+    return Layer(spec, rust_name, python_name, rust_name + "<WeightPrecision>", [kernel, bias], other_constructor_parameters)
 
 
 def parse_padding_from_string(padding: str) -> str:

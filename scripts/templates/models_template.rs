@@ -90,17 +90,23 @@ impl CodingModel for ReluLayer {
         pub fn new(loader: &mut impl WeightLoader) -> Self {
             {% for l in m.layers %}
                 {% for w in l.weights %}
-                    {% set weight_key = m.python_name + "." + l.python_name + l.number|string + "." + w.name + ".npy" %}
-                    let {{ l.python_name }}{{l.number}}_{{w.name}} = loader.get_weight("{{weight_key}}",
-                        {{ w.shape }}
-                    ).unwrap();
-                    {% if debug %}
-                        trace!("{{weight_key}}: {:?}\n", {{l.python_name}}{{l.number}}_{{w.name}});
+                    {% if w is not none %}
+                        {% set weight_key = m.python_name + "." + l.python_name + l.number|string + "." + w.name + ".npy" %}
+                        let {{ l.python_name }}{{l.number}}_{{w.name}} = loader.get_weight("{{weight_key}}",
+                            {{ w.shape }}
+                        ).unwrap();
+                        {% if debug %}
+                            trace!("{{weight_key}}: {:?}\n", {{l.python_name}}{{l.number}}_{{w.name}});
+                        {% endif %}
                     {% endif %}
                 {% endfor %}
                 let {{l.python_name}}{{l.number}} = {{l.rust_name}}::new(
                     {% for w in l.weights %}
-                    {{ l.python_name }}{{l.number}}_{{w.name}},
+                        {% if w is not none %}
+                            {{ l.python_name }}{{l.number}}_{{w.name}},
+                        {% else %}
+                            None,
+                        {% endif %}
                     {% endfor %}
                     {% for p in l.other_constructor_parameters %}
                     {{p}},

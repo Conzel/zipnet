@@ -45,21 +45,21 @@ fn gdn_base(
     let c = x.shape()[0];
     let gamma_reshape = gamma.to_shape((c, c, 1, 1)).unwrap();
     let mut norm = match params {
-        GdnParameters::Simplified => {
-            conv2d(&gamma_reshape, x.map(|a| a.abs()).view(), Padding::Valid, 1)
-        }
+        GdnParameters::Simplified => conv2d(
+            &gamma_reshape,
+            Some(beta),
+            x.map(|a| a.abs()).view(),
+            Padding::Valid,
+            1,
+        ),
         GdnParameters::Normal => conv2d(
             &gamma_reshape,
+            Some(beta),
             x.map(|a| a.powi(2)).view(),
             Padding::Valid,
             1,
         ),
     };
-    // Adding bias (Can be removed once we implement this in conv2d itself)
-    for i in 0..c {
-        let mut slice = norm.slice_mut(s![i, .., ..]);
-        slice += beta[i];
-    }
     if !inverse {
         norm = 1.0 / norm;
     }
