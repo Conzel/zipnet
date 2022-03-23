@@ -10,9 +10,10 @@ from ast import literal_eval
 
 
 class Weight:
-    def __init__(self, shape: tuple[int, ...], name: str):
+    def __init__(self, shape: tuple[int, ...], name: str, optional: bool = False):
         self.shape = shape
         self.name = name
+        self.optional = optional
 
 
 class Layer:
@@ -89,19 +90,17 @@ def make_convolution_layer(spec: dict, transpose: bool) -> Layer:
         python_name = "conv_transpose"
         kernel = Weight(
             (int(channels), int(filters), kernel_shape[0], kernel_shape[1]), "weight")
-        if spec["bias"]:
-            bias = Weight((int(filters),), "bias")
-        else:
-            bias = None
     else:
         rust_name = "ConvolutionLayer"
         python_name = "conv"
         kernel = Weight(
             (int(filters), int(channels), kernel_shape[0], kernel_shape[1]), "weight")
-        if spec["bias"]:
-            bias = Weight((int(filters),), "bias")
-        else:
-            bias = None
+
+    if spec["bias"]:
+        bias = Weight((int(filters),), "bias", optional=True)
+    else:
+        bias = None
+
     if spec.get("python_name") is not None:
         # case we need to override the default name
         python_name = spec["python_name"]

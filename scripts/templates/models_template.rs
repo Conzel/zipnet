@@ -103,7 +103,11 @@ impl CodingModel for ReluLayer {
                 let {{l.python_name}}{{l.number}} = {{l.rust_name}}::new(
                     {% for w in l.weights %}
                         {% if w is not none %}
+                            {% if w.optional %}
+                            Some({{ l.python_name }}{{l.number}}_{{w.name}}),
+                            {% else %}
                             {{ l.python_name }}{{l.number}}_{{w.name}},
+                            {% endif %}
                         {% else %}
                             None,
                         {% endif %}

@@ -1,0 +1,107 @@
+[
+    {
+        "rust_module_name": "MinnenEncoder",
+        "python_module_name": "analysis_transform",
+        "layers": [
+            {
+                "type": "conv",
+                "filters": "128",
+                "stride": 2,
+                "padding": "same",
+                "bias": true,
+                "channels": 3,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "gdn",
+                "parameters": "normal"
+            },
+            {
+                "type": "conv",
+                "filters": "128",
+                "stride": 2,
+                "padding": "same",
+                "bias": true,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "gdn",
+                "parameters": "normal"
+            },
+            {
+                "type": "conv",
+                "filters": "128",
+                "stride": 2,
+                "padding": "same",
+                "bias": true,
+                "activation": "relu",
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "gdn",
+                "parameters": "normal"
+            },
+            {
+                "type": "conv",
+                "filters": "192",
+                "stride": 2,
+                "padding": "same",
+                "bias": true,
+                "activation": "none",
+                "kernel_shape": "(5,5)"
+            }
+        ]
+    },
+    {
+        "rust_module_name": "JohnstonDecoder",
+        "python_module_name": "synthesis_transform",
+        "layers": [
+            {
+                "type": "conv_transpose",
+                "filters": "128",
+                "stride": 2,
+                "padding": "same",
+                "bias": true,
+                "channels": 192,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "igdn",
+                "parameters": "normal"
+            },
+            {
+                "type": "conv_transpose",
+                "filters": "128",
+                "stride": 2,
+                "padding": "same",
+                "bias": true,
+                "activation": "relu",
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "igdn",
+                "parameters": "normal"
+            },
+            {
+                "type": "conv_transpose",
+                "filters": "128",
+                "stride": 2,
+                "padding": "same",
+                "bias": true,
+                "kernel_shape": "(5,5)"
+            },
+            {
+                "type": "igdn",
+                "parameters": "normal"
+            },
+            {
+                "type": "conv_transpose",
+                "filters": "3",
+                "stride": 2,
+                "padding": "same",
+                "bias": true,
+                "kernel_shape": "(5,5)"
+            }
+        ]
+    }
+]
