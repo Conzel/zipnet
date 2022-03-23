@@ -1,7 +1,9 @@
 # zipnet
 ZipNet is a Work-In-Progress for the course project of [Data Compression With Deep Probabilistic Models](https://robamler.github.io/teaching/compress21/) offered by Robert Bamler at the University of Tübingen.
 
-We want to provide a fully functional Neural Image-Encoder and Decoder on the Web. The goal is to achieve a superior compression rate over classical codes (JPEG, …) while retaining acceptable performance for a Web Application (compression in a few seconds). This results in a maximally portable application that could help Neural Compression Codecs achieve a higher adoption rate. For the implementation, we plan to leverage the new, performant WebASM standard along with a model architecture that allows for various performance optimizations such as quantization and parallelization.
+We provide a fully functional Neural Image-Encoder and Decoder on the Web. The goal is to achieve a superior compression rate over classical codes (JPEG, …) while retaining acceptable performance for a Web Application (compression in a few seconds). 
+This results in a maximally portable application that could help Neural Compression Codecs achieve a higher adoption rate. 
+For the implementation, leverage the new, performant WebASM standard along with a model architecture that allows for efficient encoding and decoding.
 
 If you are interested in what all of the crates and modules do, 
 the folders either have READMEs or you can refer to the compiled cargo doc. 
@@ -28,6 +30,12 @@ to /path/to/image.bin, overwriting the output file if it is already present.
 `./zipnet decompress /path/to/image.bin /path/to/output_image.png`
 Decompression takes a previous output from the compression step and outputs a recovered version of the
 image under the given path. The output is always a .png.
+
+### Debugging with autoencoder
+`./zipnet autoencoder /path/to/image.png`
+The output is under `/path/to/image-reconstructed-ae.png`. The autoencoder does not perform any quantization, thus the image quality will be a lot better. 
+This is used mainly for debugging. Note that the final image will have unspecified dimensions and has a small black border in most cases 
+– this is not present in the image produced with the encoder-decoder pair. 
 
 ## Building WASM locally
 ### Setup (Ubuntu)
