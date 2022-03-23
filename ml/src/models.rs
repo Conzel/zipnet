@@ -99,7 +99,11 @@ impl MinnenEncoder {
             .get_weight("analysis_transform.conv0.weight.npy", (128, 3, 5, 5))
             .unwrap();
 
-        let conv0 = ConvolutionLayer::new(conv0_weight, None, 2, Padding::Same);
+        let conv0_bias = loader
+            .get_weight("analysis_transform.conv0.bias.npy", (128,))
+            .unwrap();
+
+        let conv0 = ConvolutionLayer::new(conv0_weight, Some(conv0_bias), 2, Padding::Same);
 
         let gdn0_beta = loader
             .get_weight("analysis_transform.gdn0.beta.npy", 128)
@@ -109,13 +113,17 @@ impl MinnenEncoder {
             .get_weight("analysis_transform.gdn0.gamma.npy", (128, 128))
             .unwrap();
 
-        let gdn0 = GdnLayer::new(gdn0_beta, gdn0_gamma, GdnParameters::Simplified);
+        let gdn0 = GdnLayer::new(gdn0_beta, gdn0_gamma, GdnParameters::Normal);
 
         let conv1_weight = loader
             .get_weight("analysis_transform.conv1.weight.npy", (128, 128, 5, 5))
             .unwrap();
 
-        let conv1 = ConvolutionLayer::new(conv1_weight, None, 2, Padding::Same);
+        let conv1_bias = loader
+            .get_weight("analysis_transform.conv1.bias.npy", (128,))
+            .unwrap();
+
+        let conv1 = ConvolutionLayer::new(conv1_weight, Some(conv1_bias), 2, Padding::Same);
 
         let gdn1_beta = loader
             .get_weight("analysis_transform.gdn1.beta.npy", 128)
@@ -125,13 +133,17 @@ impl MinnenEncoder {
             .get_weight("analysis_transform.gdn1.gamma.npy", (128, 128))
             .unwrap();
 
-        let gdn1 = GdnLayer::new(gdn1_beta, gdn1_gamma, GdnParameters::Simplified);
+        let gdn1 = GdnLayer::new(gdn1_beta, gdn1_gamma, GdnParameters::Normal);
 
         let conv2_weight = loader
             .get_weight("analysis_transform.conv2.weight.npy", (128, 128, 5, 5))
             .unwrap();
 
-        let conv2 = ConvolutionLayer::new(conv2_weight, None, 2, Padding::Same);
+        let conv2_bias = loader
+            .get_weight("analysis_transform.conv2.bias.npy", (128,))
+            .unwrap();
+
+        let conv2 = ConvolutionLayer::new(conv2_weight, Some(conv2_bias), 2, Padding::Same);
 
         let gdn2_beta = loader
             .get_weight("analysis_transform.gdn2.beta.npy", 128)
@@ -141,13 +153,17 @@ impl MinnenEncoder {
             .get_weight("analysis_transform.gdn2.gamma.npy", (128, 128))
             .unwrap();
 
-        let gdn2 = GdnLayer::new(gdn2_beta, gdn2_gamma, GdnParameters::Simplified);
+        let gdn2 = GdnLayer::new(gdn2_beta, gdn2_gamma, GdnParameters::Normal);
 
         let conv3_weight = loader
             .get_weight("analysis_transform.conv3.weight.npy", (192, 128, 5, 5))
             .unwrap();
 
-        let conv3 = ConvolutionLayer::new(conv3_weight, None, 2, Padding::Same);
+        let conv3_bias = loader
+            .get_weight("analysis_transform.conv3.bias.npy", (192,))
+            .unwrap();
+
+        let conv3 = ConvolutionLayer::new(conv3_weight, Some(conv3_bias), 2, Padding::Same);
 
         Self {
             conv0,
@@ -215,8 +231,16 @@ impl JohnstonDecoder {
             )
             .unwrap();
 
-        let conv_transpose0 =
-            TransposedConvolutionLayer::new(conv_transpose0_weight, None, 2, Padding::Same);
+        let conv_transpose0_bias = loader
+            .get_weight("synthesis_transform.conv_transpose0.bias.npy", (128,))
+            .unwrap();
+
+        let conv_transpose0 = TransposedConvolutionLayer::new(
+            conv_transpose0_weight,
+            Some(conv_transpose0_bias),
+            2,
+            Padding::Same,
+        );
 
         let igdn0_beta = loader
             .get_weight("synthesis_transform.igdn0.beta.npy", 128)
@@ -226,7 +250,7 @@ impl JohnstonDecoder {
             .get_weight("synthesis_transform.igdn0.gamma.npy", (128, 128))
             .unwrap();
 
-        let igdn0 = IgdnLayer::new(igdn0_beta, igdn0_gamma, GdnParameters::Simplified);
+        let igdn0 = IgdnLayer::new(igdn0_beta, igdn0_gamma, GdnParameters::Normal);
 
         let conv_transpose1_weight = loader
             .get_weight(
@@ -235,8 +259,16 @@ impl JohnstonDecoder {
             )
             .unwrap();
 
-        let conv_transpose1 =
-            TransposedConvolutionLayer::new(conv_transpose1_weight, None, 2, Padding::Same);
+        let conv_transpose1_bias = loader
+            .get_weight("synthesis_transform.conv_transpose1.bias.npy", (128,))
+            .unwrap();
+
+        let conv_transpose1 = TransposedConvolutionLayer::new(
+            conv_transpose1_weight,
+            Some(conv_transpose1_bias),
+            2,
+            Padding::Same,
+        );
 
         let igdn1_beta = loader
             .get_weight("synthesis_transform.igdn1.beta.npy", 128)
@@ -246,7 +278,7 @@ impl JohnstonDecoder {
             .get_weight("synthesis_transform.igdn1.gamma.npy", (128, 128))
             .unwrap();
 
-        let igdn1 = IgdnLayer::new(igdn1_beta, igdn1_gamma, GdnParameters::Simplified);
+        let igdn1 = IgdnLayer::new(igdn1_beta, igdn1_gamma, GdnParameters::Normal);
 
         let conv_transpose2_weight = loader
             .get_weight(
@@ -255,8 +287,16 @@ impl JohnstonDecoder {
             )
             .unwrap();
 
-        let conv_transpose2 =
-            TransposedConvolutionLayer::new(conv_transpose2_weight, None, 2, Padding::Same);
+        let conv_transpose2_bias = loader
+            .get_weight("synthesis_transform.conv_transpose2.bias.npy", (128,))
+            .unwrap();
+
+        let conv_transpose2 = TransposedConvolutionLayer::new(
+            conv_transpose2_weight,
+            Some(conv_transpose2_bias),
+            2,
+            Padding::Same,
+        );
 
         let igdn2_beta = loader
             .get_weight("synthesis_transform.igdn2.beta.npy", 128)
@@ -266,7 +306,7 @@ impl JohnstonDecoder {
             .get_weight("synthesis_transform.igdn2.gamma.npy", (128, 128))
             .unwrap();
 
-        let igdn2 = IgdnLayer::new(igdn2_beta, igdn2_gamma, GdnParameters::Simplified);
+        let igdn2 = IgdnLayer::new(igdn2_beta, igdn2_gamma, GdnParameters::Normal);
 
         let conv_transpose3_weight = loader
             .get_weight(
@@ -275,8 +315,16 @@ impl JohnstonDecoder {
             )
             .unwrap();
 
-        let conv_transpose3 =
-            TransposedConvolutionLayer::new(conv_transpose3_weight, None, 2, Padding::Same);
+        let conv_transpose3_bias = loader
+            .get_weight("synthesis_transform.conv_transpose3.bias.npy", (3,))
+            .unwrap();
+
+        let conv_transpose3 = TransposedConvolutionLayer::new(
+            conv_transpose3_weight,
+            Some(conv_transpose3_bias),
+            2,
+            Padding::Same,
+        );
 
         Self {
             conv_transpose0,
