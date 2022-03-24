@@ -1,4 +1,3 @@
-import { Imag, image } from "@tensorflow/tfjs";
 import * as wasm from "wasm-zipnet";
 const { Image } = require("image-js");
 
