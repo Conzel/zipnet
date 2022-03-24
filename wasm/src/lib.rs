@@ -26,10 +26,10 @@ pub fn encode_image(buffer: Vec<u8>) -> Vec<u8> {
     let image = load_from_memory_with_format(&buffer, ImageFormat::Png).unwrap();
     log::info!("Successfully loaded image. Starting encoding...");
     let mut encoder: Box<dyn Encoder<_>> = Box::new(FactorizedPriorEncoder::new());
-    log::info!("Finished encoding.");
 
     let encoded = encoder.encode(&image_to_ndarray(&image));
     let encoded_bin = bincode::serialize(&encoded).unwrap();
+    log::info!("Finished encoding.");
 
     encoded_bin
 }
@@ -61,26 +61,4 @@ pub fn decode_image(encoded_bin: Vec<u8>) -> Vec<u8> {
         )
         .unwrap();
     buffer
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::*;
-    use image::ImageBuffer;
-    use ndarray::Array;
-    use rand::Rng;
-
-    #[test]
-    fn smoke_test_coding() {
-        //let mut rng = rand::thread_rng();
-        //let mut im_raw = vec![];
-        //for _ in 0..300 {
-        //    im_raw.push(rng.gen());
-        //}
-        //let buffer = vec![];
-        //let arr = Array::from_shape_vec((3, 10, 10), im_raw).unwrap();
-        //let png_img = array_to_image(arr).write_to(buffer, ImageFormat::Png);
-        //let enc = encode_image(array_to_image(arr).to_vec());
-        //let _dec = decode_image(enc);
-    }
 }

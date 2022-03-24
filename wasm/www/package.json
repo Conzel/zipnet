@@ -25,7 +25,8 @@
   "license": "(MIT OR Apache-2.0)",
   "homepage": "https://github.com/sn99/wasm-template-rust/blob/master/README.md",
   "dependencies": {
-    "wasm-zipnet": "file:../pkg"
+    "wasm-zipnet": "file:../pkg",
+    "image-js": "^0.33.1"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^5.0.0",
