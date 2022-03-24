@@ -38,13 +38,14 @@
                 <header>
                     <h1>Zipnet - a neural image codec entirely in your browser!</h1>
                     <p>Try it out with your own image. A trained neural network will find an efficient encoding for
-                        your
-                        image and you can then download it.
+                        your image and you can then download it.
                         The encoding will be lossy (similar to JPEG - but it often looks more natural to the eye).
-                        You
-                        can then re-upload the encoded image to see the reconstruction.
+                        You can then re-upload the encoded image to see the reconstruction.
                         And the best thing about it – this algorithm runs entirely in your browser. No servers or
                         anything involved!
+
+                        You can try it out below. If you need additional instructions or want explanations
+                        on what you see refer to the <a href="#detailed_usage">Detailed usage</a>.
                     </p>
                     <hr>
                 </header>
@@ -52,14 +53,13 @@
                 <section>
                     <h2>Encoding Image</h2>
                     <!-- Input form for the images -->
-                    <p>Choose the image you want to encode. <br>Currently, we only support .png images (as they don't
-                        have the typical JPG artifacts and are easy to handle).
-                    </p>
+                    <p>Choose a <b>.png</b> image you want to encode (max size 256x256).</p>
                     <input id="imgInput" type="file" accept=".png" class="input"><br>
                     <div style="display: flex;">
                         <img src="" height="0" alt="Image preview..." id="encodedPreview" style="padding:5px"><br>
                     </div>
                     <button id="downloadEncoded">Get Encoded</button><br>
+                    <div id="warn_size" style="color: crimson"></div>
                     <div id="statsEncoded"></div>
                     <hr>
                     <section>
@@ -94,6 +94,84 @@
                         <hr>
                         <hr>
                     </section>
+                </section>
+                <h1>Additional information</h1>
+                <section>
+                    <h2 id="detailed_usage">Detailed usage</h2>
+                    <h3>Encoding</h3>
+                    <p>
+                        The website contains two sections. One for encoding and one for decoding.
+                        Under <i>Encoding Image</i>, you can encode an image by selecting the <i>Choose File</i>
+                        button.
+                        A file dialog should pop up. There, you can select your image file. We only accept .png,
+                        as this is the most widespread format that is not encoded in a lossy form. Due to speed
+                        reasons,
+                        we strongly recommend uploads of a maximum size of 256x256. You can however upload larger
+                        files – proceed with caution!<br>
+                        We also note that Zipnet works best with images of naturally occuring scenes (landscapes,
+                        objects, faces, animals...) as opposed to artificial images (screenshots, certain kinds of
+                        drawings...).
+                        This is simply due to the data it was trained on. We encourage you to try different images
+                        to gauge the effect!
+                    </p>
+                    <p>
+                        Uploading the image puts a preview of the image below the <i>Choose File</i> button.
+                        This is still your original image, not the encoded one. To start the encoding process, click
+                        <i>Get Encoded</i>.
+                    </p>
+                    <p>
+                        After the encoding process is finished (which should take a second)
+                        a file download will be prompted. The file's default name should look something
+                        like &quot;zipnet-enc-&lt;timestamp&gt;.bin&quot;. You can however save it as you want.
+                        Additionally, some stats about the process are displayed below the <i>Get Encoded</i>
+                        button.
+                        You can see the previous size and the size of the encoded representation (in bytes).
+                        After the encoded size, a percentage value denotes how big the file size is in relation to
+                        the
+                        original image.
+                        Additionally, we report the <i>bits per pixel (bpp)</i> value. This indicates how many bits
+                        the encoded
+                        representation takes up per pixel of the original image (completely uncompressed equals
+                        24 bpp for RGB8 color images).
+                    </p>
+                    <h3>Decoding</h3>
+                    <p>
+                        With the encoded file, we can start the decoding process. For this, click the <i>Choose
+                            File</i>
+                        button in the decoding section. This will prompt you to upload the encoded file. After
+                        choosing the file,
+                        the decoding process will immediately start. Don't worry, this can take some time (around
+                        10-15 seconds).
+                        After the process has finished, you will see a preview of the decoded image below the
+                        <i>Choose File</i>
+                        button. As we apply a pretty aggressive lossy compression scheme, this will result in a loss
+                        of quality compare to the original.
+                        After the process has finished, you can download the decoded image with the <i>Get
+                            Decoded</i> button.
+                    </p>
+                    <p>
+                        The decoding and encoding process are of course decoupled. You can encode an image, close
+                        the website,
+                        and visit a day later to decode your image without problems. We do not guarantee that
+                        encoded images
+                        will be decodeable until the end of time – we are still actively working on improving the
+                        process,
+                        which can render older encoded images unrecoverable if we decide to publish a new version of
+                        the website.<br>
+                        There is however an advantage to encoding and decoding the image in one sitting. As we will
+                        have
+                        access to the original in this case, we can provide some additional statistics.
+                        This will result in the decoding process showing two decoded images: Our method on the
+                        left, and a JPEG image that was encoded to a very similar bitrate, to the right.
+                        Keep in mind: higher bitrate means a larger encoded size.
+                        This typically results in a higher quality decompressed image. Most of the time,
+                        the JPEG image looks a lot worse (despite having almost the same encoded file size!).
+                        We confirm this via some stats below the image:
+                        additionally to the bpp for both methods, we report the <i>Peak-Signal-To-Noise-Ratio
+                            (PSNR)</i>.
+                        This
+                        is a measure of how much the image differs from the original.
+                    </p>
                 </section>
                 <section>
                     <h2>What is a neural image codec?</h2>
@@ -169,9 +247,11 @@
                         <a href=https://github.com/Conzel/convolutions-rs">a crate for convolutions in Rust:
                             convolutions-rs"</a>
                     </p>
+                    <!--
                     <h3>Performance</h3>
                     Our performance is competetive to JPEG, at least in the low bitrate regimes. We will soon put up
                     rate-distortion curves.
+                    -->
                     <!--
                     <h3>Further work</h3>
                     -->
