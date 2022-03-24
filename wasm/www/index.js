@@ -31,11 +31,27 @@ function previewImageToEncode() {
 
     if (file) {
         file.arrayBuffer().then(
-            (buffer) => displayBuffer(preview, buffer)
+            (buffer) => {
+                enforceSizeRestrictions(buffer, 256, 256);
+                displayBuffer(preview, buffer)
+            }
         )
     } else {
         preview.src = "";
     }
+}
+
+function enforceSizeRestrictions(buffer, max_height, max_width) {
+    Image.load(buffer).then(
+        (image) => {
+            if (image.width > max_width || image.height > max_height) {
+                document.getElementById("warn_size").innerHTML = "<b>WARNING: Your image has dimensions (H,W) of " + max_height + "x" + max_width + ". We strongly recommend using a maximum image size of 256x256 for speed reasons (see <i>Detailed Usage</i> section).</b>"
+            }
+            else {
+                document.getElementById("warn_size").innerHTML = ""
+            }
+        }
+    )
 }
 
 /// Encodes the given image with the given JPEG quality.
