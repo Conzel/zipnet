@@ -1,9 +1,19 @@
 # zipnet
-ZipNet is a Work-In-Progress for the course project of [Data Compression With Deep Probabilistic Models](https://robamler.github.io/teaching/compress21/) offered by Robert Bamler at the University of Tübingen.
+Zipnet is the first useable neural image encoder and decoder that can run entirely in your web browser
+(no servers involved)!
 
-We provide a fully functional Neural Image-Encoder and Decoder on the Web. The goal is to achieve a superior compression rate over classical codes (JPEG, …) while retaining acceptable performance for a Web Application (compression in a few seconds). 
-This results in a maximally portable application that could help Neural Compression Codecs achieve a higher adoption rate. 
-For the implementation, leverage the new, performant WebASM standard along with a model architecture that allows for efficient encoding and decoding.
+Useable means:
+- Superior performance compared to classical codecs (JPEG)
+- Acceptable encoding and decoding speed (a few seconds)
+
+This is achieved by defining a neural codec in Pytorch as well as in Rust, running training in Python and 
+transferring the trained weights to Rust for platform-independent inference.  The codec is compiled to WebASM, which has inference runtimes roughly compared to native code, and is then included in our website. 
+
+We have re-written a lot neural network modules in pure Rust for maximum portability. These can be found 
+under `src/ml`, or in our crate [blowtorch](https://github.com/Conzel/blowtorch), which serves as a
+framework for porting Pytorch weights to Rust for inference.
+
+This project has spun out of a course project for the lecture [Data Compression With Deep Probabilistic Models](https://robamler.github.io/teaching/compress21/) offered by Robert Bamler at the University of Tübingen.
 
 If you are interested in what all of the crates and modules do, 
 the folders either have READMEs or you can refer to the compiled cargo doc. 
